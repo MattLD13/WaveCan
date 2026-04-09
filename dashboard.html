@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WaveCan — Motor Control</title>
+<style>
+:root {
+  --bg:       #0d1117; --surface: #161b22; --surface2: #21262d;
+  --border:   #30363d; --accent:  #58a6ff; --accent2: #1f6feb;
+  --green:    #3fb950; --yellow:  #d29922; --red:     #f85149;
+  --text:     #e6edf3; --muted:   #8b949e; --radius:  10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow: hidden; }
+
+/* Full-page rover overlay */
+canvas#roverCanvas {
+  position: fixed;
+  top: 50px;
+  left: 0;
+  width: 100vw;
+  height: calc(100vh - 50px);
+  pointer-events: none;
+  z-index: 120;
+}
+
+/* ── Top Bar ── */
+.topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px; background: var(--surface); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100; height: 50px;
+}
+.logo { font-size: 1.2rem; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
+.logo span { color: var(--muted); font-weight: 400; }
+.topbar-spacer { flex: 1; }
+.pill {
+  display: flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border-radius: 99px; font-size: 0.75rem; font-weight: 600;
+  border: 1px solid var(--border); background: var(--surface2); transition: all .3s;
+}
+.pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); transition: background .3s; }
+.pill.ok { border-color: var(--green); color: var(--green); }
+.pill.ok .dot { background: var(--green); }
+.pill.gp-connected { border-color: var(--accent); color: var(--accent); }
+.pill.gp-connected .dot { background: var(--accent); }
+
+/* ── Layout ── */
+.layout { display: flex; height: calc(100vh - 50px); overflow: hidden; }
+
+/* ── Panels ── */
+.panel {
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface); border-right: 1px solid var(--border);
+}
+.panel:last-child { border-right: none; border-left: 1px solid var(--border); }
+.panel-motors { width: 280px; min-width: 240px; }
+.panel-center  { flex: 1; overflow-y: auto; background: var(--bg); }
+.panel-right   { width: 300px; min-width: 260px; overflow-y: auto; }
+
+.panel-heading {
+  padding: 11px 14px 9px; font-size: 0.68rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+
+/* ── Motor Cards ── */
+.motor-list { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.mcard {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 12px; cursor: pointer; user-select: none;
+  transition: border-color .15s, background .15s; position: relative;
+}
+.mcard:hover { border-color: var(--accent2); }
+.mcard.sel { border-color: var(--accent); background: #131c2e; box-shadow: 0 0 0 1px #1f6feb55; }
+.mcard .chk {
+  position: absolute; top: 9px; right: 10px; width: 16px; height: 16px;
+  border-radius: 4px; border: 2px solid var(--border); display: flex; align-items: center;
+  justify-content: center; font-size: 10px; transition: all .15s;
+}
+.mcard.sel .chk { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 900; }
+
+.mcard-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; padding-right: 22px; }
+.mcard-name { font-weight: 600; font-size: 0.88rem; }
+.role-badge {
+  font-size: 0.62rem; padding: 1px 6px; border-radius: 99px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+  font-weight: 700; cursor: pointer; margin-left: auto; margin-right: 22px;
+  transition: all .15s;
+}
+.role-badge.L  { border-color: var(--accent);  color: var(--accent);  background: #131c2e; }
+.role-badge.R  { border-color: var(--red);     color: var(--red);     background: #1e1013; }
+.role-badge.AUX{ border-color: var(--yellow);  color: var(--yellow);  background: #1e1a0e; }
+
+.mcard-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 0.78rem; }
+.stat-lbl { font-size: 0.6rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.stat-val { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.rbar-wrap { grid-column: 1/-1; margin-top: 4px; }
+.rbar-track { height: 3px; border-radius: 99px; background: var(--border); overflow: hidden; }
+.rbar-fill { height: 100%; border-radius: 99px; transition: width .2s; min-width: 2px;
+  background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+.rbar-fill.rev { background: linear-gradient(90deg, #c0392b, var(--red)); }
+
+.select-bar { padding: 7px 8px; border-top: 1px solid var(--border); display: flex; gap: 5px; flex-shrink: 0; }
+.btn-xs {
+  flex: 1; padding: 5px 4px; font-size: 0.72rem; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface2); color: var(--text);
+  cursor: pointer; transition: all .15s;
+}
+.btn-xs:hover { border-color: var(--accent); }
+
+/* ── Center layout ── */
+.center-grid { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.card.drive-card { overflow: visible; }
+.card-head {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--muted); display: flex; align-items: center; gap: 8px;
+}
+.card-body { padding: 14px; }
+
+/* Speed slider */
+.spd-row { display: flex; align-items: center; gap: 12px; }
+.spd-num { font-size: 2.2rem; font-weight: 800; min-width: 82px; text-align: right;
+  font-variant-numeric: tabular-nums; color: var(--accent); transition: color .2s; }
+.spd-num.neg { color: var(--red); }
+.spd-num.zero { color: var(--muted); }
+input[type=range] {
+  flex: 1; -webkit-appearance: none; height: 5px; border-radius: 99px;
+  background: var(--border); outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--accent2);
+}
+.btn-row { display: flex; gap: 7px; margin-top: 10px; flex-wrap: wrap; }
+.btn {
+  padding: 7px 16px; border-radius: 7px; font-size: 0.82rem; font-weight: 600;
+  border: 1px solid; cursor: pointer; transition: all .15s;
+}
+.btn-primary { background: var(--accent2); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent); }
+.btn-danger  { background: transparent; border-color: var(--red); color: var(--red); }
+.btn-danger:hover  { background: var(--red); color: #fff; }
+.btn-ghost   { background: transparent; border-color: var(--border); color: var(--text); }
+.btn-ghost:hover   { border-color: var(--accent); color: var(--accent); }
+.sel-note { font-size: 0.73rem; color: var(--muted); padding-top: 6px; }
+.sel-note span { color: var(--accent); font-weight: 600; }
+
+/* ── Joystick Pad ── */
+.js-row { display: flex; gap: 20px; align-items: flex-start; }
+.js-zone { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.js-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+.js-canvas { cursor: crosshair; touch-action: none; }
+.js-vals { font-size: 0.7rem; color: var(--muted); font-variant-numeric: tabular-nums; text-align: center; }
+.js-vals span { color: var(--text); font-weight: 600; }
+
+.js-legend { font-size: 0.71rem; color: var(--muted); line-height: 1.9; }
+.js-legend kbd {
+  padding: 1px 6px; border-radius: 4px; background: var(--surface2);
+  border: 1px solid var(--border); font-family: monospace; font-size: 0.67rem; color: var(--accent);
+}
+.drive-mode-row { display: flex; gap: 6px; margin-bottom: 10px; }
+.mode-btn {
+  flex: 1; padding: 5px; border-radius: 6px; font-size: 0.73rem; font-weight: 600;
+  border: 1px solid var(--border); background: var(--surface2); color: var(--muted);
+  cursor: pointer; transition: all .15s; text-align: center;
+}
+.mode-btn.active { border-color: var(--accent); color: var(--accent); background: #131c2e; }
+
+/* ── Drivetrain Viz ── */
+.dt-canvas-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0 6px; }
+canvas#dtCanvas { border-radius: 8px; }
+.dt-footer { display: flex; gap: 8px; align-items: center; font-size: .72rem; color: var(--muted); }
+.dt-footer button { padding: 3px 10px; font-size: .7rem; border-radius: 5px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; }
+.dt-footer button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Deadzone Popover ── */
+.dz-wrap { position: relative; }
+.dz-btn { background: none; border: 1px solid var(--border); border-radius: 5px; padding: 3px 8px; font-size: .72rem; color: var(--muted); cursor: pointer; transition: all .15s; }
+.dz-btn:hover { border-color: var(--accent); color: var(--accent); }
+.dz-popover {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0;
+  left: auto; transform: none; z-index: 220;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px; width: min(220px, calc(100vw - 24px)); box-shadow: 0 8px 24px #0008;
+}
+.dz-popover.open { display: block; }
+.dz-title { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 10px; }
+.dz-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.dz-row label { font-size: .72rem; color: var(--muted); width: 70px; }
+.dz-row input[type=range] { flex: 1; height: 4px; }
+.dz-val { font-size: .72rem; font-weight: 700; color: var(--accent); width: 32px; text-align: right; }
+.dz-row select {
+  flex: 1;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: .72rem;
+}
+
+/* ── RPM Chart ── */
+.chart-wrap { height: 130px; position: relative; }
+canvas#rpmChart { display: block; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 14px;
+  border-top: 1px solid var(--border); }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; }
+.leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* ── Right Panel ── */
+.info-section { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); }
+.info-section:last-child { border-bottom: none; }
+.info-title {
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--muted); margin-bottom: 9px;
+}
+.info-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+.info-key { font-size: 0.73rem; color: var(--muted); }
+.info-val { font-size: 0.78rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.info-val.ok   { color: var(--green); }
+.info-val.warn { color: var(--yellow); }
+.info-val.err  { color: var(--red); }
+
+.shortcut { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; font-size: 0.7rem; }
+.shortcut kbd {
+  padding: 1px 7px; border-radius: 4px; background: var(--surface2);
+  border: 1px solid var(--border); font-family: monospace; font-size: 0.65rem; color: var(--accent);
+}
+.shortcut .kd { color: var(--muted); }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="logo">⚡ Wave<span>Can</span></div>
+  <div class="topbar-spacer"></div>
+  <div class="pill" id="gpPill"><span class="dot"></span> No Gamepad</div>
+  <div class="pill" id="connPill"><span class="dot"></span> Connecting…</div>
+</div>
+
+<canvas id="roverCanvas"></canvas>
+
+<div class="layout">
+
+<!-- ── Left: Motor List ── -->
+<div class="panel panel-motors">
+  <div class="panel-heading">
+    ⚙ Motors
+    <span id="mCount" style="margin-left:auto;color:var(--accent);font-size:.8rem;text-transform:none;letter-spacing:0;font-weight:600"></span>
+  </div>
+  <div class="motor-list" id="motorList"></div>
+  <div class="select-bar">
+    <button class="btn-xs" onclick="selectAll()">✔ All</button>
+    <button class="btn-xs" onclick="selectNone()">✖ None</button>
+    <button class="btn-xs" onclick="selectInvert()">⇄ Inv</button>
+  </div>
+</div>
+
+<!-- ── Center ── -->
+<div class="panel-center">
+  <div class="center-grid">
+
+    <!-- Speed / Manual -->
+    <div class="card drive-card">
+      <div class="card-head">🎮 Speed Control</div>
+      <div class="card-body">
+        <div class="spd-row">
+          <div class="spd-num zero" id="spdDisplay">0%</div>
+          <input type="range" id="spdSlider" min="-100" max="100" value="0" step="1" oninput="onSlider(this.value)">
+        </div>
+        <div class="sel-note">Targeting: <span id="selLabel">none selected</span></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="sendManualSpeed()">▶ Send</button>
+          <button class="btn btn-danger"  onclick="emergencyStop()">⏹ E-Stop</button>
+          <button class="btn btn-ghost"   onclick="resetSlider()">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Joystick / Drive -->
+    <div class="card">
+      <div class="card-head">🕹 Drive Control
+        <span style="margin-left:auto"></span>
+        <div class="dz-wrap">
+          <button class="dz-btn" id="dzBtn" onclick="toggleDeadzonePopover(event)">Deadzones</button>
+          <div class="dz-popover" id="dzPopover" onclick="event.stopPropagation()">
+            <div class="dz-title">Joystick Deadzones</div>
+            <div class="dz-row">
+              <label for="dzMove">Move</label>
+              <input id="dzMove" type="range" min="0" max="30" step="1" value="8" oninput="setDeadzonesFromUI()">
+              <span class="dz-val" id="dzMoveVal">8%</span>
+            </div>
+            <div class="dz-row">
+              <label for="dzTurn">Turn</label>
+              <input id="dzTurn" type="range" min="0" max="30" step="1" value="8" oninput="setDeadzonesFromUI()">
+              <span class="dz-val" id="dzTurnVal">8%</span>
+            </div>
+            <div class="dz-title" style="margin-top:8px">Gamepad Axis Map</div>
+            <div class="dz-row">
+              <label for="axisMove">Move Axis</label>
+              <select id="axisMove" onchange="setAxesFromUI()"></select>
+            </div>
+            <div class="dz-row" style="margin-bottom:0">
+              <label for="axisTurn">Turn Axis</label>
+              <select id="axisTurn" onchange="setAxesFromUI()"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="drive-mode-row">
+          <div class="mode-btn active" id="modeArcade" onclick="setMode('arcade')">Arcade Drive</div>
+          <div class="mode-btn"        id="modeTank"   onclick="setMode('tank')">Tank Drive</div>
+          <div class="mode-btn"        id="modeOff"    onclick="setMode('off')">Disabled</div>
+        </div>
+        <div class="js-row" id="jsRow">
+          <!-- populated by JS based on mode -->
+        </div>
+        <div class="js-legend" style="margin-top:10px">
+          <div><kbd>↑↓</kbd> Throttle &nbsp;<kbd>←→</kbd> Turn</div>
+          <div><kbd>Space</kbd> Emergency stop &nbsp;<kbd>1</kbd>–<kbd>8</kbd> Toggle motor</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drivetrain Visualization -->
+    <div class="card">
+      <div class="card-head">🚗 Drivetrain View
+        <span id="dtInfo" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.72rem;color:var(--muted);margin-left:6px"></span>
+      </div>
+      <div class="dt-canvas-wrap">
+        <canvas id="dtCanvas" width="280" height="280"></canvas>
+        <div class="dt-footer">
+          <span id="dtHeading">↑ 0°</span>
+          <span id="dtRadius" style="margin-left:4px"></span>
+          <span style="flex:1"></span>
+          <button onclick="resetRobot()">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RPM Chart -->
+    <div class="card">
+      <div class="card-head">📈 RPM History</div>
+      <div class="card-body" style="padding:10px 10px 0">
+        <div class="chart-wrap"><canvas id="rpmChart"></canvas></div>
+      </div>
+      <div class="chart-legend" id="chartLegend"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Right Panel ── -->
+<div class="panel panel-right">
+
+  <div class="info-section">
+    <div class="info-title">🖥 System</div>
+    <div class="info-row"><span class="info-key">Platform</span><span class="info-val ok" id="iPlatform">—</span></div>
+    <div class="info-row"><span class="info-key">CAN Bus</span><span class="info-val" id="iCAN">—</span></div>
+    <div class="info-row"><span class="info-key">Uptime</span><span class="info-val" id="iUptime">—</span></div>
+    <div class="info-row"><span class="info-key">Req/s</span><span class="info-val" id="iRPS">—</span></div>
+  </div>
+
+  <div class="info-section">
+    <div class="info-title">📊 Fleet</div>
+    <div class="info-row"><span class="info-key">Motors</span><span class="info-val" id="iMotors">—</span></div>
+    <div class="info-row"><span class="info-key">Avg RPM</span><span class="info-val" id="iAvgRPM">—</span></div>
+    <div class="info-row"><span class="info-key">Total Amps</span><span class="info-val" id="iTotalA">—</span></div>
+    <div class="info-row"><span class="info-key">Max Temp</span><span class="info-val" id="iMaxTemp">—</span></div>
+  </div>
+
+  <div class="info-section">
+    <div class="info-title">🔑 Shortcuts</div>
+    <div class="shortcut"><kbd>↑↓</kbd><span class="kd">Throttle ±5%</span></div>
+    <div class="shortcut"><kbd>←→</kbd><span class="kd">Turn ±5%</span></div>
+    <div class="shortcut"><kbd>Space</kbd><span class="kd">Emergency stop</span></div>
+    <div class="shortcut"><kbd>1</kbd>–<kbd>8</kbd><span class="kd">Toggle motor</span></div>
+    <div class="shortcut"><kbd>A</kbd><span class="kd">Select all</span></div>
+    <div class="shortcut"><kbd>N</kbd><span class="kd">Select none</span></div>
+    <div class="shortcut"><kbd>Enter</kbd><span class="kd">Send speed</span></div>
+    <div class="shortcut"><kbd>Tab</kbd><span class="kd">Cycle drive mode</span></div>
+  </div>
+
+  <div class="info-section">
+    <div class="info-title">⚙ Motor Roles</div>
+    <div id="roleInfo" style="font-size:0.72rem;color:var(--muted);line-height:1.8">
+      Click a motor's badge to cycle role:<br>
+      <span style="color:var(--accent)">L</span> = Left side &nbsp;
+      <span style="color:var(--red)">R</span> = Right side &nbsp;
+      <span style="color:var(--yellow)">AUX</span> = Auxiliary
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  State
+// ══════════════════════════════════════════════════════════
+const S = {
+  motors: {},        // id → motor state object
+  selected: new Set(),
+  history: {},       // id → [rpm, ...]
+  historyLen: 80,
+  roles: {},         // id → 'L' | 'R' | 'AUX' | null
+  driveMode: 'arcade',  // 'arcade' | 'tank' | 'off'
+  deadzones: {
+    move: 0.08,
+    turn: 0.08,
+  },
+  axes: {
+    move: 1,
+    turn: 5,
+    tankLeft: 1,
+    tankRight: 3,
+  },
+  gamepadFiltered: {
+    move: 0,
+    turn: 0,
+    tankLeft: 0,
+    tankRight: 0,
+  },
+  inputTargets: {
+    gp: { mode: 'arcade', throttle: 0, turn: 0, left: 0, right: 0, ts: 0 },
+    ui: { mode: 'arcade', throttle: 0, turn: 0, left: 0, right: 0, ts: 0 },
+    kb: { mode: 'arcade', throttle: 0, turn: 0, left: 0, right: 0, ts: 0 },
+  },
+  // arcade drive inputs
+  throttle: 0,  // -1..1
+  turn: 0,      // -1..1
+  // tank drive inputs
+  leftRaw: 0, rightRaw: 0,
+  // manual slider
+  manualPct: 0,
+  leftCmd: 0, rightCmd: 0,  // last commanded wheel speeds (-1..1)
+  gpIdx: null,
+  lastReqTs: 0,
+  reqCount: 0,
+  prevReqCount: 0,
+  // Robot simulation (differential drive)
+  robot: {
+    x: 140, y: 140,   // canvas pixels (starts at center)
+    anchorX: 140, anchorY: 140,
+    prevAnchorX: null, prevAnchorY: null,
+    heading: -Math.PI/2,  // radians, -π/2 = facing up
+    path: [],         // [{x,y}] history
+    maxPath: 120,
+    trackWidth: 40,   // pixels between left/right wheels
+    pxPerUnit: 18,    // pixels per "unit speed" at 100%
+    lastMotionMs: 0,
+  },
+};
+
+const COLORS = ['#58a6ff','#3fb950','#f0883e','#bc8cff','#ff7b72','#79c0ff','#ffa198','#56d364'];
+const ROLES  = [null, 'L', 'R', 'AUX'];
+
+// ══════════════════════════════════════════════════════════
+//  Motor Cards
+// ══════════════════════════════════════════════════════════
+function renderMotors() {
+  const list = document.getElementById('motorList');
+  const ids  = sortedIds();
+  document.getElementById('mCount').textContent = ids.length + (ids.length !== 1 ? ' motors' : ' motor');
+
+  ids.forEach(id => {
+    const m   = S.motors[id];
+    let card  = document.getElementById('mc-' + id);
+    if (!card) {
+      card = document.createElement('div');
+      card.id = 'mc-' + id;
+      list.appendChild(card);
+    }
+    const sel  = S.selected.has(id);
+    const role = S.roles[id] || null;
+    const pct  = Math.min(100, Math.abs(m.output_percent || 0));
+    const rev  = (m.rpm || 0) < -20;
+    const tCls = m.temperature_c > 60 ? 'var(--red)' : m.temperature_c > 45 ? 'var(--yellow)' : 'var(--text)';
+
+    card.className = 'mcard' + (sel ? ' sel' : '');
+    card.innerHTML = `
+      <div class="chk">${sel ? '✓' : ''}</div>
+      <div class="mcard-head">
+        <span>⚙</span>
+        <span class="mcard-name">Motor ${id}</span>
+        <span class="role-badge${role ? ' ' + role : ''}"
+              onclick="event.stopPropagation();cycleRole(${id})">${role || '—'}</span>
+      </div>
+      <div class="mcard-stats">
+        <div><div class="stat-lbl">RPM</div><div class="stat-val">${(m.rpm||0).toFixed(0)}</div></div>
+        <div><div class="stat-lbl">Output</div><div class="stat-val">${(m.output_percent||0).toFixed(1)}%</div></div>
+        <div><div class="stat-lbl">Amps</div><div class="stat-val">${(m.current_amps||0).toFixed(1)} A</div></div>
+        <div><div class="stat-lbl">Temp</div><div class="stat-val" style="color:${tCls}">${(m.temperature_c||0).toFixed(1)}°C</div></div>
+        <div class="rbar-wrap"><div class="rbar-track"><div class="rbar-fill ${rev?'rev':''}" style="width:${pct}%"></div></div></div>
+      </div>`;
+    card.onclick = () => toggleMotor(id);
+  });
+
+  // Remove stale cards
+  [...list.querySelectorAll('.mcard')].forEach(c => {
+    const id = parseInt(c.id.replace('mc-', ''));
+    if (!S.motors[id]) c.remove();
+  });
+
+  updateSelLabel();
+  updateChartLegend();
+}
+
+function cycleRole(id) {
+  const cur = S.roles[id] || null;
+  const idx = ROLES.indexOf(cur);
+  S.roles[id] = ROLES[(idx + 1) % ROLES.length];
+  renderMotors();
+  drawDrivetrain();
+}
+
+function toggleMotor(id) {
+  if (S.selected.has(id)) S.selected.delete(id); else S.selected.add(id);
+  renderMotors();
+}
+function selectAll()    { sortedIds().forEach(id => S.selected.add(id)); renderMotors(); }
+function selectNone()   { S.selected.clear(); renderMotors(); }
+function selectInvert() { sortedIds().forEach(id => S.selected.has(id) ? S.selected.delete(id) : S.selected.add(id)); renderMotors(); }
+
+function updateSelLabel() {
+  const el = document.getElementById('selLabel');
+  if (!S.selected.size)                           { el.textContent = 'none selected'; return; }
+  if (S.selected.size === sortedIds().length)      { el.textContent = 'all motors'; return; }
+  el.textContent = [...S.selected].sort((a,b)=>a-b).map(id => 'Motor ' + id).join(', ');
+}
+
+function sortedIds() { return Object.keys(S.motors).map(Number).sort((a,b)=>a-b); }
+
+// ══════════════════════════════════════════════════════════
+//  Drive Modes
+// ══════════════════════════════════════════════════════════
+function setMode(mode) {
+  S.driveMode = mode;
+  clearTargets();
+  ['arcade','tank','off'].forEach(m => {
+    document.getElementById('mode' + m.charAt(0).toUpperCase() + m.slice(1)).classList.toggle('active', m === mode);
+  });
+  buildJoystickUI();
+}
+
+function buildJoystickUI() {
+  const row = document.getElementById('jsRow');
+  if (S.driveMode === 'off') {
+    row.innerHTML = '<span style="font-size:.8rem;color:var(--muted)">Drive control disabled — use manual slider above.</span>';
+    return;
+  }
+  if (S.driveMode === 'arcade') {
+    row.innerHTML = `
+      <div class="js-zone">
+        <div class="js-label">Left Stick</div>
+        <canvas class="js-canvas" id="jsCanvas" width="110" height="110"></canvas>
+        <div class="js-vals">Fwd <span id="jsF">0%</span> &nbsp; Turn <span id="jsT">0%</span></div>
+      </div>
+      <div class="js-legend" style="flex:1">
+        <div><kbd>↑↓</kbd> Throttle (forward/back)</div>
+        <div><kbd>Twist</kbd> Turn (Z axis)</div>
+        <div style="margin-top:8px">Gamepad axis mapping is configurable<br>from the Deadzones menu.</div>
+        <div style="margin-top:8px">
+          <b>Arcade mixing:</b><br>
+          Left = fwd + turn<br>
+          Right = fwd − turn
+        </div>
+      </div>`;
+    initJoystickCanvas();
+  } else if (S.driveMode === 'tank') {
+    row.innerHTML = `
+      <div class="js-zone">
+        <div class="js-label">Left Side</div>
+        <canvas class="js-canvas" id="jsTankL" width="60" height="110"></canvas>
+        <div class="js-vals">L <span id="jsTLV">0%</span></div>
+      </div>
+      <div class="js-zone">
+        <div class="js-label">Right Side</div>
+        <canvas class="js-canvas" id="jsTankR" width="60" height="110"></canvas>
+        <div class="js-vals">R <span id="jsTRV">0%</span></div>
+      </div>
+      <div class="js-legend" style="flex:1;margin-left:8px">
+        <div><kbd>↑↓</kbd> Left side</div>
+        <div><kbd>←→</kbd> Right side</div>
+        <div style="margin-top:8px">Gamepad left stick = left,<br>right stick = right.</div>
+      </div>`;
+    initTankCanvases();
+  }
+}
+
+function clamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+function applyDeadzone(v, dz) {
+  const mag = Math.abs(v);
+  if (mag <= dz) return 0;
+  const scaled = (mag - dz) / (1 - dz);
+  const out = Math.sign(v) * scaled;
+  // Snap tiny floating-point residue and near-maximum values.
+  if (Math.abs(out) < 1e-4) return 0;
+  if (Math.abs(out) > 0.995) return Math.sign(out);
+  return out;
+}
+
+function initDeadzoneUI() {
+  const move = document.getElementById('dzMove');
+  const turn = document.getElementById('dzTurn');
+  if (!move || !turn) return;
+  move.value = String(Math.round(S.deadzones.move * 100));
+  turn.value = String(Math.round(S.deadzones.turn * 100));
+  initAxisUI();
+  setDeadzonesFromUI();
+}
+
+function axisName(i) {
+  const known = {
+    0: 'Axis 0 (X)',
+    1: 'Axis 1 (Y)',
+    2: 'Axis 2 (Z)',
+    3: 'Axis 3',
+    4: 'Axis 4',
+    5: 'Axis 5 (Twist)',
+    6: 'Axis 6',
+    7: 'Axis 7',
+  };
+  return known[i] || ('Axis ' + i);
+}
+
+function fillAxisSelect(selectId, selected) {
+  const el = document.getElementById(selectId);
+  if (!el) return;
+  el.innerHTML = '';
+  for (let i = 0; i < 8; i++) {
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = axisName(i);
+    opt.selected = i === selected;
+    el.appendChild(opt);
+  }
+}
+
+function initAxisUI() {
+  fillAxisSelect('axisMove', S.axes.move);
+  fillAxisSelect('axisTurn', S.axes.turn);
+}
+
+function setAxesFromUI() {
+  const moveEl = document.getElementById('axisMove');
+  const turnEl = document.getElementById('axisTurn');
+  if (moveEl) {
+    S.axes.move = clamp(Number(moveEl.value), 0, 7);
+    S.axes.tankLeft = S.axes.move;
+  }
+  if (turnEl) {
+    S.axes.turn = clamp(Number(turnEl.value), 0, 7);
+  }
+}
+
+function stampNow() {
+  return performance.now();
+}
+
+function setArcadeTarget(source, throttle, turn) {
+  const t = S.inputTargets[source];
+  if (!t) return;
+  t.mode = 'arcade';
+  t.throttle = clamp(throttle, -1, 1);
+  t.turn = clamp(turn, -1, 1);
+  t.ts = stampNow();
+}
+
+function setTankTarget(source, left, right) {
+  const t = S.inputTargets[source];
+  if (!t) return;
+  t.mode = 'tank';
+  t.left = clamp(left, -1, 1);
+  t.right = clamp(right, -1, 1);
+  t.ts = stampNow();
+}
+
+function clearTargets() {
+  ['gp', 'ui', 'kb'].forEach(src => {
+    setArcadeTarget(src, 0, 0);
+    setTankTarget(src, 0, 0);
+  });
+}
+
+function chooseTarget() {
+  const priority = ['gp', 'ui', 'kb'];
+  for (const src of priority) {
+    const t = S.inputTargets[src];
+    if (!t) continue;
+    if (S.driveMode === 'arcade') {
+      if (Math.abs(t.throttle) > 0.001 || Math.abs(t.turn) > 0.001) return t;
+    } else if (S.driveMode === 'tank') {
+      if (Math.abs(t.left) > 0.001 || Math.abs(t.right) > 0.001) return t;
+    }
+  }
+  return null;
+}
+
+function driveControlTick() {
+  if (S.driveMode === 'off') {
+    S.throttle = 0;
+    S.turn = 0;
+    S.leftRaw = 0;
+    S.rightRaw = 0;
+    dispatchDrive();
+    return;
+  }
+
+  const target = chooseTarget();
+  const alpha = 0.35;
+
+  if (S.driveMode === 'arcade') {
+    const tt = target ? target.throttle : 0;
+    const tr = target ? target.turn : 0;
+    S.throttle += (tt - S.throttle) * alpha;
+    S.turn += (tr - S.turn) * alpha;
+    if (Math.abs(S.throttle) < 0.002) S.throttle = 0;
+    if (Math.abs(S.turn) < 0.002) S.turn = 0;
+    drawArcadeStick();
+  } else {
+    const tl = target ? target.left : 0;
+    const tr = target ? target.right : 0;
+    S.leftRaw += (tl - S.leftRaw) * alpha;
+    S.rightRaw += (tr - S.rightRaw) * alpha;
+    if (Math.abs(S.leftRaw) < 0.002) S.leftRaw = 0;
+    if (Math.abs(S.rightRaw) < 0.002) S.rightRaw = 0;
+  }
+
+  dispatchDrive();
+}
+
+function setDeadzonesFromUI() {
+  const moveEl = document.getElementById('dzMove');
+  const turnEl = document.getElementById('dzTurn');
+  if (!moveEl || !turnEl) return;
+  S.deadzones.move = clamp(Number(moveEl.value) / 100, 0, 0.3);
+  S.deadzones.turn = clamp(Number(turnEl.value) / 100, 0, 0.3);
+  const mv = document.getElementById('dzMoveVal');
+  const tv = document.getElementById('dzTurnVal');
+  if (mv) mv.textContent = Math.round(S.deadzones.move * 100) + '%';
+  if (tv) tv.textContent = Math.round(S.deadzones.turn * 100) + '%';
+}
+
+function toggleDeadzonePopover(e) {
+  e.stopPropagation();
+  const pop = document.getElementById('dzPopover');
+  if (!pop) return;
+  pop.classList.toggle('open');
+}
+
+document.addEventListener('click', () => {
+  const pop = document.getElementById('dzPopover');
+  if (pop) pop.classList.remove('open');
+});
+
+// ── Arcade joystick canvas ──
+let jsCtx = null;
+function initJoystickCanvas() {
+  const c = document.getElementById('jsCanvas');
+  if (!c) return;
+  jsCtx = c.getContext('2d');
+  drawArcadeStick();
+
+  // Mouse / touch drag
+  let dragging = false;
+  const getXY = e => {
+    const r = c.getBoundingClientRect();
+    const pt = e.touches ? e.touches[0] : e;
+    return [pt.clientX - r.left, pt.clientY - r.top];
+  };
+  const apply = (x, y) => {
+    const cx = c.width/2, cy = c.height/2, rad = cx - 10;
+    let dx = (x - cx) / rad, dy = (y - cy) / rad;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    if (len > 1) { dx /= len; dy /= len; }
+    const rawTurn = Math.round(dx * 100) / 100;
+    const rawMove = Math.round(-dy * 100) / 100;
+    const turn = applyDeadzone(rawTurn, S.deadzones.turn);
+    const throttle = applyDeadzone(rawMove, S.deadzones.move);
+    setArcadeTarget('ui', throttle, turn);
+    drawArcadeStick();
+  };
+  c.addEventListener('mousedown',  e => { dragging = true; apply(...getXY(e)); });
+  c.addEventListener('mousemove',  e => { if (dragging) apply(...getXY(e)); });
+  c.addEventListener('mouseup',    () => { dragging = false; snapToZero(); });
+  c.addEventListener('mouseleave', () => { if (dragging) { dragging = false; snapToZero(); } });
+  c.addEventListener('touchstart', e => { e.preventDefault(); apply(...getXY(e)); }, {passive:false});
+  c.addEventListener('touchmove',  e => { e.preventDefault(); apply(...getXY(e)); }, {passive:false});
+  c.addEventListener('touchend',   () => snapToZero());
+}
+
+function snapToZero() {
+  setArcadeTarget('ui', 0, 0);
+  drawArcadeStick();
+}
+
+function drawArcadeStick() {
+  const c = jsCtx;
+  if (!c) return;
+  const W = 110, H = 110, cx = W/2, cy = H/2, rad = cx - 10;
+  c.clearRect(0, 0, W, H);
+
+  // Background circle
+  c.beginPath(); c.arc(cx, cy, rad, 0, Math.PI*2);
+  c.fillStyle = '#1c2230'; c.fill();
+  c.strokeStyle = '#30363d'; c.lineWidth = 1.5; c.stroke();
+
+  // Crosshair
+  c.strokeStyle = '#30363d'; c.lineWidth = 1; c.setLineDash([3,3]);
+  c.beginPath(); c.moveTo(cx, cy - rad); c.lineTo(cx, cy + rad); c.stroke();
+  c.beginPath(); c.moveTo(cx - rad, cy); c.lineTo(cx + rad, cy); c.stroke();
+  c.setLineDash([]);
+
+  // Stick dot
+  const sx = cx + S.turn * rad, sy = cy - S.throttle * rad;
+  const spd = Math.sqrt(S.throttle**2 + S.turn**2);
+  const col = spd > 0.05
+    ? (S.throttle < -0.05 ? '#f85149' : '#58a6ff')
+    : '#8b949e';
+
+  c.beginPath(); c.arc(sx, sy, 10, 0, Math.PI*2);
+  c.fillStyle = col + '55'; c.fill();
+  c.beginPath(); c.arc(sx, sy, 7, 0, Math.PI*2);
+  c.fillStyle = col; c.fill();
+
+  // Update labels
+  const fEl = document.getElementById('jsF'), tEl = document.getElementById('jsT');
+  if (fEl) fEl.textContent = (S.throttle >= 0 ? '+' : '') + Math.round(S.throttle * 100) + '%';
+  if (tEl) tEl.textContent = (S.turn >= 0 ? '+' : '') + Math.round(S.turn * 100) + '%';
+}
+
+// ── Tank canvases ──
+function initTankCanvases() {
+  ['L','R'].forEach(side => {
+    const c = document.getElementById('jsTank' + side);
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    drawTankBar(ctx, side, side === 'L' ? S.leftRaw : S.rightRaw);
+    let dragging = false;
+    const applyY = y => {
+      const val = Math.max(-1, Math.min(1, -(y / c.height * 2 - 1)));
+      const filtered = applyDeadzone(val, S.deadzones.move);
+      const curL = (side === 'L') ? filtered : (S.inputTargets.ui.left || 0);
+      const curR = (side === 'R') ? filtered : (S.inputTargets.ui.right || 0);
+      setTankTarget('ui', curL, curR);
+      drawTankBar(ctx, side, filtered);
+    };
+    c.addEventListener('mousedown',  e => { dragging=true; applyY(e.offsetY); });
+    c.addEventListener('mousemove',  e => { if(dragging) applyY(e.offsetY); });
+    c.addEventListener('mouseup',    () => {
+      dragging=false;
+      const curL = side === 'L' ? 0 : (S.inputTargets.ui.left || 0);
+      const curR = side === 'R' ? 0 : (S.inputTargets.ui.right || 0);
+      setTankTarget('ui', curL, curR);
+      drawTankBar(ctx,side,0);
+    });
+    c.addEventListener('mouseleave', () => {
+      if (!dragging) return;
+      dragging=false;
+      const curL = side === 'L' ? 0 : (S.inputTargets.ui.left || 0);
+      const curR = side === 'R' ? 0 : (S.inputTargets.ui.right || 0);
+      setTankTarget('ui', curL, curR);
+      drawTankBar(ctx,side,0);
+    });
+  });
+}
+
+function drawTankBar(ctx, side, val) {
+  const W = 60, H = 110, mid = H/2;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#1c2230';
+  ctx.beginPath(); ctx.roundRect(4,4,W-8,H-8,6); ctx.fill();
+  ctx.strokeStyle = '#30363d'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.roundRect(4,4,W-8,H-8,6); ctx.stroke();
+  // bar
+  const barH = Math.abs(val) * (H/2 - 10);
+  const col = val > 0.05 ? '#58a6ff' : val < -0.05 ? '#f85149' : '#30363d';
+  ctx.fillStyle = col;
+  if (val > 0)  ctx.fillRect(10, mid - barH, W-20, barH);
+  else          ctx.fillRect(10, mid,         W-20, barH);
+  // center line
+  ctx.strokeStyle = '#30363d'; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(4,mid); ctx.lineTo(W-4,mid); ctx.stroke();
+  ctx.setLineDash([]);
+  // label
+  const vEl = document.getElementById('jsTank' + (side==='L'?'LV':'RV'));
+  if (vEl) vEl.textContent = (val>=0?'+':'') + Math.round(val*100) + '%';
+}
+
+// ══════════════════════════════════════════════════════════
+//  Drive Command Dispatch
+// ══════════════════════════════════════════════════════════
+function dispatchDrive() {
+  if (S.driveMode === 'off') return;
+  const ids = sortedIds();
+  const leftIds  = ids.filter(id => S.roles[id] === 'L');
+  const rightIds = ids.filter(id => S.roles[id] === 'R');
+  // Fall back: if no roles assigned, use first half as L, second as R
+  if (!leftIds.length && !rightIds.length) {
+    const half = Math.ceil(ids.length / 2);
+    ids.slice(0, half).forEach(id => S.roles[id] = 'L');
+    ids.slice(half).forEach(id => S.roles[id] = 'R');
+    renderMotors();
+    return dispatchDrive();
+  }
+
+  let leftPct, rightPct;
+  if (S.driveMode === 'arcade') {
+    leftPct  = Math.max(-1, Math.min(1, S.throttle + S.turn));
+    rightPct = Math.max(-1, Math.min(1, S.throttle - S.turn));
+  } else {
+    leftPct  = S.leftRaw;
+    rightPct = S.rightRaw;
+  }
+
+  S.leftCmd = leftPct;
+  S.rightCmd = rightPct;
+
+  leftIds.forEach(id  => postCmd(id, 'set', leftPct));
+  rightIds.forEach(id => postCmd(id, 'set', rightPct));
+}
+
+// ══════════════════════════════════════════════════════════
+//  Manual slider
+// ══════════════════════════════════════════════════════════
+function onSlider(v) {
+  S.manualPct = Number(v);
+  const el = document.getElementById('spdDisplay');
+  el.textContent = (S.manualPct > 0 ? '+' : '') + S.manualPct + '%';
+  el.className = 'spd-num' + (S.manualPct > 0 ? '' : S.manualPct < 0 ? ' neg' : ' zero');
+}
+function resetSlider() {
+  S.manualPct = 0;
+  document.getElementById('spdSlider').value = 0;
+  onSlider(0);
+}
+async function sendManualSpeed() {
+  if (!S.selected.size) { flash('No motors selected'); return; }
+  for (const id of S.selected) await postCmd(id, 'set', S.manualPct / 100);
+}
+async function emergencyStop() {
+  for (const id of sortedIds()) await postCmd(id, 'set', 0);
+  S.throttle = 0; S.turn = 0; S.leftRaw = 0; S.rightRaw = 0;
+  clearTargets();
+  resetSlider();
+  drawArcadeStick();
+}
+
+async function postCmd(id, cmd, value) {
+  try {
+    await fetch('/api/motor/cmd', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({id, cmd, value})
+    });
+  } catch(e) {}
+}
+
+function flash(msg) {
+  const el = document.getElementById('selLabel');
+  const orig = el.textContent;
+  el.style.color = 'var(--yellow)';
+  el.textContent = '⚠ ' + msg;
+  setTimeout(() => { el.style.color=''; el.textContent=orig; }, 1500);
+}
+
+// ══════════════════════════════════════════════════════════
+//  Keyboard
+// ══════════════════════════════════════════════════════════
+const keys = {};
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  keys[e.key] = true;
+  if (e.key === ' ')     { e.preventDefault(); emergencyStop(); }
+  if (e.key === 'Enter') { e.preventDefault(); sendManualSpeed(); }
+  if (e.key==='a'||e.key==='A') { e.preventDefault(); selectAll(); }
+  if (e.key==='n'||e.key==='N') { e.preventDefault(); selectNone(); }
+  if (e.key==='Tab')    { e.preventDefault(); const m=['arcade','tank','off']; setMode(m[(m.indexOf(S.driveMode)+1)%m.length]); }
+  const num = parseInt(e.key);
+  if (num >= 1 && num <= 8) {
+    e.preventDefault();
+    const ids = sortedIds();
+    if (ids[num-1] !== undefined) toggleMotor(ids[num-1]);
+  }
+});
+document.addEventListener('keyup', e => { keys[e.key] = false; });
+
+// Keyboard drive loop
+setInterval(() => {
+  if (S.driveMode === 'off') return;
+  const kb = S.inputTargets.kb;
+  let kt = kb.throttle || 0;
+  let kr = kb.turn || 0;
+  let changed = false;
+  const step = 0.05;
+  if (keys['ArrowUp'])    { kt = Math.min(1, kt + step); changed = true; }
+  if (keys['ArrowDown'])  { kt = Math.max(-1, kt - step); changed = true; }
+  if (keys['ArrowLeft'])  { kr = Math.max(-1, kr - step); changed = true; }
+  if (keys['ArrowRight']) { kr = Math.min(1, kr + step); changed = true; }
+  if (!keys['ArrowUp'] && !keys['ArrowDown'] && Math.abs(kt) > 0.01)
+    { kt *= 0.85; if (Math.abs(kt) < 0.02) kt = 0; changed = true; }
+  if (!keys['ArrowLeft'] && !keys['ArrowRight'] && Math.abs(kr) > 0.01)
+    { kr *= 0.80; if (Math.abs(kr) < 0.02) kr = 0; changed = true; }
+  if (changed) setArcadeTarget('kb', kt, kr);
+}, 50);
+
+// ══════════════════════════════════════════════════════════
+//  Gamepad
+// ══════════════════════════════════════════════════════════
+window.addEventListener('gamepadconnected',    e => { S.gpIdx = e.gamepad.index; updateGpPill(true,  e.gamepad.id); });
+window.addEventListener('gamepaddisconnected', e => {
+  S.gpIdx = null;
+  setArcadeTarget('gp', 0, 0);
+  setTankTarget('gp', 0, 0);
+  updateGpPill(false, '');
+});
+
+function updateGpPill(on, label) {
+  const el = document.getElementById('gpPill');
+  el.className = 'pill' + (on ? ' gp-connected' : '');
+  el.innerHTML = `<span class="dot"></span> ${on ? '🎮 ' + label.substring(0,18) : 'No Gamepad'}`;
+}
+
+let gpLastFwd=0, gpLastTurn=0;
+function pollGamepad() {
+  if (S.gpIdx !== null && S.driveMode !== 'off') {
+    const gp = navigator.getGamepads()[S.gpIdx];
+    if (gp) {
+      const moveRaw = -(gp.axes[S.axes.move] || 0);
+      const turnRaw = -(gp.axes[S.axes.turn] || 0);
+      const tankRightRaw = -(gp.axes[S.axes.tankRight] || 0);
+
+      // Browser gamepad values can be noisy; smooth before deadzone.
+      const alpha = 0.22;
+      S.gamepadFiltered.move += (moveRaw - S.gamepadFiltered.move) * alpha;
+      S.gamepadFiltered.turn += (turnRaw - S.gamepadFiltered.turn) * alpha;
+      S.gamepadFiltered.tankRight += (tankRightRaw - S.gamepadFiltered.tankRight) * alpha;
+
+      let fwd  = applyDeadzone(S.gamepadFiltered.move, S.deadzones.move);
+      let turn = applyDeadzone(S.gamepadFiltered.turn, S.deadzones.turn);
+
+      // Suppress tiny crosstalk on the secondary axis near full deflection.
+      if (Math.abs(fwd) > 0.9 && Math.abs(turn) < 0.15) turn = 0;
+      if (Math.abs(turn) > 0.9 && Math.abs(fwd) < 0.15) fwd = 0;
+
+      // Keep targets fresh continuously so holding full deflection does not decay to 0.
+      if (S.driveMode === 'arcade') {
+        setArcadeTarget('gp', fwd, turn);
+      }
+      else if (S.driveMode === 'tank') {
+        const left = applyDeadzone(S.gamepadFiltered.move, S.deadzones.move);
+        const right = applyDeadzone(S.gamepadFiltered.tankRight, S.deadzones.move);
+        setTankTarget('gp', left, right);
+      }
+
+      gpLastFwd = fwd;
+      gpLastTurn = turn;
+    }
+  }
+  requestAnimationFrame(pollGamepad);
+}
+pollGamepad();
+setInterval(driveControlTick, 25);
+
+// ══════════════════════════════════════════════════════════
+//  Drivetrain Visualization
+// ══════════════════════════════════════════════════════════
+const dtAnchorCanvas = document.getElementById('dtCanvas');
+const dtCanvas = document.getElementById('roverCanvas') || dtAnchorCanvas;
+const dtCtx    = dtCanvas.getContext('2d');
+let dtLastTs = Date.now();
+
+function resizeRoverCanvas() {
+  if (!dtCanvas) return;
+  if (dtCanvas.id === 'roverCanvas') {
+    dtCanvas.width = window.innerWidth;
+    dtCanvas.height = Math.max(1, window.innerHeight - 50);
+  }
+}
+window.addEventListener('resize', resizeRoverCanvas);
+resizeRoverCanvas();
+
+function getDrivetrainAnchorCenter() {
+  if (!dtAnchorCanvas || dtCanvas.id !== 'roverCanvas') {
+    return { x: dtCanvas.width / 2, y: dtCanvas.height / 2 };
+  }
+  const rect = dtAnchorCanvas.getBoundingClientRect();
+  // Overlay canvas starts below the 50px top bar.
+  const overlayTop = 50;
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2 - overlayTop,
+  };
+}
+
+function resetRobot() {
+  const anchor = getDrivetrainAnchorCenter();
+  S.robot.anchorX = anchor.x;
+  S.robot.anchorY = anchor.y;
+  S.robot.prevAnchorX = anchor.x;
+  S.robot.prevAnchorY = anchor.y;
+  S.robot.x = anchor.x;
+  S.robot.y = anchor.y;
+  S.robot.heading = -Math.PI / 2;
+  S.robot.path = [{x: S.robot.x, y: S.robot.y}];
+  S.robot.vLeft = 0;
+  S.robot.vRight = 0;
+  S.robot.lastMotionMs = Date.now();
+}
+
+function avgSideNormalized(ids, fallbackCmd) {
+  if (!ids.length) return fallbackCmd || 0;
+  const avg = ids.reduce((sum, id) => {
+    const m = S.motors[id] || {};
+    const max = m.max_rpm || 5700;
+    const rpm = m.rpm || 0;
+    return sum + (max > 0 ? rpm / max : 0);
+  }, 0) / ids.length;
+  return clamp(avg, -1, 1);
+}
+
+function drawDrivetrain() {
+  const W = dtCanvas.width, H = dtCanvas.height;
+  const ctx = dtCtx;
+  const liveAnchor = getDrivetrainAnchorCenter();
+  const prevAX = S.robot.prevAnchorX;
+  const prevAY = S.robot.prevAnchorY;
+  if (prevAX !== null && prevAY !== null) {
+    const dx = liveAnchor.x - prevAX;
+    const dy = liveAnchor.y - prevAY;
+    if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) {
+      S.robot.x += dx;
+      S.robot.y += dy;
+      S.robot.path = S.robot.path.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
+    }
+  }
+  S.robot.anchorX = liveAnchor.x;
+  S.robot.anchorY = liveAnchor.y;
+  S.robot.prevAnchorX = liveAnchor.x;
+  S.robot.prevAnchorY = liveAnchor.y;
+  const anchor = {
+    x: S.robot.anchorX ?? (W / 2),
+    y: S.robot.anchorY ?? (H / 2),
+  };
+  const now = Date.now();
+  const dt = Math.min(0.1, (now - dtLastTs) / 1000);
+  dtLastTs = now;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const ids = sortedIds();
+  const leftIds  = ids.filter(id => S.roles[id] === 'L');
+  const rightIds = ids.filter(id => S.roles[id] === 'R');
+  const leftPct  = clamp(S.leftCmd || 0, -1, 1);
+  const rightPct = clamp(S.rightCmd || 0, -1, 1);
+
+  // Filter wheel speeds slightly to avoid jitter from telemetry updates.
+  const smooth = Math.min(1, dt * 10);
+  S.robot.vLeft += (leftPct - S.robot.vLeft) * smooth;
+  S.robot.vRight += (rightPct - S.robot.vRight) * smooth;
+
+  const wheelBase = 48; // px
+  const wheelSpeedPx = 62; // px/sec at 100%
+  const vL = S.robot.vLeft * wheelSpeedPx;
+  const vR = S.robot.vRight * wheelSpeedPx;
+  const linearV = (vL + vR) * 0.5;
+  const angularV = (vR - vL) / wheelBase;
+
+  const moving = Math.abs(linearV) > 1.5 || Math.abs(angularV) > 0.02;
+  if (moving) S.robot.lastMotionMs = now;
+
+  // Differential-drive arc integration for cleaner circle trajectories.
+  if (Math.abs(angularV) < 1e-4) {
+    S.robot.x += Math.cos(S.robot.heading) * linearV * dt;
+    S.robot.y += Math.sin(S.robot.heading) * linearV * dt;
+  } else {
+    const newHeading = S.robot.heading + angularV * dt;
+    const radius = linearV / angularV;
+    S.robot.x += radius * (Math.sin(newHeading) - Math.sin(S.robot.heading));
+    S.robot.y += -radius * (Math.cos(newHeading) - Math.cos(S.robot.heading));
+    S.robot.heading = newHeading;
+  }
+
+  if (Math.abs(angularV) < 1e-4) {
+    // Keep heading continuity when moving straight.
+    S.robot.heading += angularV * dt;
+  }
+
+  S.robot.x = clamp(S.robot.x, 24, W - 24);
+  // Allow roaming across the full map area while keeping robot body on-screen.
+  S.robot.x = clamp(S.robot.x, 22, W - 22);
+  S.robot.y = clamp(S.robot.y, 22, H - 22);
+
+  // If idle for >= 5s, return to the center reference circle.
+  if (!moving && (now - S.robot.lastMotionMs) >= 5000) {
+    S.robot.x = anchor.x;
+    S.robot.y = anchor.y;
+    S.robot.heading = -Math.PI / 2;
+    S.robot.vLeft = 0;
+    S.robot.vRight = 0;
+    S.robot.path = [{x: S.robot.x, y: S.robot.y}];
+    S.robot.lastMotionMs = now;
+  }
+
+  const p = S.robot.path;
+  if (!p.length || Math.hypot(S.robot.x - p[p.length - 1].x, S.robot.y - p[p.length - 1].y) > 2) {
+    p.push({x: S.robot.x, y: S.robot.y});
+    if (p.length > S.robot.maxPath) p.shift();
+  }
+
+  // Trail path
+  if (p.length > 1) {
+    ctx.strokeStyle = '#58a6ff66';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    p.forEach((pt, i) => i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
+    ctx.stroke();
+  }
+
+  // Reference ring
+  ctx.strokeStyle = '#30363d';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.arc(anchor.x, anchor.y, 95, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Robot in local frame
+  ctx.save();
+  ctx.translate(S.robot.x, S.robot.y);
+  // Heading is tracked in kinematic frame (0 = +X); body art faces up by default.
+  ctx.rotate(S.robot.heading + Math.PI / 2);
+
+  const bodyW = 36, bodyH = 52;
+  ctx.fillStyle = '#21262d';
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(-bodyW / 2, -bodyH / 2, bodyW, bodyH, 7);
+  ctx.fill();
+  ctx.stroke();
+
+  const lCol = leftPct > 0.05 ? '#58a6ff' : leftPct < -0.05 ? '#f85149' : '#30363d';
+  const rCol = rightPct > 0.05 ? '#58a6ff' : rightPct < -0.05 ? '#f85149' : '#30363d';
+  ctx.fillStyle = lCol + '66';
+  ctx.fillRect(-bodyW / 2 - 8, -bodyH / 2 + 4, 6, bodyH - 8);
+  ctx.fillStyle = rCol + '66';
+  ctx.fillRect(bodyW / 2 + 2, -bodyH / 2 + 4, 6, bodyH - 8);
+
+  // Nose arrow
+  ctx.fillStyle = '#8b949e';
+  ctx.beginPath();
+  ctx.moveTo(0, -bodyH / 2 - 8);
+  ctx.lineTo(-7, -bodyH / 2 + 4);
+  ctx.lineTo(7, -bodyH / 2 + 4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Heading vector
+  const hx = S.robot.x + Math.cos(S.robot.heading) * 22;
+  const hy = S.robot.y + Math.sin(S.robot.heading) * 22;
+  ctx.strokeStyle = '#79c0ff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(S.robot.x, S.robot.y);
+  ctx.lineTo(hx, hy);
+  ctx.stroke();
+
+  // Status info
+  const dtInfo = document.getElementById('dtInfo');
+  if (dtInfo) {
+    const lRpm = leftIds.length  ? leftIds.reduce((s,id)=>s+(S.motors[id]?.rpm||0),0)/leftIds.length  : null;
+    const rRpm = rightIds.length ? rightIds.reduce((s,id)=>s+(S.motors[id]?.rpm||0),0)/rightIds.length : null;
+    dtInfo.textContent = (lRpm !== null ? `L: ${lRpm.toFixed(0)} ` : '') + (rRpm !== null ? `R: ${rRpm.toFixed(0)} rpm` : '');
+  }
+
+  const headingEl = document.getElementById('dtHeading');
+  if (headingEl) {
+    const deg = ((S.robot.heading * 180 / Math.PI) + 450) % 360;
+    headingEl.textContent = '↑ ' + deg.toFixed(0) + '°';
+  }
+  const radiusEl = document.getElementById('dtRadius');
+  if (radiusEl) {
+    if (Math.abs(angularV) < 0.03 && Math.abs(linearV) > 2) radiusEl.textContent = 'Straight';
+    else if (Math.abs(angularV) >= 0.03 && Math.abs(linearV) <= 2) radiusEl.textContent = 'Turning in place';
+    else if (Math.abs(angularV) >= 0.03) {
+      const r = Math.abs(linearV / angularV);
+      radiusEl.textContent = 'R≈' + r.toFixed(0) + ' px';
+    } else radiusEl.textContent = '';
+  }
+}
+
+// Animate drivetrain at ~30fps
+setInterval(drawDrivetrain, 33);
+
+// ══════════════════════════════════════════════════════════
+//  RPM Chart
+// ══════════════════════════════════════════════════════════
+const rpmCanvas = document.getElementById('rpmChart');
+const rpmCtx    = rpmCanvas.getContext('2d');
+
+function resizeChart() {
+  const w = rpmCanvas.parentElement.clientWidth;
+  rpmCanvas.width  = w;
+  rpmCanvas.height = 130;
+}
+window.addEventListener('resize', resizeChart);
+resizeChart();
+
+function drawChart() {
+  resizeChart();
+  const W = rpmCanvas.width, H = rpmCanvas.height;
+  rpmCtx.clearRect(0, 0, W, H);
+  rpmCtx.strokeStyle = 'rgba(48,54,61,0.6)'; rpmCtx.lineWidth = 1;
+  for (let i=0; i<=4; i++) {
+    const y = H * i / 4;
+    rpmCtx.beginPath(); rpmCtx.moveTo(0, y); rpmCtx.lineTo(W, y); rpmCtx.stroke();
+  }
+  const ids = sortedIds();
+  const maxRPM = Math.max(...ids.map(id => S.motors[id]?.max_rpm||5700), 5700);
+  const zeroY = H/2, scaleY = H/2/maxRPM;
+  ids.forEach((id, ci) => {
+    const h = S.history[id];
+    if (!h || h.length < 2) return;
+    rpmCtx.strokeStyle = COLORS[ci % COLORS.length];
+    rpmCtx.lineWidth = 2; rpmCtx.lineJoin = 'round';
+    const dx = W / (S.historyLen - 1);
+    rpmCtx.beginPath();
+    h.forEach((rpm, i) => {
+      const x = i * dx, y = zeroY - rpm * scaleY;
+      i === 0 ? rpmCtx.moveTo(x, y) : rpmCtx.lineTo(x, y);
+    });
+    rpmCtx.stroke();
+  });
+  rpmCtx.strokeStyle = 'rgba(139,148,158,0.25)'; rpmCtx.setLineDash([4,4]);
+  rpmCtx.beginPath(); rpmCtx.moveTo(0, zeroY); rpmCtx.lineTo(W, zeroY); rpmCtx.stroke();
+  rpmCtx.setLineDash([]);
+}
+setInterval(drawChart, 100);
+
+function updateChartLegend() {
+  const el = document.getElementById('chartLegend');
+  el.innerHTML = sortedIds().map((id, ci) =>
+    `<div class="leg-item"><div class="leg-dot" style="background:${COLORS[ci%COLORS.length]}"></div>M${id} (${(S.motors[id]?.rpm||0).toFixed(0)} rpm)</div>`
+  ).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//  Status Polling
+// ══════════════════════════════════════════════════════════
+let prevReq = 0, prevTs = Date.now();
+
+async function pollStatus() {
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    document.getElementById('connPill').className = 'pill ok';
+    document.getElementById('connPill').innerHTML = '<span class="dot"></span> Connected';
+    d.motors.forEach(m => {
+      S.motors[m.motor_id] = m;
+      if (!S.history[m.motor_id]) S.history[m.motor_id] = [];
+      const h = S.history[m.motor_id];
+      h.push(m.rpm);
+      if (h.length > S.historyLen) h.shift();
+    });
+    renderMotors();
+    updateFleet(d.motors);
+  } catch(e) {
+    document.getElementById('connPill').className = 'pill';
+    document.getElementById('connPill').innerHTML = '<span class="dot"></span> Disconnected';
+  }
+}
+
+async function pollHealth() {
+  try {
+    const r = await fetch('/api/health');
+    const d = await r.json();
+    document.getElementById('iUptime').textContent  = fmtUptime(d.uptime_ms);
+    document.getElementById('iPlatform').textContent = 'Desktop';
+    document.getElementById('iCAN').textContent      = 'Mock CAN';
+    const now = Date.now();
+    const rps = ((d.requests - prevReq) / ((now - prevTs) / 1000)).toFixed(1);
+    document.getElementById('iRPS').textContent = rps;
+    prevReq = d.requests; prevTs = now;
+  } catch(e) {}
+}
+
+function updateFleet(motors) {
+  document.getElementById('iMotors').textContent  = motors.length;
+  const avgRpm   = motors.length ? motors.reduce((s,m)=>s+m.rpm,0)/motors.length : 0;
+  const totalA   = motors.reduce((s,m)=>s+(m.current_amps||0),0);
+  const maxTemp  = motors.reduce((max,m)=>Math.max(max,m.temperature_c||0),0);
+  document.getElementById('iAvgRPM').textContent  = avgRpm.toFixed(0) + ' rpm';
+  document.getElementById('iTotalA').textContent  = totalA.toFixed(1) + ' A';
+  const tEl = document.getElementById('iMaxTemp');
+  tEl.textContent = maxTemp.toFixed(1) + '°C';
+  tEl.className   = 'info-val' + (maxTemp > 60 ? ' err' : maxTemp > 45 ? ' warn' : ' ok');
+}
+
+function fmtUptime(ms) {
+  const s=Math.floor(ms/1000), m=Math.floor(s/60), h=Math.floor(m/60);
+  return h>0 ? `${h}h ${m%60}m` : m>0 ? `${m}m ${s%60}s` : `${s}s`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  Init
+// ══════════════════════════════════════════════════════════
+buildJoystickUI();
+initDeadzoneUI();
+resetRobot();
+setInterval(pollStatus, 200);
+setInterval(pollHealth, 2000);
+pollStatus();
+pollHealth();
+</script>
+</body>
+</html>

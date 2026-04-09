@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python mock_can.py)",
+      "Bash(python mock_sparkmax.py)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(python -m pytest tests/test_motor_controller.py -v --tb=line)",
+      "Bash(python -m pytest tests/test_motor_controller.py -v --tb=short)",
+      "Bash(ls -lh *.py)"
+    ]
+  }
+}

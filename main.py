@@ -1,0 +1,131 @@
+"""
+WaveCan Main Firmware Entry Point
+Runs the motor controller, physics simulation, and web server
+Works on both desktop (Python 3) and RP2350 (MicroPython)
+"""
+
+import asyncio
+import sys
+from wavecan_platform import get_platform_info, get_can_bus_class, get_ticks_ms, log
+from mock_sparkmax import MockMotorController, MockSPARKMAXConfig
+from hardware_motor_controller import HardwareMotorController
+from web_server import WebServer
+from config import (
+    CAN_BITRATE,
+    CAN_INTERFACE,
+    HTTP_HOST,
+    HTTP_PORT,
+    MOTOR_IDS,
+    RUNTIME_MODE,
+)
+
+# Get the appropriate CAN bus for this platform
+CANBusClass = get_can_bus_class()
+
+
+class WaveCan:
+    """Main application controller"""
+
+    def __init__(self):
+        self.platform_info = get_platform_info()
+        log(f"[WaveCan] Starting on {self.platform_info['can_bus_class']} platform")
+        log(f"[WaveCan] Runtime mode: {RUNTIME_MODE}")
+
+        # Initialize CAN bus
+        self.can_bus = CANBusClass(speed_kbps=int(CAN_BITRATE / 1000), name="WaveCanBus", channel=CAN_INTERFACE)
+
+        # Initialize controller based on runtime mode
+        if RUNTIME_MODE == "socketcan":
+            self.motor_controller = HardwareMotorController(self.can_bus, MOTOR_IDS)
+        else:
+            motor_configs = [
+                MockSPARKMAXConfig(mid, max_rpm=5700)
+                for mid in MOTOR_IDS
+            ]
+            self.motor_controller = MockMotorController(self.can_bus, motor_configs)
+
+        # Initialize web server
+        self.web_server = WebServer(
+            self.motor_controller,
+            port=HTTP_PORT,
+            host=HTTP_HOST
+        )
+
+        # Enable all motors
+        self.motor_controller.enable_all()
+
+        log("[WaveCan] Initialization complete")
+        log(f"  Platform: {self.platform_info}")
+        log(f"  HTTP: {HTTP_HOST}:{HTTP_PORT}")
+        log(f"  Motors: {len(self.motor_controller.motors)}")
+
+    async def physics_loop(self):
+        """
+        Background task: Update motor physics at ~100Hz
+        Runs periodically to advance motor state
+        """
+        update_interval_ms = 10  # 10ms = ~100Hz
+        last_telemetry_ms = 0
+        telemetry_interval_ms = 100  # Broadcast telemetry every 100ms
+
+        while self.web_server.is_running:
+            try:
+                # Update physics for all motors
+                self.motor_controller.update_physics(update_interval_ms)
+
+                # Periodically broadcast telemetry
+                current_time_ms = get_ticks_ms()
+                if current_time_ms - last_telemetry_ms >= telemetry_interval_ms:
+                    self.motor_controller.broadcast_telemetry()
+                    last_telemetry_ms = current_time_ms
+
+                # Sleep until next update
+                await asyncio.sleep(update_interval_ms / 1000.0)
+
+            except Exception as e:
+                log(f"[Physics Loop] Error: {e}", "ERROR")
+                await asyncio.sleep(0.01)
+
+    async def run(self):
+        """Start all systems: physics loop + web server"""
+        try:
+            # Start web server and physics loop concurrently
+            await asyncio.gather(
+                self.web_server.run(),
+                self.physics_loop(),
+                return_exceptions=True
+            )
+        except KeyboardInterrupt:
+            log("[WaveCan] Shutdown requested")
+        except Exception as e:
+            log(f"[WaveCan] Fatal error: {e}", "ERROR")
+        finally:
+            self.shutdown()
+
+    def shutdown(self):
+        """Graceful shutdown"""
+        log("[WaveCan] Shutting down...")
+        self.web_server.stop()
+        self.motor_controller.disable_all()
+        log("[WaveCan] Shutdown complete")
+
+
+async def main():
+    """Main async entry point"""
+    app = WaveCan()
+    await app.run()
+
+
+if __name__ == "__main__":
+    log("=" * 60)
+    log("WaveCan Motor Control Platform")
+    log("=" * 60)
+
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        log("\nShutdown by user")
+        sys.exit(0)
+    except Exception as e:
+        log(f"Fatal error: {e}", "ERROR")
+        sys.exit(1)

@@ -1,0 +1,6 @@
+# MicroPython dependencies for RP2350
+# Install via Thonny or mpremote
+
+# CAN driver (choose one based on compatibility):
+# adafruit-circuitpython-mcp2515
+# or use custom MCP2515 driver if needed
