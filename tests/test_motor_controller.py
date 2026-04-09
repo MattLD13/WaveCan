@@ -1,13 +1,8 @@
 """
-Unit tests for Motor Controller
-Tests multi-motor management and physics simulation
+Unit tests for mock motor controller and simulation physics.
 
-CAN ID Scheme: base_id = 0x100 + (motor_id * 0x10)
-For motor N:
-  - Velocity command: base_id + 0x02
-  - Voltage command: base_id + 0x04
-  - STATUS_0: base_id + 0x00
-  - STATUS_1: base_id + 0x01
+Note: these tests validate the simulator-only mock CAN ID scheme:
+    base_id = 0x100 + (motor_id * 0x10)
 """
 
 import pytest

@@ -1,16 +1,14 @@
 """
 Hardware-oriented motor controller facade.
 
-This controller is intentionally protocol-light: it sends velocity percentage
-commands using the same frame layout as the mock controller by default.
-For real SPARK MAX deployments, replace CAN IDs/frame layout with the exact
-REV protocol in a follow-up step.
+Uses REV SPARK MAX CAN framing (FRC 29-bit arbitration ID layout) for outgoing
+setpoint commands when running in socketcan mode.
 """
 
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-from mock_can import CANMessage, make_float_message
+from rev_sparkmax_protocol import make_duty_cycle_setpoint_frame, make_disable_frame
 from wavecan_platform import get_ticks_ms, log
 
 
@@ -51,9 +49,6 @@ class HardwareMotorProxy:
 class HardwareMotorController:
     """Controller facade used by the web server in hardware mode."""
 
-    # Default framing mirrors mock controller IDs.
-    VELOCITY_SETPOINT = 0x02
-
     def __init__(self, can_bus, motor_ids):
         self.can_bus = can_bus
         self.motors: Dict[int, HardwareMotorProxy] = {
@@ -62,10 +57,6 @@ class HardwareMotorController:
         }
 
         log(f"[HardwareMotorController] Initialized with motors={sorted(self.motors.keys())}")
-
-    @staticmethod
-    def _base_can_id(motor_id: int) -> int:
-        return 0x100 + (motor_id * 0x10)
 
     def get_motor(self, motor_id: int) -> Optional[HardwareMotorProxy]:
         return self.motors.get(motor_id)
@@ -82,8 +73,7 @@ class HardwareMotorController:
         motor.output_percent = pct
         motor.target_rpm = pct * motor.config.max_rpm
 
-        cmd_id = self._base_can_id(motor_id) + self.VELOCITY_SETPOINT
-        msg = make_float_message(cmd_id, pct)
+        msg = make_duty_cycle_setpoint_frame(motor_id, pct, no_ack=True)
         ok = self.can_bus.send(msg)
         if not ok:
             log(f"[HardwareMotorController] CAN send failed motor={motor_id}", "WARN")
@@ -111,6 +101,7 @@ class HardwareMotorController:
         for motor_id in list(self.motors.keys()):
             try:
                 self.set_motor_output(motor_id, 0.0)
+                self.can_bus.send(make_disable_frame(motor_id))
             except Exception:
                 pass
             self.motors[motor_id].enabled = False

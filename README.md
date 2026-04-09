@@ -70,9 +70,12 @@ Configure `hostapd` + `dnsmasq` on `wlan0` so client devices can join directly.
 Typical static AP subnet: `192.168.4.1/24`, then browse `http://192.168.4.1:8080`.
 
 ### Important protocol note
-Current hardware mode sends velocity percentage frames using the same CAN ID layout as the simulator.
-This is useful for end-to-end software + CAN transport testing on Pi, but full REV SPARK MAX protocol
-implementation (status decode/config frames) is still a follow-up item.
+Hardware mode now uses REV-style framing with the FRC 29-bit CAN arbitration ID layout
+(device type + manufacturer + API class/index + device ID) and transmits extended-ID
+setpoint frames from the dashboard command path.
+
+Current hardware mode primarily implements outgoing control frames; full status/config
+decode coverage is still an ongoing follow-up item.
 
 ## Architecture Overview
 
@@ -125,7 +128,23 @@ This allows **identical code** to run on both platforms.
 
 ## CAN Protocol Implementation
 
-### CAN ID Scheme (Mock)
+### REV / FRC Extended-ID Scheme (hardware mode)
+Hardware mode uses the FRC CAN bit layout used by REV devices:
+
+```
+29-bit arbitration ID
+  [device type:5][manufacturer:8][api id:10][device id:6]
+
+Where:
+  manufacturer (REV Robotics) = 5
+  device type (Motor Controller) = 2
+  api id = (api_class << 4) | api_index
+```
+
+For open-loop output commands, hardware mode sends Voltage Control + Set Setpoint No Ack
+frames with float32 little-endian setpoint payload in [-1.0, 1.0].
+
+### CAN ID Scheme (Mock Simulator)
 ```
 Base ID = 0x100 + (motor_id * 0x10)
 
