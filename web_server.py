@@ -89,10 +89,11 @@ class WebServer:
     Handles motor control commands and telemetry streaming
     """
 
-    def __init__(self, motor_controller, port: int = 8080, host: str = '127.0.0.1'):
+    def __init__(self, motor_controller, port: int = 8080, host: str = '127.0.0.1', runtime_mode: str = 'mock'):
         self.motor_controller = motor_controller
         self.port = port
         self.host = host
+        self.runtime_mode = runtime_mode
         self.is_running = True   # True from init so physics_loop doesn't exit before server binds
         self.request_count = 0
         self.start_time_ms = get_ticks_ms()
@@ -225,10 +226,14 @@ class WebServer:
         """Return current motor status as JSON"""
         try:
             states = self.motor_controller.get_all_states()
+            can_bus = getattr(self.motor_controller, 'can_bus', None)
+            can_stats = can_bus.get_stats() if can_bus and hasattr(can_bus, 'get_stats') else {}
             response_data = {
                 'timestamp_ms': get_ticks_ms() - self.start_time_ms,
                 'motors': states,
                 'motor_count': len(states),
+                'runtime_mode': self.runtime_mode,
+                'can_bus': can_stats,
             }
             return HTTPResponse(200).set_json(response_data)
         except Exception as e:
@@ -279,11 +284,15 @@ class WebServer:
     async def handle_health(self, request: HTTPRequest) -> HTTPResponse:
         """Health check endpoint"""
         uptime_ms = get_ticks_ms() - self.start_time_ms
+        can_bus = getattr(self.motor_controller, 'can_bus', None)
+        can_stats = can_bus.get_stats() if can_bus and hasattr(can_bus, 'get_stats') else {}
         return HTTPResponse(200).set_json({
             'status': 'ok',
             'uptime_ms': uptime_ms,
             'requests': self.request_count,
             'motors': len(self.motor_controller.motors),
+            'runtime_mode': self.runtime_mode,
+            'can_bus': can_stats,
         })
 
     async def run(self):

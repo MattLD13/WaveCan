@@ -368,7 +368,7 @@ canvas#rpmChart { display: block; }
   <div class="info-section">
     <div class="info-title">🖥 System</div>
     <div class="info-row"><span class="info-key">Platform</span><span class="info-val ok" id="iPlatform">—</span></div>
-    <div class="info-row"><span class="info-key">CAN Bus</span><span class="info-val" id="iCAN">—</span></div>
+    <div class="info-row"><span class="info-key">CAN Status</span><span class="info-val" id="iCAN">—</span></div>
     <div class="info-row"><span class="info-key">Uptime</span><span class="info-val" id="iUptime">—</span></div>
     <div class="info-row"><span class="info-key">Req/s</span><span class="info-val" id="iRPS">—</span></div>
   </div>
@@ -1392,8 +1392,19 @@ async function pollHealth() {
     const r = await fetch('/api/health');
     const d = await r.json();
     document.getElementById('iUptime').textContent  = fmtUptime(d.uptime_ms);
-    document.getElementById('iPlatform').textContent = 'Desktop';
-    document.getElementById('iCAN').textContent      = 'Mock CAN';
+    document.getElementById('iPlatform').textContent = d.runtime_mode === 'socketcan' ? 'Linux / SocketCAN' : 'Desktop / Mock';
+
+    const can = d.can_bus || {};
+    const canLabel = can.channel
+      ? `${d.runtime_mode === 'socketcan' ? 'SocketCAN' : 'MockCAN'} ${can.channel}${can.speed_kbps ? ` @ ${can.speed_kbps} kbps` : ''}`
+      : (d.runtime_mode === 'socketcan' ? 'SocketCAN' : 'MockCAN');
+    const canCounters = [
+      can.total_messages !== undefined ? `tx ${can.total_messages}` : null,
+      can.tx_count !== undefined ? `txq ${can.tx_count}` : null,
+      can.rx_count !== undefined ? `rxq ${can.rx_count}` : null,
+      can.is_open !== undefined ? (can.is_open ? 'up' : 'down') : null,
+    ].filter(Boolean).join(' • ');
+    document.getElementById('iCAN').textContent = canCounters ? `${canLabel} • ${canCounters}` : canLabel;
     const now = Date.now();
     const rps = ((d.requests - prevReq) / ((now - prevTs) / 1000)).toFixed(1);
     document.getElementById('iRPS').textContent = rps;

@@ -48,7 +48,8 @@ class WaveCan:
         self.web_server = WebServer(
             self.motor_controller,
             port=HTTP_PORT,
-            host=HTTP_HOST
+            host=HTTP_HOST,
+            runtime_mode=RUNTIME_MODE
         )
 
         # Enable all motors
