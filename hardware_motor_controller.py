@@ -49,12 +49,16 @@ class HardwareMotorProxy:
 class HardwareMotorController:
     """Controller facade used by the web server in hardware mode."""
 
+    COMMAND_EPSILON = 0.001
+    MIN_RESEND_INTERVAL_MS = 100
+
     def __init__(self, can_bus, motor_ids):
         self.can_bus = can_bus
         self.motors: Dict[int, HardwareMotorProxy] = {
             mid: HardwareMotorProxy(HardwareMotorConfig(mid))
             for mid in motor_ids
         }
+        self._last_command: Dict[int, tuple[float, int]] = {}
 
         log(f"[HardwareMotorController] Initialized with motors={sorted(self.motors.keys())}")
 
@@ -73,10 +77,22 @@ class HardwareMotorController:
         motor.output_percent = pct
         motor.target_rpm = pct * motor.config.max_rpm
 
+        now_ms = get_ticks_ms()
+        last = self._last_command.get(motor_id)
+        if last is not None:
+            last_value, last_sent_ms = last
+            same_value = abs(last_value - pct) <= self.COMMAND_EPSILON
+            recent_send = (now_ms - last_sent_ms) < self.MIN_RESEND_INTERVAL_MS
+            if same_value and recent_send:
+                return
+
         msg = make_duty_cycle_setpoint_frame(motor_id, pct, no_ack=True)
         ok = self.can_bus.send(msg)
         if not ok:
             log(f"[HardwareMotorController] CAN send failed motor={motor_id}", "WARN")
+            return
+
+        self._last_command[motor_id] = (pct, now_ms)
 
     def update_physics(self, dt_ms: float = 10.0) -> None:
         # No simulated physics in hardware mode.
@@ -101,7 +117,9 @@ class HardwareMotorController:
         for motor_id in list(self.motors.keys()):
             try:
                 self.set_motor_output(motor_id, 0.0)
-                self.can_bus.send(make_disable_frame(motor_id))
+                last = self._last_command.get(motor_id)
+                if last is None or abs(last[0]) > self.COMMAND_EPSILON:
+                    self.can_bus.send(make_disable_frame(motor_id))
             except Exception:
                 pass
             self.motors[motor_id].enabled = False
