@@ -1,25 +1,13 @@
 """
 Unit tests for mock motor controller and simulation physics.
 
-Note: these tests validate the simulator-only mock CAN ID scheme:
-    base_id = 0x100 + (motor_id * 0x10)
+These tests validate the REV-style CAN framing used by the simulator and the
+hardware facade.
 """
 
 import pytest
-from mock_can import make_float_message
 
-
-# CAN ID constants for testing
-def motor_velocity_id(motor_id):
-    """Calculate velocity command CAN ID for a motor"""
-    base_id = 0x100 + (motor_id * 0x10)
-    return base_id + 0x02
-
-
-def motor_voltage_id(motor_id):
-    """Calculate voltage command CAN ID for a motor"""
-    base_id = 0x100 + (motor_id * 0x10)
-    return base_id + 0x04
+from rev_sparkmax_protocol import make_duty_cycle_setpoint_frame
 
 
 class TestSingleMotor:
@@ -43,7 +31,7 @@ class TestSingleMotor:
     def test_motor_velocity_command_received(self, can_bus, single_motor):
         """Motor should receive and process velocity command"""
         # Send 50% speed command to motor 1
-        cmd = make_float_message(motor_velocity_id(1), 0.5)
+        cmd = make_duty_cycle_setpoint_frame(1, 0.5)
         can_bus.send(cmd)
 
         assert single_motor.target_rpm == 0.5 * 5700
@@ -52,7 +40,7 @@ class TestSingleMotor:
     def test_motor_ramps_to_setpoint(self, single_motor, can_bus):
         """Motor should ramp smoothly to velocity setpoint"""
         # Set target to 50% speed
-        cmd = make_float_message(motor_velocity_id(1), 0.5)
+        cmd = make_duty_cycle_setpoint_frame(1, 0.5)
         can_bus.send(cmd)
 
         # Update physics multiple times
@@ -66,7 +54,7 @@ class TestSingleMotor:
     def test_motor_reaches_target_rpm(self, single_motor, can_bus):
         """Motor should eventually reach target RPM"""
         # Set target to 50% speed
-        cmd = make_float_message(motor_velocity_id(1), 0.5)
+        cmd = make_duty_cycle_setpoint_frame(1, 0.5)
         can_bus.send(cmd)
 
         # Update physics many times (2 seconds)
@@ -82,7 +70,7 @@ class TestSingleMotor:
         initial_temp = single_motor.temperature
 
         # Set high speed (100%)
-        cmd = make_float_message(motor_velocity_id(1), 1.0)
+        cmd = make_duty_cycle_setpoint_frame(1, 1.0)
         can_bus.send(cmd)
 
         # Run for 1 second with full load
@@ -95,7 +83,7 @@ class TestSingleMotor:
     def test_motor_status_message_format(self, single_motor, can_bus):
         """Motor should broadcast properly formatted status messages"""
         # Send velocity command and update
-        cmd = make_float_message(motor_velocity_id(1), 0.5)
+        cmd = make_duty_cycle_setpoint_frame(1, 0.5)
         can_bus.send(cmd)
 
         for _ in range(50):
@@ -133,7 +121,7 @@ class TestMotorController:
         """Physics update should affect all enabled motors"""
         # Command all motors to 50% speed
         for motor_id in [1, 2, 3]:
-            cmd = make_float_message(motor_velocity_id(motor_id), 0.5)
+            cmd = make_duty_cycle_setpoint_frame(motor_id, 0.5)
             can_bus.send(cmd)
 
         # Update physics
@@ -165,7 +153,7 @@ class TestMotorController:
         """Should return state of all motors"""
         # Command all motors
         for motor_id in [1, 2, 3]:
-            cmd = make_float_message(motor_velocity_id(motor_id), 0.3)
+            cmd = make_duty_cycle_setpoint_frame(motor_id, 0.3)
             can_bus.send(cmd)
 
         # Update and get states
@@ -186,9 +174,9 @@ class TestMultiMotorCoordination:
     def test_independent_motor_speeds(self, populated_motor_controller, can_bus):
         """Motors should be controlled independently"""
         # Motor 1: 50%, Motor 2: 75%, Motor 3: 25%
-        can_bus.send(make_float_message(motor_velocity_id(1), 0.50))
-        can_bus.send(make_float_message(motor_velocity_id(2), 0.75))
-        can_bus.send(make_float_message(motor_velocity_id(3), 0.25))
+        can_bus.send(make_duty_cycle_setpoint_frame(1, 0.50))
+        can_bus.send(make_duty_cycle_setpoint_frame(2, 0.75))
+        can_bus.send(make_duty_cycle_setpoint_frame(3, 0.25))
 
         # Update physics long enough for motors to reach different speeds
         # Each motor accelerates at same rate, but targets are different
@@ -216,14 +204,14 @@ class TestMultiMotorCoordination:
         """All motors should stop when commanded to zero"""
         # First spin them up
         for motor_id in [1, 2, 3]:
-            can_bus.send(make_float_message(motor_velocity_id(motor_id), 1.0))
+            can_bus.send(make_duty_cycle_setpoint_frame(motor_id, 1.0))
 
         for _ in range(50):
             populated_motor_controller.update_physics(10.0)
 
         # Then command zero
         for motor_id in [1, 2, 3]:
-            can_bus.send(make_float_message(motor_velocity_id(motor_id), 0.0))
+            can_bus.send(make_duty_cycle_setpoint_frame(motor_id, 0.0))
 
         for _ in range(50):
             populated_motor_controller.update_physics(10.0)

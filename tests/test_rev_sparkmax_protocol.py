@@ -9,6 +9,8 @@ from rev_sparkmax_protocol import (
     build_arbitration_id,
     make_disable_frame,
     make_duty_cycle_setpoint_frame,
+    make_status_0_frame,
+    make_status_1_frame,
 )
 
 
@@ -53,3 +55,14 @@ def test_make_disable_frame_extended_and_empty_payload():
     msg = make_disable_frame(device_id=4)
     assert msg.is_extended_id is True
     assert msg.data == b""
+
+
+def test_make_status_frames_use_rev_layout():
+    status_0 = make_status_0_frame(device_id=7, rpm=1234.5, temperature_c=42.0, voltage_v=12.0)
+    status_1 = make_status_1_frame(device_id=7, output_percent=0.25, current_amps=8.5)
+
+    assert status_0.is_extended_id is True
+    assert status_1.is_extended_id is True
+    assert status_0.arbitration_id != status_1.arbitration_id
+    assert struct.unpack("<f", status_0.data[:4])[0] == pytest.approx(1234.5)
+    assert struct.unpack("<f", status_1.data[:4])[0] == pytest.approx(0.25)

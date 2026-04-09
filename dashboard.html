@@ -271,65 +271,11 @@ canvas#rpmChart { display: block; }
 <div class="panel-center">
   <div class="center-grid">
 
-    <!-- Speed / Manual -->
-    <div class="card drive-card">
-      <div class="card-head">🎮 Speed Control</div>
-      <div class="card-body">
-        <div class="spd-row">
-          <div class="spd-num zero" id="spdDisplay">0%</div>
-          <input type="range" id="spdSlider" min="-100" max="100" value="0" step="1" oninput="onSlider(this.value)">
-        </div>
-        <div class="sel-note">Targeting: <span id="selLabel">none selected</span></div>
-        <div class="btn-row">
-          <button class="btn btn-primary" onclick="sendManualSpeed()">▶ Send</button>
-          <button class="btn btn-danger"  onclick="emergencyStop()">⏹ E-Stop</button>
-          <button class="btn btn-ghost"   onclick="resetSlider()">↺ Reset</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Joystick / Drive -->
     <div class="card">
-      <div class="card-head">🕹 Drive Control
-        <span style="margin-left:auto"></span>
-        <div class="dz-wrap">
-          <button class="dz-btn" id="dzBtn" onclick="toggleDeadzonePopover(event)">Deadzones</button>
-          <div class="dz-popover" id="dzPopover" onclick="event.stopPropagation()">
-            <div class="dz-title">Joystick Deadzones</div>
-            <div class="dz-row">
-              <label for="dzMove">Move</label>
-              <input id="dzMove" type="range" min="0" max="30" step="1" value="8" oninput="setDeadzonesFromUI()">
-              <span class="dz-val" id="dzMoveVal">8%</span>
-            </div>
-            <div class="dz-row">
-              <label for="dzTurn">Turn</label>
-              <input id="dzTurn" type="range" min="0" max="30" step="1" value="8" oninput="setDeadzonesFromUI()">
-              <span class="dz-val" id="dzTurnVal">8%</span>
-            </div>
-            <div class="dz-title" style="margin-top:8px">Gamepad Axis Map</div>
-            <div class="dz-row">
-              <label for="axisMove">Move Axis</label>
-              <select id="axisMove" onchange="setAxesFromUI()"></select>
-            </div>
-            <div class="dz-row" style="margin-bottom:0">
-              <label for="axisTurn">Turn Axis</label>
-              <select id="axisTurn" onchange="setAxesFromUI()"></select>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="card-head">📡 CAN Telemetry</div>
       <div class="card-body">
-        <div class="drive-mode-row">
-          <div class="mode-btn active" id="modeArcade" onclick="setMode('arcade')">Arcade Drive</div>
-          <div class="mode-btn"        id="modeTank"   onclick="setMode('tank')">Tank Drive</div>
-          <div class="mode-btn"        id="modeOff"    onclick="setMode('off')">Disabled</div>
-        </div>
-        <div class="js-row" id="jsRow">
-          <!-- populated by JS based on mode -->
-        </div>
-        <div class="js-legend" style="margin-top:10px">
-          <div><kbd>↑↓</kbd> Throttle &nbsp;<kbd>←→</kbd> Turn</div>
-          <div><kbd>Space</kbd> Emergency stop &nbsp;<kbd>1</kbd>–<kbd>8</kbd> Toggle motor</div>
+        <div style="font-size:.9rem; color:var(--text); line-height:1.6">
+          This view is telemetry-only. Per-motor CAN command age and status age are shown in the motor list, and the dashboard no longer posts live drive or joystick commands.
         </div>
       </div>
     </div>
@@ -382,25 +328,11 @@ canvas#rpmChart { display: block; }
   </div>
 
   <div class="info-section">
-    <div class="info-title">🔑 Shortcuts</div>
-    <div class="shortcut"><kbd>↑↓</kbd><span class="kd">Throttle ±5%</span></div>
-    <div class="shortcut"><kbd>←→</kbd><span class="kd">Turn ±5%</span></div>
-    <div class="shortcut"><kbd>Space</kbd><span class="kd">Emergency stop</span></div>
-    <div class="shortcut"><kbd>1</kbd>–<kbd>8</kbd><span class="kd">Toggle motor</span></div>
-    <div class="shortcut"><kbd>A</kbd><span class="kd">Select all</span></div>
+    <div class="info-title">📡 Telemetry</div>
+    <div class="shortcut"><kbd>1</kbd>–<kbd>8</kbd><span class="kd">Toggle motor selection</span></div>
+    <div class="shortcut"><kbd>A</kbd><span class="kd">Select all motors</span></div>
     <div class="shortcut"><kbd>N</kbd><span class="kd">Select none</span></div>
-    <div class="shortcut"><kbd>Enter</kbd><span class="kd">Send speed</span></div>
-    <div class="shortcut"><kbd>Tab</kbd><span class="kd">Cycle drive mode</span></div>
-  </div>
-
-  <div class="info-section">
-    <div class="info-title">⚙ Motor Roles</div>
-    <div id="roleInfo" style="font-size:0.72rem;color:var(--muted);line-height:1.8">
-      Click a motor's badge to cycle role:<br>
-      <span style="color:var(--accent)">L</span> = Left side &nbsp;
-      <span style="color:var(--red)">R</span> = Right side &nbsp;
-      <span style="color:var(--yellow)">AUX</span> = Auxiliary
-    </div>
+    <div class="shortcut"><kbd>Esc</kbd><span class="kd">Close overlays</span></div>
   </div>
 
 </div>
@@ -417,7 +349,7 @@ const S = {
   historyLen: 80,
   statusTimeMs: 0,
   roles: {},         // id → 'L' | 'R' | 'AUX' | null
-  driveMode: 'arcade',  // 'arcade' | 'tank' | 'off'
+  driveMode: 'off',  // telemetry-only dashboard
   deadzones: {
     move: 0.08,
     turn: 0.08,
@@ -489,11 +421,16 @@ function renderMotors() {
     const pct  = Math.min(100, Math.abs(m.output_percent || 0));
     const rev  = (m.rpm || 0) < -20;
     const tCls = m.temperature_c > 60 ? 'var(--red)' : m.temperature_c > 45 ? 'var(--yellow)' : 'var(--text)';
-    const dataAge = (S.statusTimeMs && m.last_command_ms)
+    const cmdAge = (S.statusTimeMs && m.last_command_ms)
       ? Math.max(0, S.statusTimeMs - m.last_command_ms)
       : null;
-    const dataText = dataAge === null ? 'No' : (dataAge < 1000 ? 'Yes' : `${(dataAge / 1000).toFixed(1)}s`);
-    const dataCls = dataAge === null ? 'var(--red)' : (dataAge < 1000 ? 'var(--green)' : 'var(--yellow)');
+    const statusAge = (S.statusTimeMs && m.last_status_ms)
+      ? Math.max(0, S.statusTimeMs - m.last_status_ms)
+      : null;
+    const cmdText = cmdAge === null ? 'No' : (cmdAge < 1000 ? 'Yes' : `${(cmdAge / 1000).toFixed(1)}s`);
+    const statusText = statusAge === null ? 'No' : (statusAge < 1000 ? 'Yes' : `${(statusAge / 1000).toFixed(1)}s`);
+    const cmdCls = cmdAge === null ? 'var(--red)' : (cmdAge < 1000 ? 'var(--green)' : 'var(--yellow)');
+    const statusCls = statusAge === null ? 'var(--red)' : (statusAge < 1000 ? 'var(--green)' : 'var(--yellow)');
 
     card.className = 'mcard' + (sel ? ' sel' : '');
     card.innerHTML = `
@@ -509,7 +446,8 @@ function renderMotors() {
         <div><div class="stat-lbl">Output</div><div class="stat-val">${(m.output_percent||0).toFixed(1)}%</div></div>
         <div><div class="stat-lbl">Amps</div><div class="stat-val">${(m.current_amps||0).toFixed(1)} A</div></div>
         <div><div class="stat-lbl">Temp</div><div class="stat-val" style="color:${tCls}">${(m.temperature_c||0).toFixed(1)}°C</div></div>
-        <div><div class="stat-lbl">Data</div><div class="stat-val" style="color:${dataCls}">${dataText}</div></div>
+        <div><div class="stat-lbl">CAN Cmd</div><div class="stat-val" style="color:${cmdCls}">${cmdText}</div></div>
+        <div><div class="stat-lbl">CAN Stat</div><div class="stat-val" style="color:${statusCls}">${statusText}</div></div>
         <div class="rbar-wrap"><div class="rbar-track"><div class="rbar-fill ${rev?'rev':''}" style="width:${pct}%"></div></div></div>
       </div>`;
     card.onclick = () => toggleMotor(id);
@@ -555,11 +493,6 @@ function sortedIds() { return Object.keys(S.motors).map(Number).sort((a,b)=>a-b)
 // ══════════════════════════════════════════════════════════
 function setMode(mode) {
   S.driveMode = mode;
-  clearTargets();
-  ['arcade','tank','off'].forEach(m => {
-    document.getElementById('mode' + m.charAt(0).toUpperCase() + m.slice(1)).classList.toggle('active', m === mode);
-  });
-  buildJoystickUI();
 }
 
 function buildJoystickUI() {
@@ -990,11 +923,8 @@ const keys = {};
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
   keys[e.key] = true;
-  if (e.key === ' ')     { e.preventDefault(); emergencyStop(); }
-  if (e.key === 'Enter') { e.preventDefault(); sendManualSpeed(); }
   if (e.key==='a'||e.key==='A') { e.preventDefault(); selectAll(); }
   if (e.key==='n'||e.key==='N') { e.preventDefault(); selectNone(); }
-  if (e.key==='Tab')    { e.preventDefault(); const m=['arcade','tank','off']; setMode(m[(m.indexOf(S.driveMode)+1)%m.length]); }
   const num = parseInt(e.key);
   if (num >= 1 && num <= 8) {
     e.preventDefault();
@@ -1436,8 +1366,6 @@ function fmtUptime(ms) {
 // ══════════════════════════════════════════════════════════
 //  Init
 // ══════════════════════════════════════════════════════════
-buildJoystickUI();
-initDeadzoneUI();
 resetRobot();
 setInterval(pollStatus, 200);
 setInterval(pollHealth, 2000);

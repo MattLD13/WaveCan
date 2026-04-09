@@ -2,13 +2,24 @@
 Hardware-oriented motor controller facade.
 
 Uses REV SPARK MAX CAN framing (FRC 29-bit arbitration ID layout) for outgoing
-setpoint commands when running in socketcan mode.
+setpoint commands when running in socketcan mode, and ingests REV-style status
+frames for dashboard telemetry.
 """
 
 from dataclasses import dataclass
 from typing import Dict, Optional
+import struct
 
-from rev_sparkmax_protocol import make_duty_cycle_setpoint_frame, make_disable_frame
+from rev_sparkmax_protocol import (
+    API_CLASS_STATUS,
+    API_CLASS_PERIODIC_STATUS,
+    API_INDEX_STATUS_0,
+    API_INDEX_STATUS_1,
+    build_api_id,
+    extract_frc_can_fields,
+    make_duty_cycle_setpoint_frame,
+    make_disable_frame,
+)
 from wavecan_platform import get_ticks_ms, log
 
 
@@ -31,6 +42,7 @@ class HardwareMotorProxy:
         self.output_percent = 0.0
         self.enabled = True
         self.last_command_ms = 0
+        self.last_status_ms = 0
 
     def get_state(self) -> dict:
         return {
@@ -45,6 +57,7 @@ class HardwareMotorProxy:
             "voltage": 12.0 * self.output_percent,
             "enabled": self.enabled,
             "last_command_ms": self.last_command_ms,
+            "last_status_ms": self.last_status_ms,
         }
 
 
@@ -69,6 +82,32 @@ class HardwareMotorController:
 
     def get_all_states(self) -> list:
         return [m.get_state() for m in self.motors.values()]
+
+    def _decode_status_message(self, message) -> None:
+        fields = extract_frc_can_fields(message.arbitration_id)
+        if fields["device_type"] != 2 or fields["manufacturer"] != 5:
+            return
+
+        api_class = fields["api_id"] >> 4
+        api_index = fields["api_id"] & 0x0F
+        motor = self.get_motor(fields["device_id"])
+        if motor is None:
+            return
+
+        if api_class not in (API_CLASS_STATUS, API_CLASS_PERIODIC_STATUS):
+            return
+
+        motor.last_status_ms = get_ticks_ms()
+
+        if api_index == API_INDEX_STATUS_0 and len(message.data) >= 6:
+            rpm, temperature_c, voltage_tenths = struct.unpack("<fBB", message.data[:6])
+            motor.current_rpm = rpm
+            motor.temperature = float(temperature_c)
+            motor.output_percent = max(-1.0, min(1.0, (voltage_tenths / 10.0) / 12.0))
+        elif api_index == API_INDEX_STATUS_1 and len(message.data) >= 8:
+            output_percent, current_amps = struct.unpack("<ff", message.data[:8])
+            motor.output_percent = max(-1.0, min(1.0, output_percent))
+            motor.current_amps = max(0.0, current_amps)
 
     def set_motor_output(self, motor_id: int, value: float) -> None:
         motor = self.get_motor(motor_id)
@@ -98,19 +137,16 @@ class HardwareMotorController:
         self._last_command[motor_id] = (pct, now_ms)
 
     def update_physics(self, dt_ms: float = 10.0) -> None:
-        # No simulated physics in hardware mode.
-        # Keep a soft decay toward target state for dashboard readability.
         alpha = min(1.0, dt_ms / 250.0)
         for motor in self.motors.values():
             motor.current_rpm += (motor.target_rpm - motor.current_rpm) * alpha
 
     def broadcast_telemetry(self) -> None:
-        # Placeholder for real status frame parsing.
-        # Drain at most a few frames to avoid starving main loop.
-        for _ in range(8):
+        for _ in range(16):
             msg = self.can_bus.recv(timeout_ms=0)
             if msg is None:
                 break
+            self._decode_status_message(msg)
 
     def enable_all(self) -> None:
         for motor in self.motors.values():

@@ -27,6 +27,8 @@ MOTOR_CONTROLLER_DEVICE_TYPE = 2
 # Generic motor-controller API classes from FRC CAN spec
 API_CLASS_VOLTAGE_CONTROL = 0
 API_CLASS_SPEED_CONTROL = 1
+API_CLASS_STATUS = 5
+API_CLASS_PERIODIC_STATUS = 6
 
 
 # Generic API indices from FRC CAN spec
@@ -37,6 +39,18 @@ API_INDEX_SET_REFERENCE = 6
 API_INDEX_TRUSTED_SET_NO_ACK = 8
 API_INDEX_TRUSTED_SET_SETPOINT_NO_ACK = 10
 API_INDEX_SET_SETPOINT_NO_ACK = 11
+API_INDEX_STATUS_0 = 0
+API_INDEX_STATUS_1 = 1
+
+
+def extract_frc_can_fields(arbitration_id: int) -> dict:
+    """Extract FRC CAN bit fields from a 29-bit arbitration ID."""
+    return {
+        "device_type": (arbitration_id >> 24) & 0x1F,
+        "manufacturer": (arbitration_id >> 16) & 0xFF,
+        "api_id": (arbitration_id >> 6) & 0x03FF,
+        "device_id": arbitration_id & 0x3F,
+    }
 
 
 def clamp_unit(value: float) -> float:
@@ -99,6 +113,33 @@ def make_duty_cycle_setpoint_frame(device_id: int, output_percent: float, no_ack
         api_index=api_index,
     )
     data = struct.pack("<f", clamp_unit(output_percent))
+    return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
+
+
+def make_status_0_frame(device_id: int, rpm: float, temperature_c: float, voltage_v: float) -> CANMessage:
+    """Build a Spark MAX status-0 telemetry frame."""
+    arbitration_id = build_arbitration_id(
+        device_id=device_id,
+        api_class=API_CLASS_STATUS,
+        api_index=API_INDEX_STATUS_0,
+    )
+    data = struct.pack(
+        "<fBB",
+        float(rpm),
+        max(0, min(255, int(round(temperature_c)))),
+        max(0, min(255, int(round(voltage_v * 10.0)))),
+    )
+    return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
+
+
+def make_status_1_frame(device_id: int, output_percent: float, current_amps: float) -> CANMessage:
+    """Build a Spark MAX status-1 telemetry frame."""
+    arbitration_id = build_arbitration_id(
+        device_id=device_id,
+        api_class=API_CLASS_STATUS,
+        api_index=API_INDEX_STATUS_1,
+    )
+    data = struct.pack("<ff", float(output_percent), float(current_amps))
     return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
 
 
