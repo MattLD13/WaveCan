@@ -53,6 +53,7 @@ class MockSPARKMAX:
         self.output_percent = 0.0
         self.current_amps = 0.0
         self.encoder_position = 0.0
+        self.last_command_ms = 0
 
         # Control mode
         self.velocity_mode = True  # True=velocity, False=voltage
@@ -195,6 +196,7 @@ class MockSPARKMAX:
             'position_rad': self.encoder_position,
             'voltage': self.config.max_voltage * self.output_percent,
             'enabled': self.enabled,
+            'last_command_ms': self.last_command_ms,
         }
 
     def enable(self) -> None:

@@ -415,6 +415,7 @@ const S = {
   selected: new Set(),
   history: {},       // id → [rpm, ...]
   historyLen: 80,
+  statusTimeMs: 0,
   roles: {},         // id → 'L' | 'R' | 'AUX' | null
   driveMode: 'arcade',  // 'arcade' | 'tank' | 'off'
   deadzones: {
@@ -488,6 +489,11 @@ function renderMotors() {
     const pct  = Math.min(100, Math.abs(m.output_percent || 0));
     const rev  = (m.rpm || 0) < -20;
     const tCls = m.temperature_c > 60 ? 'var(--red)' : m.temperature_c > 45 ? 'var(--yellow)' : 'var(--text)';
+    const dataAge = (S.statusTimeMs && m.last_command_ms)
+      ? Math.max(0, S.statusTimeMs - m.last_command_ms)
+      : null;
+    const dataText = dataAge === null ? 'No' : (dataAge < 1000 ? 'Yes' : `${(dataAge / 1000).toFixed(1)}s`);
+    const dataCls = dataAge === null ? 'var(--red)' : (dataAge < 1000 ? 'var(--green)' : 'var(--yellow)');
 
     card.className = 'mcard' + (sel ? ' sel' : '');
     card.innerHTML = `
@@ -503,6 +509,7 @@ function renderMotors() {
         <div><div class="stat-lbl">Output</div><div class="stat-val">${(m.output_percent||0).toFixed(1)}%</div></div>
         <div><div class="stat-lbl">Amps</div><div class="stat-val">${(m.current_amps||0).toFixed(1)} A</div></div>
         <div><div class="stat-lbl">Temp</div><div class="stat-val" style="color:${tCls}">${(m.temperature_c||0).toFixed(1)}°C</div></div>
+        <div><div class="stat-lbl">Data</div><div class="stat-val" style="color:${dataCls}">${dataText}</div></div>
         <div class="rbar-wrap"><div class="rbar-track"><div class="rbar-fill ${rev?'rev':''}" style="width:${pct}%"></div></div></div>
       </div>`;
     card.onclick = () => toggleMotor(id);
@@ -718,7 +725,7 @@ function driveControlTick() {
     S.turn = 0;
     S.leftRaw = 0;
     S.rightRaw = 0;
-    dispatchDrive();
+    drawArcadeStick();
     return;
   }
 
@@ -742,7 +749,7 @@ function driveControlTick() {
     if (Math.abs(S.rightRaw) < 0.002) S.rightRaw = 0;
   }
 
-  dispatchDrive();
+  drawArcadeStick();
 }
 
 function setDeadzonesFromUI() {
@@ -931,9 +938,6 @@ function dispatchDrive() {
 
   S.leftCmd = leftPct;
   S.rightCmd = rightPct;
-
-  leftIds.forEach(id  => postCmd(id, 'set', leftPct));
-  rightIds.forEach(id => postCmd(id, 'set', rightPct));
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1075,7 +1079,6 @@ function pollGamepad() {
   requestAnimationFrame(pollGamepad);
 }
 pollGamepad();
-setInterval(driveControlTick, 25);
 
 // ══════════════════════════════════════════════════════════
 //  Drivetrain Visualization
@@ -1370,6 +1373,7 @@ async function pollStatus() {
   try {
     const r = await fetch('/api/status');
     const d = await r.json();
+    S.statusTimeMs = d.timestamp_ms || 0;
     document.getElementById('connPill').className = 'pill ok';
     document.getElementById('connPill').innerHTML = '<span class="dot"></span> Connected';
     d.motors.forEach(m => {

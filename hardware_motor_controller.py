@@ -30,6 +30,7 @@ class HardwareMotorProxy:
         self.current_amps = 0.0
         self.output_percent = 0.0
         self.enabled = True
+        self.last_command_ms = 0
 
     def get_state(self) -> dict:
         return {
@@ -43,6 +44,7 @@ class HardwareMotorProxy:
             "position_rad": 0.0,
             "voltage": 12.0 * self.output_percent,
             "enabled": self.enabled,
+            "last_command_ms": self.last_command_ms,
         }
 
 
@@ -92,6 +94,7 @@ class HardwareMotorController:
             log(f"[HardwareMotorController] CAN send failed motor={motor_id}", "WARN")
             return
 
+        motor.last_command_ms = now_ms
         self._last_command[motor_id] = (pct, now_ms)
 
     def update_physics(self, dt_ms: float = 10.0) -> None:
