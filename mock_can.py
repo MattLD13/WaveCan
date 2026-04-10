@@ -139,15 +139,15 @@ class MockCANBus:
 # ============================================================================
 
 def make_float_message(can_id: int, value: float) -> CANMessage:
-    """Create a CAN message with a 32-bit float value (big-endian)"""
-    data = struct.pack('>f', value)  # Big-endian IEEE 754
+    """Create a CAN message with a 32-bit float value (little-endian)"""
+    data = struct.pack('<f', value)
     return CANMessage(arbitration_id=can_id, data=data)
 
 def read_float_message(message: CANMessage) -> float:
     """Extract a 32-bit float from a CAN message"""
     if len(message.data) < 4:
         raise ValueError("Message data too short for float")
-    return struct.unpack('>f', message.data[:4])[0]
+    return struct.unpack('<f', message.data[:4])[0]
 
 def make_int32_message(can_id: int, value: int) -> CANMessage:
     """Create a CAN message with a 32-bit signed integer (big-endian)"""

@@ -15,12 +15,15 @@ from rev_sparkmax_protocol import (
     API_CLASS_PERIODIC_STATUS,
     API_INDEX_STATUS_0,
     API_INDEX_STATUS_1,
-    build_api_id,
     extract_frc_can_fields,
     make_duty_cycle_setpoint_frame,
     make_disable_frame,
 )
 from wavecan_platform import get_ticks_ms, log
+
+
+def _format_can_bytes(data: bytes) -> str:
+    return " ".join(f"{b:02X}" for b in data)
 
 
 @dataclass
@@ -43,6 +46,14 @@ class HardwareMotorProxy:
         self.enabled = True
         self.last_command_ms = 0
         self.last_status_ms = 0
+        self.last_tx_arb_id = ""
+        self.last_tx_data_hex = ""
+        self.last_rx_arb_id = ""
+        self.last_rx_data_hex = ""
+        self.last_rx_status0_arb_id = ""
+        self.last_rx_status0_data_hex = ""
+        self.last_rx_status1_arb_id = ""
+        self.last_rx_status1_data_hex = ""
 
     def get_state(self) -> dict:
         return {
@@ -58,6 +69,16 @@ class HardwareMotorProxy:
             "enabled": self.enabled,
             "last_command_ms": self.last_command_ms,
             "last_status_ms": self.last_status_ms,
+            "can_debug": {
+                "tx_arb_id": self.last_tx_arb_id,
+                "tx_data_hex": self.last_tx_data_hex,
+                "rx_arb_id": self.last_rx_arb_id,
+                "rx_data_hex": self.last_rx_data_hex,
+                "rx_status0_arb_id": self.last_rx_status0_arb_id,
+                "rx_status0_data_hex": self.last_rx_status0_data_hex,
+                "rx_status1_arb_id": self.last_rx_status1_arb_id,
+                "rx_status1_data_hex": self.last_rx_status1_data_hex,
+            },
         }
 
 
@@ -98,16 +119,24 @@ class HardwareMotorController:
             return
 
         motor.last_status_ms = get_ticks_ms()
+        arb_id_hex = f"0x{message.arbitration_id:08X}"
+        data_hex = _format_can_bytes(bytes(message.data))
+        motor.last_rx_arb_id = arb_id_hex
+        motor.last_rx_data_hex = data_hex
 
         if api_index == API_INDEX_STATUS_0 and len(message.data) >= 6:
             rpm, temperature_c, voltage_tenths = struct.unpack("<fBB", message.data[:6])
             motor.current_rpm = rpm
             motor.temperature = float(temperature_c)
             motor.output_percent = max(-1.0, min(1.0, (voltage_tenths / 10.0) / 12.0))
+            motor.last_rx_status0_arb_id = arb_id_hex
+            motor.last_rx_status0_data_hex = data_hex
         elif api_index == API_INDEX_STATUS_1 and len(message.data) >= 8:
             output_percent, current_amps = struct.unpack("<ff", message.data[:8])
             motor.output_percent = max(-1.0, min(1.0, output_percent))
             motor.current_amps = max(0.0, current_amps)
+            motor.last_rx_status1_arb_id = arb_id_hex
+            motor.last_rx_status1_data_hex = data_hex
 
     def set_motor_output(self, motor_id: int, value: float) -> None:
         motor = self.get_motor(motor_id)
@@ -135,11 +164,32 @@ class HardwareMotorController:
 
         motor.last_command_ms = now_ms
         self._last_command[motor_id] = (pct, now_ms)
+        motor.last_tx_arb_id = f"0x{msg.arbitration_id:08X}"
+        motor.last_tx_data_hex = _format_can_bytes(bytes(msg.data))
 
     def update_physics(self, dt_ms: float = 10.0) -> None:
-        alpha = min(1.0, dt_ms / 250.0)
-        for motor in self.motors.values():
-            motor.current_rpm += (motor.target_rpm - motor.current_rpm) * alpha
+        """
+        Hardware mode: do not simulate motor RPM.
+
+        Keep the last known duty-cycle command alive so SPARK MAX watchdog
+        does not timeout when no new HTTP command is received.
+        """
+        now_ms = get_ticks_ms()
+
+        for motor_id, motor in self.motors.items():
+            if not motor.enabled:
+                continue
+
+            last_value, last_sent_ms = self._last_command.get(motor_id, (0.0, 0))
+            if (now_ms - last_sent_ms) < 20:
+                continue
+
+            msg = make_duty_cycle_setpoint_frame(motor_id, last_value, no_ack=True)
+            if self.can_bus.send(msg):
+                self._last_command[motor_id] = (last_value, now_ms)
+                motor.last_command_ms = now_ms
+                motor.last_tx_arb_id = f"0x{msg.arbitration_id:08X}"
+                motor.last_tx_data_hex = _format_can_bytes(bytes(msg.data))
 
     def broadcast_telemetry(self) -> None:
         for _ in range(16):

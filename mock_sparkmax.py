@@ -15,10 +15,15 @@ from rev_sparkmax_protocol import (
     API_CLASS_VOLTAGE_CONTROL,
     API_INDEX_SET_SETPOINT_NO_ACK,
     build_arbitration_id,
+    make_duty_cycle_setpoint_frame,
     make_status_0_frame,
     make_status_1_frame,
 )
 from wavecan_platform import get_ticks_ms, log
+
+
+def _format_can_bytes(data: bytes) -> str:
+    return " ".join(f"{b:02X}" for b in data)
 
 
 @dataclass
@@ -53,6 +58,14 @@ class MockSPARKMAX:
         self.velocity_mode = True
         self.enabled = True
         self.last_update_ms = get_ticks_ms()
+        self.last_tx_arb_id = ""
+        self.last_tx_data_hex = ""
+        self.last_rx_arb_id = ""
+        self.last_rx_data_hex = ""
+        self.last_rx_status0_arb_id = ""
+        self.last_rx_status0_data_hex = ""
+        self.last_rx_status1_arb_id = ""
+        self.last_rx_status1_data_hex = ""
 
         log(f"[SPARK MAX {self.motor_id}] Initialized (max_rpm={config.max_rpm})")
         self._setup_can_listeners()
@@ -77,6 +90,8 @@ class MockSPARKMAX:
             self.target_rpm = norm_speed * self.config.max_rpm
             self.velocity_mode = True
             self.last_command_ms = get_ticks_ms()
+            self.last_tx_arb_id = f"0x{message.arbitration_id:08X}"
+            self.last_tx_data_hex = _format_can_bytes(bytes(message.data))
             log(f"[SPARK MAX {self.motor_id}] Velocity command: {self.target_rpm:.0f} RPM")
 
     def _on_voltage_command(self, message: CANMessage) -> None:
@@ -86,6 +101,8 @@ class MockSPARKMAX:
             self.target_rpm = norm_output * self.config.max_rpm
             self.velocity_mode = True
             self.last_command_ms = get_ticks_ms()
+            self.last_tx_arb_id = f"0x{message.arbitration_id:08X}"
+            self.last_tx_data_hex = _format_can_bytes(bytes(message.data))
             log(f"[SPARK MAX {self.motor_id}] Output command: {norm_output:.2f}")
 
     def update(self, dt_ms: float = 10.0) -> None:
@@ -143,6 +160,12 @@ class MockSPARKMAX:
         self.can_bus.add_message_to_rx(msg_0)
         self.can_bus.add_message_to_rx(msg_1)
         self.last_status_ms = get_ticks_ms()
+        self.last_rx_status0_arb_id = f"0x{msg_0.arbitration_id:08X}"
+        self.last_rx_status0_data_hex = _format_can_bytes(bytes(msg_0.data))
+        self.last_rx_status1_arb_id = f"0x{msg_1.arbitration_id:08X}"
+        self.last_rx_status1_data_hex = _format_can_bytes(bytes(msg_1.data))
+        self.last_rx_arb_id = self.last_rx_status1_arb_id
+        self.last_rx_data_hex = self.last_rx_status1_data_hex
 
     def get_state(self) -> dict:
         return {
@@ -158,6 +181,16 @@ class MockSPARKMAX:
             "enabled": self.enabled,
             "last_command_ms": self.last_command_ms,
             "last_status_ms": self.last_status_ms,
+            "can_debug": {
+                "tx_arb_id": self.last_tx_arb_id,
+                "tx_data_hex": self.last_tx_data_hex,
+                "rx_arb_id": self.last_rx_arb_id,
+                "rx_data_hex": self.last_rx_data_hex,
+                "rx_status0_arb_id": self.last_rx_status0_arb_id,
+                "rx_status0_data_hex": self.last_rx_status0_data_hex,
+                "rx_status1_arb_id": self.last_rx_status1_arb_id,
+                "rx_status1_data_hex": self.last_rx_status1_data_hex,
+            },
         }
 
     def enable(self) -> None:
@@ -202,6 +235,19 @@ class MockMotorController:
 
     def get_motor(self, motor_id: int) -> Optional[MockSPARKMAX]:
         return self.motors.get(motor_id)
+
+    def set_motor_output(self, motor_id: int, value: float) -> None:
+        motor = self.get_motor(motor_id)
+        if motor is None:
+            raise ValueError(f"Motor {motor_id} not found")
+
+        pct = max(-1.0, min(1.0, float(value)))
+        msg = make_duty_cycle_setpoint_frame(motor_id, pct, no_ack=True)
+        if not self.can_bus.send(msg):
+            motor.target_rpm = pct * motor.config.max_rpm
+            motor.command_voltage = pct * motor.config.max_voltage
+            motor.velocity_mode = True
+            motor.last_command_ms = get_ticks_ms()
 
     def enable_all(self) -> None:
         for motor in self.motors.values():

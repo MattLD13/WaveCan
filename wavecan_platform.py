@@ -11,7 +11,7 @@ from config import RUNTIME_MODE
 
 # Detect platform
 IS_MICROPYTHON = hasattr(sys, 'implementation') and sys.implementation.name == 'micropython'
-IS_RP2350 = IS_MICROPYTHON and 'RP2' in sys.platform if hasattr(sys, 'platform') else False
+IS_RP2350 = IS_MICROPYTHON and 'rp2' in sys.platform.lower() if hasattr(sys, 'platform') else False
 
 print(f"[Platform] Python version: {sys.version}")
 print(f"[Platform] MicroPython: {IS_MICROPYTHON}, RP2350: {IS_RP2350}")

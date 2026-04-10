@@ -52,16 +52,51 @@ canvas#roverCanvas {
 .panel {
   display: flex; flex-direction: column; overflow: hidden;
   background: var(--surface); border-right: 1px solid var(--border);
+  transition: width .2s ease, min-width .2s ease;
 }
 .panel:last-child { border-right: none; border-left: 1px solid var(--border); }
 .panel-motors { width: 280px; min-width: 240px; }
 .panel-center  { flex: 1; overflow-y: auto; background: var(--bg); }
 .panel-right   { width: 300px; min-width: 260px; overflow-y: auto; }
 
+.panel.is-collapsed {
+  width: 42px !important;
+  min-width: 42px !important;
+}
+.panel.is-collapsed .motor-list,
+.panel.is-collapsed .select-bar,
+.panel.is-collapsed .info-section {
+  display: none;
+}
+.panel.is-collapsed .panel-heading {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.panel.is-collapsed .panel-heading .heading-label,
+.panel.is-collapsed .panel-heading .heading-meta {
+  display: none;
+}
+
 .panel-heading {
   padding: 11px 14px 9px; font-size: 0.68rem; font-weight: 700; letter-spacing: .1em;
   text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.panel-toggle {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.panel-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* ── Motor Cards ── */
@@ -121,6 +156,30 @@ canvas#roverCanvas {
   color: var(--muted); display: flex; align-items: center; gap: 8px;
 }
 .card-body { padding: 14px; }
+
+.card.collapsible .card-head,
+.info-section.collapsible .info-title {
+  cursor: pointer;
+  user-select: none;
+}
+.card.collapsible .card-head::after,
+.info-section.collapsible .info-title::after {
+  content: '▾';
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.82rem;
+  transition: transform .15s ease;
+}
+.card.collapsed .card-head::after,
+.info-section.collapsed .info-title::after {
+  transform: rotate(-90deg);
+}
+.card.collapsed > :not(.card-head) {
+  display: none;
+}
+.info-section.collapsed > :not(.info-title) {
+  display: none;
+}
 
 /* Speed slider */
 .spd-row { display: flex; align-items: center; gap: 12px; }
@@ -204,6 +263,19 @@ canvas#dtCanvas { border-radius: 8px; }
   color: var(--text);
   font-size: .72rem;
 }
+.dz-row input[type=checkbox] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+.dz-subtitle {
+  font-size: .65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin: 10px 0 6px;
+}
 
 /* ── RPM Chart ── */
 .chart-wrap { height: 130px; position: relative; }
@@ -212,6 +284,37 @@ canvas#rpmChart { display: block; }
   border-top: 1px solid var(--border); }
 .leg-item { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; }
 .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* ── CAN Telemetry Blocks ── */
+.can-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+.can-block {
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 8px;
+}
+.can-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.can-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.can-line b {
+  color: var(--text);
+  font-weight: 700;
+}
 
 /* ── Right Panel ── */
 .info-section { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); }
@@ -256,8 +359,9 @@ canvas#rpmChart { display: block; }
 <!-- ── Left: Motor List ── -->
 <div class="panel panel-motors">
   <div class="panel-heading">
-    ⚙ Motors
-    <span id="mCount" style="margin-left:auto;color:var(--accent);font-size:.8rem;text-transform:none;letter-spacing:0;font-weight:600"></span>
+    <span class="heading-label">⚙ Motors</span>
+    <span class="heading-meta" id="mCount" style="margin-left:auto;color:var(--accent);font-size:.8rem;text-transform:none;letter-spacing:0;font-weight:600"></span>
+    <button class="panel-toggle" id="leftPanelToggle" onclick="toggleSidePanel('left')" title="Collapse left panel" aria-label="Toggle left panel">&lt;</button>
   </div>
   <div class="motor-list" id="motorList"></div>
   <div class="select-bar">
@@ -271,17 +375,105 @@ canvas#rpmChart { display: block; }
 <div class="panel-center">
   <div class="center-grid">
 
-    <div class="card">
-      <div class="card-head">📡 CAN Telemetry</div>
+    <!-- Test / Manual Command -->
+    <div class="card drive-card" data-collapse-id="manual-command">
+      <div class="card-head">🧪 CAN Test Command
+        <span style="margin-left:auto"></span>
+        <div class="dz-wrap">
+          <button class="dz-btn" id="dzBtn" onclick="toggleDeadzonePopover(event)">Drive Settings</button>
+          <div class="dz-popover" id="dzPopover" onclick="event.stopPropagation()">
+            <div class="dz-title">Drive Settings</div>
+
+            <div class="dz-subtitle">Input Deadzones</div>
+            <div class="dz-row">
+              <label for="dzMove">Move</label>
+              <input id="dzMove" type="range" min="0" max="30" step="1" value="8" oninput="setDeadzonesFromUI()">
+              <span class="dz-val" id="dzMoveVal">8%</span>
+            </div>
+            <div class="dz-row">
+              <label for="dzTurn">Turn</label>
+              <input id="dzTurn" type="range" min="0" max="30" step="1" value="8" oninput="setDeadzonesFromUI()">
+              <span class="dz-val" id="dzTurnVal">8%</span>
+            </div>
+
+            <div class="dz-subtitle">Axis Mapping</div>
+            <div class="dz-row">
+              <label for="axisMove">Move Axis</label>
+              <select id="axisMove" onchange="setAxesFromUI()"></select>
+            </div>
+            <div class="dz-row">
+              <label for="axisTurn">Turn Axis</label>
+              <select id="axisTurn" onchange="setAxesFromUI()"></select>
+            </div>
+
+            <div class="dz-subtitle">Invert Modes</div>
+            <div class="dz-row">
+              <label for="invMove">Invert Move</label>
+              <input id="invMove" type="checkbox" onchange="setDriveSettingsFromUI()">
+            </div>
+            <div class="dz-row">
+              <label for="invTurn">Invert Turn</label>
+              <input id="invTurn" type="checkbox" onchange="setDriveSettingsFromUI()">
+            </div>
+            <div class="dz-row">
+              <label for="invManual">Invert Manual</label>
+              <input id="invManual" type="checkbox" onchange="setDriveSettingsFromUI()">
+            </div>
+
+            <div class="dz-subtitle">Response</div>
+            <div class="dz-row">
+              <label for="gpSmooth">GP Smooth</label>
+              <input id="gpSmooth" type="range" min="5" max="60" step="1" value="22" oninput="setDriveSettingsFromUI()">
+              <span class="dz-val" id="gpSmoothVal">22%</span>
+            </div>
+            <div class="dz-row" style="margin-bottom:0">
+              <label for="kbStep">KB Step</label>
+              <input id="kbStep" type="range" min="1" max="20" step="1" value="5" oninput="setDriveSettingsFromUI()">
+              <span class="dz-val" id="kbStepVal">5%</span>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="card-body">
-        <div style="font-size:.9rem; color:var(--text); line-height:1.6">
-          This view is telemetry-only. Per-motor CAN command age and status age are shown in the motor list, and the dashboard no longer posts live drive or joystick commands.
+        <div class="spd-row">
+          <div class="spd-num zero" id="spdDisplay">0%</div>
+          <input type="range" id="spdSlider" min="-100" max="100" value="0" step="1" oninput="onSlider(this.value)">
+        </div>
+        <div class="sel-note">Targeting: <span id="selLabel">none selected</span></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="manualToggleBtn" onclick="toggleManualLatch()">▶ Send</button>
+          <button class="btn btn-danger"  onclick="emergencyStop()">⏹ E-Stop</button>
+          <button class="btn btn-ghost"   onclick="resetSlider()">↺ Reset</button>
         </div>
       </div>
     </div>
 
+    <!-- Joystick / Drive (restored) -->
+    <div class="card" data-collapse-id="drive-control">
+      <div class="card-head">🕹 Drive Control</div>
+      <div class="card-body">
+        <div class="drive-mode-row">
+          <div class="mode-btn" id="modeArcade" onclick="setMode('arcade')">Arcade Drive</div>
+          <div class="mode-btn" id="modeTank" onclick="setMode('tank')">Tank Drive</div>
+          <div class="mode-btn active" id="modeOff" onclick="setMode('off')">Disabled</div>
+        </div>
+        <div class="js-row" id="jsRow"></div>
+        <div class="js-legend" style="margin-top:10px">
+          <div><kbd>↑↓</kbd> Throttle &nbsp;<kbd>←→</kbd> Turn</div>
+          <div><kbd>Space</kbd> Emergency stop &nbsp;<kbd>1</kbd>–<kbd>8</kbd> Toggle motor</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-collapse-id="can-telemetry">
+      <div class="card-head">📡 CAN Telemetry</div>
+      <div class="card-body">
+        <div class="can-grid" id="canTelemetryGrid"></div>
+      </div>
+    </div>
+
     <!-- Drivetrain Visualization -->
-    <div class="card">
+    <div class="card" data-collapse-id="drivetrain-view">
       <div class="card-head">🚗 Drivetrain View
         <span id="dtInfo" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.72rem;color:var(--muted);margin-left:6px"></span>
       </div>
@@ -297,7 +489,7 @@ canvas#rpmChart { display: block; }
     </div>
 
     <!-- RPM Chart -->
-    <div class="card">
+    <div class="card" data-collapse-id="rpm-history">
       <div class="card-head">📈 RPM History</div>
       <div class="card-body" style="padding:10px 10px 0">
         <div class="chart-wrap"><canvas id="rpmChart"></canvas></div>
@@ -310,8 +502,12 @@ canvas#rpmChart { display: block; }
 
 <!-- ── Right Panel ── -->
 <div class="panel panel-right">
+  <div class="panel-heading">
+    <span class="heading-label">ℹ Info</span>
+    <button class="panel-toggle" id="rightPanelToggle" onclick="toggleSidePanel('right')" title="Collapse right panel" aria-label="Toggle right panel">&gt;</button>
+  </div>
 
-  <div class="info-section">
+  <div class="info-section" data-collapse-id="sys-info">
     <div class="info-title">🖥 System</div>
     <div class="info-row"><span class="info-key">Platform</span><span class="info-val ok" id="iPlatform">—</span></div>
     <div class="info-row"><span class="info-key">CAN Status</span><span class="info-val" id="iCAN">—</span></div>
@@ -319,7 +515,7 @@ canvas#rpmChart { display: block; }
     <div class="info-row"><span class="info-key">Req/s</span><span class="info-val" id="iRPS">—</span></div>
   </div>
 
-  <div class="info-section">
+  <div class="info-section" data-collapse-id="fleet-info">
     <div class="info-title">📊 Fleet</div>
     <div class="info-row"><span class="info-key">Motors</span><span class="info-val" id="iMotors">—</span></div>
     <div class="info-row"><span class="info-key">Avg RPM</span><span class="info-val" id="iAvgRPM">—</span></div>
@@ -327,7 +523,7 @@ canvas#rpmChart { display: block; }
     <div class="info-row"><span class="info-key">Max Temp</span><span class="info-val" id="iMaxTemp">—</span></div>
   </div>
 
-  <div class="info-section">
+  <div class="info-section" data-collapse-id="shortcut-info">
     <div class="info-title">📡 Telemetry</div>
     <div class="shortcut"><kbd>1</kbd>–<kbd>8</kbd><span class="kd">Toggle motor selection</span></div>
     <div class="shortcut"><kbd>A</kbd><span class="kd">Select all motors</span></div>
@@ -349,10 +545,19 @@ const S = {
   historyLen: 80,
   statusTimeMs: 0,
   roles: {},         // id → 'L' | 'R' | 'AUX' | null
-  driveMode: 'off',  // telemetry-only dashboard
+  driveMode: 'off',
   deadzones: {
     move: 0.08,
     turn: 0.08,
+  },
+  invert: {
+    move: false,
+    turn: false,
+    manual: false,
+  },
+  driveSettings: {
+    gamepadSmoothing: 0.22,
+    keyboardStep: 0.05,
   },
   axes: {
     move: 1,
@@ -379,6 +584,14 @@ const S = {
   // manual slider
   manualPct: 0,
   leftCmd: 0, rightCmd: 0,  // last commanded wheel speeds (-1..1)
+  driveNet: {
+    inFlight: false,
+    lastById: {},
+  },
+  manual: {
+    latched: false,
+    latchedMotorIds: [],
+  },
   gpIdx: null,
   lastReqTs: 0,
   reqCount: 0,
@@ -399,6 +612,104 @@ const S = {
 
 const COLORS = ['#58a6ff','#3fb950','#f0883e','#bc8cff','#ff7b72','#79c0ff','#ffa198','#56d364'];
 const ROLES  = [null, 'L', 'R', 'AUX'];
+const COLLAPSE_KEY = 'wavecan.dashboard.collapse.v1';
+
+function loadCollapseState() {
+  try {
+    const raw = localStorage.getItem(COLLAPSE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function saveCollapseState(state) {
+  try {
+    localStorage.setItem(COLLAPSE_KEY, JSON.stringify(state));
+  } catch (_) {}
+}
+
+function isInteractiveElement(target) {
+  return !!target.closest('button, input, select, textarea, a, [role="button"], .role-badge');
+}
+
+function initCollapsiblePieces() {
+  const state = loadCollapseState();
+
+  document.querySelectorAll('.card[data-collapse-id]').forEach(card => {
+    const head = card.querySelector('.card-head');
+    const id = card.getAttribute('data-collapse-id');
+    if (!head || !id) return;
+
+    card.classList.add('collapsible');
+    if (state[id]) card.classList.add('collapsed');
+
+    head.addEventListener('click', ev => {
+      if (isInteractiveElement(ev.target)) return;
+      card.classList.toggle('collapsed');
+      state[id] = card.classList.contains('collapsed');
+      saveCollapseState(state);
+    });
+  });
+
+  document.querySelectorAll('.info-section[data-collapse-id]').forEach(section => {
+    const title = section.querySelector('.info-title');
+    const id = section.getAttribute('data-collapse-id');
+    if (!title || !id) return;
+
+    section.classList.add('collapsible');
+    if (state[id]) section.classList.add('collapsed');
+
+    title.addEventListener('click', ev => {
+      if (isInteractiveElement(ev.target)) return;
+      section.classList.toggle('collapsed');
+      state[id] = section.classList.contains('collapsed');
+      saveCollapseState(state);
+    });
+  });
+}
+
+function setSidePanelState(side, collapsed, state = null) {
+  const leftPanel = document.querySelector('.panel-motors');
+  const rightPanel = document.querySelector('.panel-right');
+  const panel = side === 'left' ? leftPanel : rightPanel;
+  if (!panel) return;
+
+  panel.classList.toggle('is-collapsed', !!collapsed);
+
+  const leftBtn = document.getElementById('leftPanelToggle');
+  const rightBtn = document.getElementById('rightPanelToggle');
+  if (leftBtn) {
+    const leftCollapsed = leftPanel ? leftPanel.classList.contains('is-collapsed') : false;
+    leftBtn.innerHTML = leftCollapsed ? '&gt;' : '&lt;';
+    leftBtn.title = leftCollapsed ? 'Expand left panel' : 'Collapse left panel';
+  }
+  if (rightBtn) {
+    const rightCollapsed = rightPanel ? rightPanel.classList.contains('is-collapsed') : false;
+    rightBtn.innerHTML = rightCollapsed ? '&lt;' : '&gt;';
+    rightBtn.title = rightCollapsed ? 'Expand right panel' : 'Collapse right panel';
+  }
+
+  if (state) {
+    state[`panel_${side}`] = !!collapsed;
+    saveCollapseState(state);
+  }
+}
+
+function toggleSidePanel(side) {
+  const panel = document.querySelector(side === 'left' ? '.panel-motors' : '.panel-right');
+  if (!panel) return;
+  const state = loadCollapseState();
+  setSidePanelState(side, !panel.classList.contains('is-collapsed'), state);
+}
+
+function initSidePanelCollapse() {
+  const state = loadCollapseState();
+  setSidePanelState('left', !!state.panel_left);
+  setSidePanelState('right', !!state.panel_right);
+}
 
 // ══════════════════════════════════════════════════════════
 //  Motor Cards
@@ -493,6 +804,16 @@ function sortedIds() { return Object.keys(S.motors).map(Number).sort((a,b)=>a-b)
 // ══════════════════════════════════════════════════════════
 function setMode(mode) {
   S.driveMode = mode;
+  const modeMap = {
+    arcade: document.getElementById('modeArcade'),
+    tank: document.getElementById('modeTank'),
+    off: document.getElementById('modeOff'),
+  };
+  Object.keys(modeMap).forEach(key => {
+    const el = modeMap[key];
+    if (el) el.classList.toggle('active', key === mode);
+  });
+  buildJoystickUI();
 }
 
 function buildJoystickUI() {
@@ -563,6 +884,7 @@ function initDeadzoneUI() {
   turn.value = String(Math.round(S.deadzones.turn * 100));
   initAxisUI();
   setDeadzonesFromUI();
+  setDriveSettingsFromUI(true);
 }
 
 function axisName(i) {
@@ -607,6 +929,40 @@ function setAxesFromUI() {
   if (turnEl) {
     S.axes.turn = clamp(Number(turnEl.value), 0, 7);
   }
+}
+
+function setDriveSettingsFromUI(fromInit = false) {
+  const invMoveEl = document.getElementById('invMove');
+  const invTurnEl = document.getElementById('invTurn');
+  const invManualEl = document.getElementById('invManual');
+  const gpSmoothEl = document.getElementById('gpSmooth');
+  const kbStepEl = document.getElementById('kbStep');
+
+  if (fromInit) {
+    if (invMoveEl) invMoveEl.checked = S.invert.move;
+    if (invTurnEl) invTurnEl.checked = S.invert.turn;
+    if (invManualEl) invManualEl.checked = S.invert.manual;
+    if (gpSmoothEl) gpSmoothEl.value = String(Math.round(S.driveSettings.gamepadSmoothing * 100));
+    if (kbStepEl) kbStepEl.value = String(Math.round(S.driveSettings.keyboardStep * 100));
+  }
+
+  if (invMoveEl) S.invert.move = !!invMoveEl.checked;
+  if (invTurnEl) S.invert.turn = !!invTurnEl.checked;
+  if (invManualEl) S.invert.manual = !!invManualEl.checked;
+  if (gpSmoothEl) S.driveSettings.gamepadSmoothing = clamp(Number(gpSmoothEl.value) / 100, 0.05, 0.60);
+  if (kbStepEl) S.driveSettings.keyboardStep = clamp(Number(kbStepEl.value) / 100, 0.01, 0.20);
+
+  const gpSmoothVal = document.getElementById('gpSmoothVal');
+  const kbStepVal = document.getElementById('kbStepVal');
+  if (gpSmoothVal) gpSmoothVal.textContent = `${Math.round(S.driveSettings.gamepadSmoothing * 100)}%`;
+  if (kbStepVal) kbStepVal.textContent = `${Math.round(S.driveSettings.keyboardStep * 100)}%`;
+
+  const slider = document.getElementById('spdSlider');
+  if (slider) onSlider(slider.value);
+}
+
+function withInvert(value, invertEnabled) {
+  return invertEnabled ? -value : value;
 }
 
 function stampNow() {
@@ -877,7 +1233,8 @@ function dispatchDrive() {
 //  Manual slider
 // ══════════════════════════════════════════════════════════
 function onSlider(v) {
-  S.manualPct = Number(v);
+  const raw = Number(v);
+  S.manualPct = withInvert(raw, S.invert.manual);
   const el = document.getElementById('spdDisplay');
   el.textContent = (S.manualPct > 0 ? '+' : '') + S.manualPct + '%';
   el.className = 'spd-num' + (S.manualPct > 0 ? '' : S.manualPct < 0 ? ' neg' : ' zero');
@@ -889,14 +1246,88 @@ function resetSlider() {
 }
 async function sendManualSpeed() {
   if (!S.selected.size) { flash('No motors selected'); return; }
-  for (const id of S.selected) await postCmd(id, 'set', S.manualPct / 100);
+  // Keep manual setpoint latched by ensuring drive loop is not actively sending 0.
+  setMode('off');
+  const ids = [...S.selected].sort((a,b)=>a-b);
+  for (const id of ids) await postCmd(id, 'set', S.manualPct / 100);
+  S.manual.latched = true;
+  S.manual.latchedMotorIds = ids;
+  updateManualButton();
+}
+
+async function stopManualSpeed() {
+  const ids = S.manual.latchedMotorIds.length ? S.manual.latchedMotorIds : sortedIds();
+  for (const id of ids) await postCmd(id, 'set', 0);
+  S.manual.latched = false;
+  S.manual.latchedMotorIds = [];
+  updateManualButton();
+}
+
+async function toggleManualLatch() {
+  if (S.manual.latched) {
+    await stopManualSpeed();
+  } else {
+    await sendManualSpeed();
+  }
+}
+
+function updateManualButton() {
+  const btn = document.getElementById('manualToggleBtn');
+  if (!btn) return;
+  if (S.manual.latched) {
+    btn.textContent = '■ Stop';
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-danger');
+  } else {
+    btn.textContent = '▶ Send';
+    btn.classList.add('btn-primary');
+    btn.classList.remove('btn-danger');
+  }
 }
 async function emergencyStop() {
   for (const id of sortedIds()) await postCmd(id, 'set', 0);
   S.throttle = 0; S.turn = 0; S.leftRaw = 0; S.rightRaw = 0;
+  S.manual.latched = false;
+  S.manual.latchedMotorIds = [];
+  updateManualButton();
   clearTargets();
   resetSlider();
   drawArcadeStick();
+}
+
+async function driveSendTick() {
+  driveControlTick();
+  dispatchDrive();
+
+  if (S.driveMode === 'off') return;
+  if (S.driveNet.inFlight) return;
+
+  const ids = sortedIds();
+  const leftIds  = ids.filter(id => S.roles[id] === 'L');
+  const rightIds = ids.filter(id => S.roles[id] === 'R');
+  if (!leftIds.length && !rightIds.length) return;
+
+  const now = Date.now();
+  const updates = [];
+  leftIds.forEach(id => updates.push([id, S.leftCmd]));
+  rightIds.forEach(id => updates.push([id, S.rightCmd]));
+
+  const toSend = updates.filter(([id, value]) => {
+    const last = S.driveNet.lastById[id];
+    if (!last) return true;
+    return Math.abs(last.value - value) > 0.01 || (now - last.ts) >= 200;
+  });
+  if (!toSend.length) return;
+
+  S.driveNet.inFlight = true;
+  try {
+    for (const [id, value] of toSend) {
+      await postCmd(id, 'set', value);
+      S.driveNet.lastById[id] = { value, ts: now };
+    }
+  } finally {
+    S.driveNet.inFlight = false;
+  }
 }
 
 async function postCmd(id, cmd, value) {
@@ -923,6 +1354,7 @@ const keys = {};
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
   keys[e.key] = true;
+  if (e.key === ' ') { e.preventDefault(); emergencyStop(); }
   if (e.key==='a'||e.key==='A') { e.preventDefault(); selectAll(); }
   if (e.key==='n'||e.key==='N') { e.preventDefault(); selectNone(); }
   const num = parseInt(e.key);
@@ -941,7 +1373,7 @@ setInterval(() => {
   let kt = kb.throttle || 0;
   let kr = kb.turn || 0;
   let changed = false;
-  const step = 0.05;
+  const step = S.driveSettings.keyboardStep;
   if (keys['ArrowUp'])    { kt = Math.min(1, kt + step); changed = true; }
   if (keys['ArrowDown'])  { kt = Math.max(-1, kt - step); changed = true; }
   if (keys['ArrowLeft'])  { kr = Math.max(-1, kr - step); changed = true; }
@@ -975,12 +1407,12 @@ function pollGamepad() {
   if (S.gpIdx !== null && S.driveMode !== 'off') {
     const gp = navigator.getGamepads()[S.gpIdx];
     if (gp) {
-      const moveRaw = -(gp.axes[S.axes.move] || 0);
-      const turnRaw = -(gp.axes[S.axes.turn] || 0);
+      const moveRaw = withInvert(-(gp.axes[S.axes.move] || 0), S.invert.move);
+      const turnRaw = withInvert(-(gp.axes[S.axes.turn] || 0), S.invert.turn);
       const tankRightRaw = -(gp.axes[S.axes.tankRight] || 0);
 
       // Browser gamepad values can be noisy; smooth before deadzone.
-      const alpha = 0.22;
+      const alpha = S.driveSettings.gamepadSmoothing;
       S.gamepadFiltered.move += (moveRaw - S.gamepadFiltered.move) * alpha;
       S.gamepadFiltered.turn += (turnRaw - S.gamepadFiltered.turn) * alpha;
       S.gamepadFiltered.tankRight += (tankRightRaw - S.gamepadFiltered.tankRight) * alpha;
@@ -1294,6 +1726,51 @@ function updateChartLegend() {
   ).join('');
 }
 
+function fmtAge(ms) {
+  if (ms === null || ms === undefined || Number.isNaN(ms)) return '—';
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  return `${(ms / 1000).toFixed(2)} s`;
+}
+
+function renderCanTelemetry() {
+  const grid = document.getElementById('canTelemetryGrid');
+  if (!grid) return;
+  const ids = sortedIds();
+  if (!ids.length) {
+    grid.innerHTML = '<div style="font-size:.82rem;color:var(--muted)">No motor telemetry yet.</div>';
+    return;
+  }
+
+  grid.innerHTML = ids.map(id => {
+    const m = S.motors[id] || {};
+    const dbg = m.can_debug || {};
+    const txAge = (S.statusTimeMs && m.last_command_ms)
+      ? Math.max(0, S.statusTimeMs - m.last_command_ms)
+      : null;
+    const rxAge = (S.statusTimeMs && m.last_status_ms)
+      ? Math.max(0, S.statusTimeMs - m.last_status_ms)
+      : null;
+    const txId = dbg.tx_arb_id || '—';
+    const txBytes = dbg.tx_data_hex || '—';
+    const rx0Id = dbg.rx_status0_arb_id || '—';
+    const rx0Bytes = dbg.rx_status0_data_hex || '—';
+    const rx1Id = dbg.rx_status1_arb_id || '—';
+    const rx1Bytes = dbg.rx_status1_data_hex || '—';
+    return `
+      <div class="can-block">
+        <div class="can-title">Motor ${id}</div>
+        <div class="can-line"><span>TX ID</span><b>${txId}</b></div>
+        <div class="can-line"><span>TX Bytes</span><b>${txBytes}</b></div>
+        <div class="can-line"><span>TX Age</span><b>${fmtAge(txAge)}</b></div>
+        <div class="can-line"><span>RX0 ID</span><b>${rx0Id}</b></div>
+        <div class="can-line"><span>RX0 Bytes</span><b>${rx0Bytes}</b></div>
+        <div class="can-line"><span>RX1 ID</span><b>${rx1Id}</b></div>
+        <div class="can-line"><span>RX1 Bytes</span><b>${rx1Bytes}</b></div>
+        <div class="can-line"><span>RX Age</span><b>${fmtAge(rxAge)}</b></div>
+      </div>`;
+  }).join('');
+}
+
 // ══════════════════════════════════════════════════════════
 //  Status Polling
 // ══════════════════════════════════════════════════════════
@@ -1314,6 +1791,7 @@ async function pollStatus() {
       if (h.length > S.historyLen) h.shift();
     });
     renderMotors();
+    renderCanTelemetry();
     updateFleet(d.motors);
   } catch(e) {
     document.getElementById('connPill').className = 'pill';
@@ -1367,8 +1845,14 @@ function fmtUptime(ms) {
 //  Init
 // ══════════════════════════════════════════════════════════
 resetRobot();
+initSidePanelCollapse();
+initCollapsiblePieces();
+initDeadzoneUI();
+buildJoystickUI();
+updateManualButton();
 setInterval(pollStatus, 200);
 setInterval(pollHealth, 2000);
+setInterval(() => { driveSendTick(); }, 60);
 pollStatus();
 pollHealth();
 </script>
