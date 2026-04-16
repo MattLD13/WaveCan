@@ -8,6 +8,7 @@ import asyncio
 import sys
 from platform import system as platform_system
 from wavecan_platform import get_platform_info, get_can_bus_class, get_ticks_ms, log
+from mock_can import MockCANBus
 from mock_sparkmax import MockMotorController, MockSPARKMAXConfig
 from hardware_motor_controller import HardwareMotorController
 from web_server import WebServer
@@ -29,11 +30,12 @@ class WaveCan:
 
     def __init__(self):
         self.platform_info = get_platform_info()
+        self.runtime_mode = RUNTIME_MODE
         os_name = platform_system()
         log(f"[WaveCan] Operating System: {os_name}")
         log(f"[WaveCan] Starting on {self.platform_info['can_bus_class']} platform")
-        log(f"[WaveCan] Runtime mode: {RUNTIME_MODE}")
-        if RUNTIME_MODE == "socketcan":
+        log(f"[WaveCan] Runtime mode: {self.runtime_mode}")
+        if self.runtime_mode == "socketcan":
             log(f"[WaveCan] ✓ Using REAL HARDWARE (SocketCAN)")
         else:
             log(f"[WaveCan] ✓ Using MOCK HARDWARE (simulation)")
@@ -41,8 +43,26 @@ class WaveCan:
         # Initialize CAN bus
         self.can_bus = CANBusClass(speed_kbps=int(CAN_BITRATE / 1000), name="WaveCanBus", channel=CAN_INTERFACE)
 
+        if self.runtime_mode == "socketcan" and hasattr(self.can_bus, "probe_bus_activity"):
+            bus_activity = self.can_bus.probe_bus_activity(timeout_ms=300)
+            if bus_activity.get("traffic_detected"):
+                rev_devices = bus_activity.get("rev_devices", [])
+                if rev_devices:
+                    device_ids = [device["device_id"] for device in rev_devices]
+                    log(f"[WaveCan] Detected active CAN devices: {device_ids}")
+                else:
+                    log("[WaveCan] Detected CAN traffic on the bus")
+            else:
+                log("[WaveCan] WARNING: No CAN traffic detected at startup; falling back to mock mode", "WARN")
+                try:
+                    self.can_bus.close()
+                except Exception:
+                    pass
+                self.runtime_mode = "mock"
+                self.can_bus = MockCANBus(speed_kbps=int(CAN_BITRATE / 1000), name="WaveCanBus", channel="mock0")
+
         # Initialize controller based on runtime mode
-        if RUNTIME_MODE == "socketcan":
+        if self.runtime_mode == "socketcan":
             self.motor_controller = HardwareMotorController(self.can_bus, MOTOR_IDS)
         else:
             motor_configs = [
@@ -56,7 +76,7 @@ class WaveCan:
             self.motor_controller,
             port=HTTP_PORT,
             host=HTTP_HOST,
-            runtime_mode=RUNTIME_MODE
+            runtime_mode=self.runtime_mode
         )
 
         # Enable all motors
@@ -66,6 +86,7 @@ class WaveCan:
         log(f"  Platform: {self.platform_info}")
         log(f"  HTTP: {HTTP_HOST}:{HTTP_PORT}")
         log(f"  Motors: {len(self.motor_controller.motors)}")
+        log(f"  Effective runtime mode: {self.runtime_mode}")
 
     async def physics_loop(self):
         """

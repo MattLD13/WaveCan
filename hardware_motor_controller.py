@@ -54,6 +54,8 @@ class HardwareMotorProxy:
         self.last_rx_status0_data_hex = ""
         self.last_rx_status1_arb_id = ""
         self.last_rx_status1_data_hex = ""
+        self.last_tx_failure_ms = 0
+        self.online = True
 
     def get_state(self) -> dict:
         return {
@@ -87,6 +89,8 @@ class HardwareMotorController:
 
     COMMAND_EPSILON = 0.001
     MIN_RESEND_INTERVAL_MS = 100
+    TX_FAILURE_BACKOFF_MS = 5000
+    TX_FAILURES_BEFORE_BACKOFF = 3
 
     def __init__(self, can_bus, motor_ids):
         self.can_bus = can_bus
@@ -95,6 +99,8 @@ class HardwareMotorController:
             for mid in motor_ids
         }
         self._last_command: Dict[int, tuple[float, int]] = {}
+        self._tx_failure_count = 0
+        self._tx_backoff_until_ms = 0
 
         log(f"[HardwareMotorController] Initialized with motors={sorted(self.motors.keys())}")
 
@@ -103,6 +109,31 @@ class HardwareMotorController:
 
     def get_all_states(self) -> list:
         return [m.get_state() for m in self.motors.values()]
+
+    def _should_attempt_tx(self, now_ms: int) -> bool:
+        return now_ms >= self._tx_backoff_until_ms
+
+    def _record_tx_failure(self, motor: HardwareMotorProxy, motor_id: int, now_ms: int) -> None:
+        motor.online = False
+        motor.last_tx_failure_ms = now_ms
+        self._tx_failure_count += 1
+        if self._tx_failure_count >= self.TX_FAILURES_BEFORE_BACKOFF:
+            self._tx_backoff_until_ms = now_ms + self.TX_FAILURE_BACKOFF_MS
+            log(
+                f"[HardwareMotorController] CAN bus transmit failures detected; pausing TX for {self.TX_FAILURE_BACKOFF_MS}ms",
+                "WARN",
+            )
+            self._tx_failure_count = 0
+        log(f"[HardwareMotorController] CAN send failed motor={motor_id}", "WARN")
+
+    def _record_tx_success(self, motor: HardwareMotorProxy, motor_id: int, msg, now_ms: int) -> None:
+        motor.last_command_ms = now_ms
+        motor.online = True
+        self._tx_failure_count = 0
+        self._tx_backoff_until_ms = 0
+        self._last_command[motor_id] = (motor.output_percent, now_ms)
+        motor.last_tx_arb_id = f"0x{msg.arbitration_id:08X}"
+        motor.last_tx_data_hex = _format_can_bytes(bytes(msg.data))
 
     def _decode_status_message(self, message) -> None:
         fields = extract_frc_can_fields(message.arbitration_id)
@@ -148,6 +179,9 @@ class HardwareMotorController:
         motor.target_rpm = pct * motor.config.max_rpm
 
         now_ms = get_ticks_ms()
+        if not self._should_attempt_tx(now_ms):
+            return
+
         last = self._last_command.get(motor_id)
         if last is not None:
             last_value, last_sent_ms = last
@@ -159,13 +193,10 @@ class HardwareMotorController:
         msg = make_duty_cycle_setpoint_frame(motor_id, pct, no_ack=True)
         ok = self.can_bus.send(msg)
         if not ok:
-            log(f"[HardwareMotorController] CAN send failed motor={motor_id}", "WARN")
+            self._record_tx_failure(motor, motor_id, now_ms)
             return
 
-        motor.last_command_ms = now_ms
-        self._last_command[motor_id] = (pct, now_ms)
-        motor.last_tx_arb_id = f"0x{msg.arbitration_id:08X}"
-        motor.last_tx_data_hex = _format_can_bytes(bytes(msg.data))
+        self._record_tx_success(motor, motor_id, msg, now_ms)
 
     def update_physics(self, dt_ms: float = 10.0) -> None:
         """
@@ -175,9 +206,14 @@ class HardwareMotorController:
         does not timeout when no new HTTP command is received.
         """
         now_ms = get_ticks_ms()
+        if not self._should_attempt_tx(now_ms):
+            return
 
         for motor_id, motor in self.motors.items():
             if not motor.enabled:
+                continue
+
+            if not motor.online and motor.last_tx_failure_ms and (now_ms - motor.last_tx_failure_ms) < self.TX_FAILURE_BACKOFF_MS:
                 continue
 
             last_value, last_sent_ms = self._last_command.get(motor_id, (0.0, 0))
@@ -186,10 +222,11 @@ class HardwareMotorController:
 
             msg = make_duty_cycle_setpoint_frame(motor_id, last_value, no_ack=True)
             if self.can_bus.send(msg):
-                self._last_command[motor_id] = (last_value, now_ms)
-                motor.last_command_ms = now_ms
-                motor.last_tx_arb_id = f"0x{msg.arbitration_id:08X}"
-                motor.last_tx_data_hex = _format_can_bytes(bytes(msg.data))
+                motor.output_percent = last_value
+                self._record_tx_success(motor, motor_id, msg, now_ms)
+            else:
+                self._record_tx_failure(motor, motor_id, now_ms)
+                break
 
     def broadcast_telemetry(self) -> None:
         for _ in range(16):
@@ -202,13 +239,14 @@ class HardwareMotorController:
         for motor in self.motors.values():
             motor.enabled = True
 
-    def disable_all(self) -> None:
+    def disable_all(self, send_can: bool = False) -> None:
         for motor_id in list(self.motors.keys()):
             try:
-                self.set_motor_output(motor_id, 0.0)
-                last = self._last_command.get(motor_id)
-                if last is None or abs(last[0]) > self.COMMAND_EPSILON:
-                    self.can_bus.send(make_disable_frame(motor_id))
+                if send_can:
+                    self.set_motor_output(motor_id, 0.0)
+                    last = self._last_command.get(motor_id)
+                    if last is None or abs(last[0]) > self.COMMAND_EPSILON:
+                        self.can_bus.send(make_disable_frame(motor_id))
             except Exception:
                 pass
             self.motors[motor_id].enabled = False

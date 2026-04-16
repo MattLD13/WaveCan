@@ -7,6 +7,7 @@ from collections import defaultdict
 from typing import Callable, Optional
 
 from mock_can import CANMessage
+from rev_sparkmax_protocol import MOTOR_CONTROLLER_DEVICE_TYPE, REV_MANUFACTURER_ID, extract_frc_can_fields
 from wavecan_platform import get_ticks_ms, log
 
 
@@ -89,6 +90,37 @@ class SocketCANBus:
             "channel": self.channel,
             "total_messages": self.message_count,
             "is_open": self.is_open,
+        }
+
+    def probe_bus_activity(self, timeout_ms: int = 250) -> dict:
+        """Listen briefly for CAN traffic and report any active devices found."""
+        deadline_ms = get_ticks_ms() + max(0, timeout_ms)
+        traffic_count = 0
+        devices = {}
+
+        while get_ticks_ms() < deadline_ms:
+            remaining_ms = max(0, deadline_ms - get_ticks_ms())
+            msg = self.recv(timeout_ms=min(50, remaining_ms))
+            if msg is None:
+                continue
+
+            traffic_count += 1
+            fields = extract_frc_can_fields(msg.arbitration_id)
+            if fields["manufacturer"] != REV_MANUFACTURER_ID or fields["device_type"] != MOTOR_CONTROLLER_DEVICE_TYPE:
+                continue
+
+            device_id = fields["device_id"]
+            devices[device_id] = {
+                "device_id": device_id,
+                "arbitration_id": f"0x{msg.arbitration_id:08X}",
+                "api_class": fields["api_id"] >> 4,
+                "api_index": fields["api_id"] & 0x0F,
+            }
+
+        return {
+            "traffic_detected": traffic_count > 0,
+            "traffic_count": traffic_count,
+            "rev_devices": [devices[key] for key in sorted(devices.keys())],
         }
 
     def close(self) -> None:
