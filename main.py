@@ -30,6 +30,7 @@ class WaveCan:
     def __init__(self):
         self.platform_info = get_platform_info()
         self.runtime_mode = RUNTIME_MODE
+        motor_ids = list(MOTOR_IDS)
         os_name = platform_system()
         log(f"[WaveCan] Operating System: {os_name}")
         log(f"[WaveCan] Starting on {self.platform_info['can_bus_class']} platform")
@@ -49,18 +50,25 @@ class WaveCan:
                 if rev_devices:
                     device_ids = [device["device_id"] for device in rev_devices]
                     log(f"[WaveCan] Detected active CAN devices: {device_ids}")
+                    # Prefer discovered IDs so any connected SPARK MAX can be controlled.
+                    motor_ids = sorted(set(device_ids))
                 else:
                     log("[WaveCan] Detected CAN traffic on the bus")
             else:
                 log("[WaveCan] WARNING: No CAN traffic detected at startup; continuing in socketcan mode", "WARN")
 
+        if motor_ids != list(MOTOR_IDS):
+            log(f"[WaveCan] Using discovered motor IDs: {motor_ids}")
+        else:
+            log(f"[WaveCan] Using configured motor IDs: {motor_ids}")
+
         # Initialize controller based on runtime mode
         if self.runtime_mode == "socketcan":
-            self.motor_controller = HardwareMotorController(self.can_bus, MOTOR_IDS)
+            self.motor_controller = HardwareMotorController(self.can_bus, motor_ids)
         else:
             motor_configs = [
                 MockSPARKMAXConfig(mid, max_rpm=5700)
-                for mid in MOTOR_IDS
+                for mid in motor_ids
             ]
             self.motor_controller = MockMotorController(self.can_bus, motor_configs)
 
