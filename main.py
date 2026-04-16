@@ -8,7 +8,6 @@ import asyncio
 import sys
 from platform import system as platform_system
 from wavecan_platform import get_platform_info, get_can_bus_class, get_ticks_ms, log
-from mock_can import MockCANBus
 from mock_sparkmax import MockMotorController, MockSPARKMAXConfig
 from hardware_motor_controller import HardwareMotorController
 from web_server import WebServer
@@ -53,13 +52,7 @@ class WaveCan:
                 else:
                     log("[WaveCan] Detected CAN traffic on the bus")
             else:
-                log("[WaveCan] WARNING: No CAN traffic detected at startup; falling back to mock mode", "WARN")
-                try:
-                    self.can_bus.close()
-                except Exception:
-                    pass
-                self.runtime_mode = "mock"
-                self.can_bus = MockCANBus(speed_kbps=int(CAN_BITRATE / 1000), name="WaveCanBus", channel="mock0")
+                log("[WaveCan] WARNING: No CAN traffic detected at startup; continuing in socketcan mode", "WARN")
 
         # Initialize controller based on runtime mode
         if self.runtime_mode == "socketcan":

@@ -70,14 +70,7 @@ if "WAVECAN_RUNTIME_MODE" in os.environ:
 else:
     # Auto-detect based on platform
     if sys.platform.startswith("linux"):
-        # On Linux, check if CAN interface is actually available
-        if is_can_interface_available(CAN_INTERFACE):
-            RUNTIME_MODE = "socketcan"  # Use real hardware on Linux with CAN interface available
-        else:
-            RUNTIME_MODE = "mock"  # Fallback to mock if CAN interface is not available
-            print(f"[Config] WARNING: CAN interface '{CAN_INTERFACE}' not available, using mock mode")
-            print(f"[Config] To use real hardware on Linux, run:")
-            print(f"[Config]   sudo ip link set {CAN_INTERFACE} up type can bitrate {CAN_BITRATE}")
+        RUNTIME_MODE = "socketcan"  # Linux defaults to real hardware
     else:
         RUNTIME_MODE = "mock"  # Use mock hardware on Windows/macOS
 
