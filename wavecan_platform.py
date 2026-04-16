@@ -111,10 +111,17 @@ def get_motor_class():
         _motor_type = SPARKMAX
         print("[Platform] Using real SPARK MAX CAN driver")
     else:
-        # Desktop - use mock SPARK MAX motors
-        from mock_sparkmax import MockSPARKMAX
-        _motor_type = MockSPARKMAX
-        print("[Platform] Using mock SPARK MAX motors (simulation mode)")
+        # Desktop/Linux - match the CAN bus selection
+        if sys.platform.startswith('linux') and RUNTIME_MODE == 'socketcan':
+            # Using real SocketCAN hardware - use hardware motor controller
+            from hardware_motor_controller import HardwareMotorController
+            _motor_type = HardwareMotorController
+            print("[Platform] Using hardware SPARK MAX motor controller (socketcan)")
+        else:
+            # Using mock CAN - use mock motors
+            from mock_sparkmax import MockSPARKMAX
+            _motor_type = MockSPARKMAX
+            print("[Platform] Using mock SPARK MAX motors (simulation mode)")
 
     return _motor_type
 

@@ -27,9 +27,16 @@ class SocketCANBus:
         self.is_open = True
         self.message_count = 0
 
-        self._bus = self._can.interface.Bus(channel=self.channel, interface="socketcan")
-        self._notifier = self._can.Notifier(self._bus, [self._on_message])
-        log(f"[{self.name}] Initialized channel={self.channel} speed={self.speed_kbps}kbps")
+        try:
+            self._bus = self._can.interface.Bus(channel=self.channel, interface="socketcan")
+            self._notifier = self._can.Notifier(self._bus, [self._on_message])
+            log(f"[{self.name}] Initialized channel={self.channel} speed={self.speed_kbps}kbps")
+        except Exception as exc:
+            log(f"[{self.name}] FAILED to initialize: {exc}", "ERROR")
+            log(f"[{self.name}] Hint: CAN interface '{self.channel}' may not be available or not brought up", "ERROR")
+            log(f"[{self.name}] On Raspberry Pi, try: sudo ip link set {self.channel} up type can bitrate {speed_kbps*1000}", "ERROR")
+            log(f"[{self.name}] Or set WAVECAN_RUNTIME_MODE=mock to use simulation mode", "ERROR")
+            raise RuntimeError(f"Failed to initialize SocketCAN on {self.channel}") from exc
 
     def _on_message(self, msg) -> None:
         can_msg = CANMessage(

@@ -5,6 +5,30 @@ Defines motor IDs, CAN parameters, tuning defaults, etc.
 
 import os
 import sys
+import subprocess
+
+
+# Helper function to check if CAN interface is available
+def is_can_interface_available(interface: str = "can0") -> bool:
+    """Check if a CAN interface exists and is up on Linux"""
+    if not sys.platform.startswith("linux"):
+        return False
+    
+    try:
+        result = subprocess.run(
+            ["ip", "link", "show", interface],
+            capture_output=True,
+            text=True,
+            timeout=2
+        )
+        if result.returncode == 0:
+            # Check if interface is UP
+            return "UP" in result.stdout or "UNKNOWN" in result.stdout
+        return False
+    except (FileNotFoundError, subprocess.TimeoutExpired, Exception):
+        # ip command not available or other error
+        return False
+
 
 # Motor Configuration
 MOTORS = {
@@ -17,6 +41,8 @@ MOTORS = {
 # CAN Configuration
 CAN_BUS_SPEED = 500000  # 500 kbps, SPARK MAX default
 CAN_TIMEOUT = 1000  # milliseconds
+CAN_INTERFACE = os.getenv("WAVECAN_CAN_INTERFACE", "can0")
+CAN_BITRATE = int(os.getenv("WAVECAN_CAN_BITRATE", str(CAN_BUS_SPEED)))
 
 # SPI Configuration (for XL2515 on RP2350)
 SPI_PORT = 0
@@ -44,13 +70,16 @@ if "WAVECAN_RUNTIME_MODE" in os.environ:
 else:
     # Auto-detect based on platform
     if sys.platform.startswith("linux"):
-        RUNTIME_MODE = "socketcan"  # Use real hardware on Linux
+        # On Linux, check if CAN interface is actually available
+        if is_can_interface_available(CAN_INTERFACE):
+            RUNTIME_MODE = "socketcan"  # Use real hardware on Linux with CAN interface available
+        else:
+            RUNTIME_MODE = "mock"  # Fallback to mock if CAN interface is not available
+            print(f"[Config] WARNING: CAN interface '{CAN_INTERFACE}' not available, using mock mode")
+            print(f"[Config] To use real hardware on Linux, run:")
+            print(f"[Config]   sudo ip link set {CAN_INTERFACE} up type can bitrate {CAN_BITRATE}")
     else:
         RUNTIME_MODE = "mock"  # Use mock hardware on Windows/macOS
-
-# SocketCAN Configuration (Linux/Raspberry Pi)
-CAN_INTERFACE = os.getenv("WAVECAN_CAN_INTERFACE", "can0")
-CAN_BITRATE = int(os.getenv("WAVECAN_CAN_BITRATE", str(CAN_BUS_SPEED)))
 
 # Motor IDs to expose in web UI/controller
 MOTOR_IDS = [1, 2, 3, 4]
