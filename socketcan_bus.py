@@ -46,6 +46,25 @@ class SocketCANBus:
             log(f"[{self.name}] Or set WAVECAN_RUNTIME_MODE=mock to use simulation mode", "ERROR")
             raise RuntimeError(f"Failed to initialize SocketCAN on {self.channel}") from exc
 
+    def _pause_notifier(self):
+        notifier = getattr(self, "_notifier", None)
+        if notifier is None:
+            return None
+        try:
+            notifier.stop()
+        except Exception:
+            pass
+        return notifier
+
+    def _resume_notifier(self, notifier) -> None:
+        if notifier is None:
+            return
+        try:
+            self._notifier = self._can.Notifier(self._bus, [self._on_message])
+        except Exception:
+            # If the listener cannot be restarted, leave the bus usable for direct recv/send.
+            pass
+
     def _on_message(self, msg) -> None:
         can_msg = CANMessage(
             arbitration_id=msg.arbitration_id,
@@ -101,28 +120,32 @@ class SocketCANBus:
 
     def probe_bus_activity(self, timeout_ms: int = 250) -> dict:
         """Listen briefly for CAN traffic and report any active devices found."""
+        paused_notifier = self._pause_notifier()
         deadline_ms = get_ticks_ms() + max(0, timeout_ms)
         traffic_count = 0
         devices = {}
 
-        while get_ticks_ms() < deadline_ms:
-            remaining_ms = max(0, deadline_ms - get_ticks_ms())
-            msg = self.recv(timeout_ms=min(50, remaining_ms))
-            if msg is None:
-                continue
+        try:
+            while get_ticks_ms() < deadline_ms:
+                remaining_ms = max(0, deadline_ms - get_ticks_ms())
+                msg = self.recv(timeout_ms=min(50, remaining_ms))
+                if msg is None:
+                    continue
 
-            traffic_count += 1
-            fields = extract_frc_can_fields(msg.arbitration_id)
-            if fields["manufacturer"] != REV_MANUFACTURER_ID or fields["device_type"] != MOTOR_CONTROLLER_DEVICE_TYPE:
-                continue
+                traffic_count += 1
+                fields = extract_frc_can_fields(msg.arbitration_id)
+                if fields["manufacturer"] != REV_MANUFACTURER_ID or fields["device_type"] != MOTOR_CONTROLLER_DEVICE_TYPE:
+                    continue
 
-            device_id = fields["device_id"]
-            devices[device_id] = {
-                "device_id": device_id,
-                "arbitration_id": f"0x{msg.arbitration_id:08X}",
-                "api_class": fields["api_id"] >> 4,
-                "api_index": fields["api_id"] & 0x0F,
-            }
+                device_id = fields["device_id"]
+                devices[device_id] = {
+                    "device_id": device_id,
+                    "arbitration_id": f"0x{msg.arbitration_id:08X}",
+                    "api_class": fields["api_id"] >> 4,
+                    "api_index": fields["api_id"] & 0x0F,
+                }
+        finally:
+            self._resume_notifier(paused_notifier)
 
         return {
             "traffic_detected": traffic_count > 0,
@@ -132,31 +155,35 @@ class SocketCANBus:
 
     def sweep_for_sparkmax_devices(self, device_ids=range(0, 63), settle_ms: int = 2) -> dict:
         """Actively probe every valid SPARK MAX device ID and report which IDs respond."""
+        paused_notifier = self._pause_notifier()
         found_devices = {}
 
-        for device_id in device_ids:
-            # Use a benign zero-output command with ack enabled so a live device can respond.
-            probe_message = make_duty_cycle_setpoint_frame(device_id, 0.0, no_ack=False)
-            if not self.send(probe_message):
-                continue
-
-            response_deadline_ms = get_ticks_ms() + max(0, settle_ms)
-            while get_ticks_ms() <= response_deadline_ms:
-                response = self.recv(timeout_ms=0)
-                if response is None:
-                    break
-
-                fields = extract_frc_can_fields(response.arbitration_id)
-                if fields["manufacturer"] != REV_MANUFACTURER_ID or fields["device_type"] != MOTOR_CONTROLLER_DEVICE_TYPE:
+        try:
+            for device_id in device_ids:
+                # Use a benign zero-output command with ack enabled so a live device can respond.
+                probe_message = make_duty_cycle_setpoint_frame(device_id, 0.0, no_ack=False)
+                if not self.send(probe_message):
                     continue
 
-                response_id = fields["device_id"]
-                found_devices[response_id] = {
-                    "device_id": response_id,
-                    "arbitration_id": f"0x{response.arbitration_id:08X}",
-                    "api_class": fields["api_id"] >> 4,
-                    "api_index": fields["api_id"] & 0x0F,
-                }
+                response_deadline_ms = get_ticks_ms() + max(0, settle_ms)
+                while get_ticks_ms() <= response_deadline_ms:
+                    response = self.recv(timeout_ms=1)
+                    if response is None:
+                        continue
+
+                    fields = extract_frc_can_fields(response.arbitration_id)
+                    if fields["manufacturer"] != REV_MANUFACTURER_ID or fields["device_type"] != MOTOR_CONTROLLER_DEVICE_TYPE:
+                        continue
+
+                    response_id = fields["device_id"]
+                    found_devices[response_id] = {
+                        "device_id": response_id,
+                        "arbitration_id": f"0x{response.arbitration_id:08X}",
+                        "api_class": fields["api_id"] >> 4,
+                        "api_index": fields["api_id"] & 0x0F,
+                    }
+        finally:
+            self._resume_notifier(paused_notifier)
 
         return {
             "scanned_ids": list(device_ids),
