@@ -6,6 +6,7 @@ Works on both desktop (Python 3) and RP2350 (MicroPython)
 
 import asyncio
 import sys
+from platform import system as platform_system
 from wavecan_platform import get_platform_info, get_can_bus_class, get_ticks_ms, log
 from mock_sparkmax import MockMotorController, MockSPARKMAXConfig
 from hardware_motor_controller import HardwareMotorController
@@ -28,8 +29,14 @@ class WaveCan:
 
     def __init__(self):
         self.platform_info = get_platform_info()
+        os_name = platform_system()
+        log(f"[WaveCan] Operating System: {os_name}")
         log(f"[WaveCan] Starting on {self.platform_info['can_bus_class']} platform")
         log(f"[WaveCan] Runtime mode: {RUNTIME_MODE}")
+        if RUNTIME_MODE == "socketcan":
+            log(f"[WaveCan] ✓ Using REAL HARDWARE (SocketCAN)")
+        else:
+            log(f"[WaveCan] ✓ Using MOCK HARDWARE (simulation)")
 
         # Initialize CAN bus
         self.can_bus = CANBusClass(speed_kbps=int(CAN_BITRATE / 1000), name="WaveCanBus", channel=CAN_INTERFACE)

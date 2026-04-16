@@ -4,6 +4,7 @@ Defines motor IDs, CAN parameters, tuning defaults, etc.
 """
 
 import os
+import sys
 
 # Motor Configuration
 MOTORS = {
@@ -34,10 +35,18 @@ DEFAULT_KD = 0.0
 HTTP_PORT = 8080
 HTTP_HOST = os.getenv("WAVECAN_HTTP_HOST", "0.0.0.0")
 
-# Runtime Mode
-# mock: desktop simulation
-# socketcan: Linux/Raspberry Pi SocketCAN bus
-RUNTIME_MODE = os.getenv("WAVECAN_RUNTIME_MODE", "mock").strip().lower()
+# Runtime Mode - Auto-detect platform if not explicitly set
+# mock: desktop simulation (Windows, macOS, or manual override)
+# socketcan: Linux/Raspberry Pi SocketCAN bus (real hardware)
+if "WAVECAN_RUNTIME_MODE" in os.environ:
+    # Explicit environment variable takes precedence
+    RUNTIME_MODE = os.getenv("WAVECAN_RUNTIME_MODE", "mock").strip().lower()
+else:
+    # Auto-detect based on platform
+    if sys.platform.startswith("linux"):
+        RUNTIME_MODE = "socketcan"  # Use real hardware on Linux
+    else:
+        RUNTIME_MODE = "mock"  # Use mock hardware on Windows/macOS
 
 # SocketCAN Configuration (Linux/Raspberry Pi)
 CAN_INTERFACE = os.getenv("WAVECAN_CAN_INTERFACE", "can0")
