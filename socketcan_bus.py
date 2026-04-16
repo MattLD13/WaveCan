@@ -7,7 +7,14 @@ from collections import defaultdict
 from typing import Callable, Optional
 
 from mock_can import CANMessage
-from rev_sparkmax_protocol import MOTOR_CONTROLLER_DEVICE_TYPE, REV_MANUFACTURER_ID, extract_frc_can_fields
+from rev_sparkmax_protocol import (
+    API_CLASS_VOLTAGE_CONTROL,
+    API_INDEX_SET_SETPOINT,
+    MOTOR_CONTROLLER_DEVICE_TYPE,
+    REV_MANUFACTURER_ID,
+    extract_frc_can_fields,
+    make_duty_cycle_setpoint_frame,
+)
 from wavecan_platform import get_ticks_ms, log
 
 
@@ -121,6 +128,40 @@ class SocketCANBus:
             "traffic_detected": traffic_count > 0,
             "traffic_count": traffic_count,
             "rev_devices": [devices[key] for key in sorted(devices.keys())],
+        }
+
+    def sweep_for_sparkmax_devices(self, device_ids=range(0, 63), settle_ms: int = 2) -> dict:
+        """Actively probe every valid SPARK MAX device ID and report which IDs respond."""
+        found_devices = {}
+
+        for device_id in device_ids:
+            # Use a benign zero-output command with ack enabled so a live device can respond.
+            probe_message = make_duty_cycle_setpoint_frame(device_id, 0.0, no_ack=False)
+            if not self.send(probe_message):
+                continue
+
+            response_deadline_ms = get_ticks_ms() + max(0, settle_ms)
+            while get_ticks_ms() <= response_deadline_ms:
+                response = self.recv(timeout_ms=0)
+                if response is None:
+                    break
+
+                fields = extract_frc_can_fields(response.arbitration_id)
+                if fields["manufacturer"] != REV_MANUFACTURER_ID or fields["device_type"] != MOTOR_CONTROLLER_DEVICE_TYPE:
+                    continue
+
+                response_id = fields["device_id"]
+                found_devices[response_id] = {
+                    "device_id": response_id,
+                    "arbitration_id": f"0x{response.arbitration_id:08X}",
+                    "api_class": fields["api_id"] >> 4,
+                    "api_index": fields["api_id"] & 0x0F,
+                }
+
+        return {
+            "scanned_ids": list(device_ids),
+            "found_ids": sorted(found_devices.keys()),
+            "devices": [found_devices[key] for key in sorted(found_devices.keys())],
         }
 
     def close(self) -> None:
