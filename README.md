@@ -50,7 +50,7 @@ python3 -m pip install -r requirements-dev.txt
 Use your Waveshare HAT instructions to bring up CAN. For a typical `can0` bring-up:
 ```bash
 sudo ip link set can0 down
-sudo ip link set can0 type can bitrate 500000
+sudo ip link set can0 type can bitrate 1000000
 sudo ip link set can0 up
 ip -details link show can0
 ```
