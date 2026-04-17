@@ -44,25 +44,17 @@ class WaveCan:
         self.can_bus = CANBusClass(speed_kbps=int(CAN_BITRATE / 1000), name="WaveCanBus", channel=CAN_INTERFACE)
 
         if self.runtime_mode == "socketcan" and hasattr(self.can_bus, "probe_bus_activity"):
-            bus_activity = self.can_bus.probe_bus_activity(timeout_ms=300)
+            bus_activity = self.can_bus.probe_bus_activity(timeout_ms=1500)
             if bus_activity.get("traffic_detected"):
                 rev_devices = bus_activity.get("rev_devices", [])
                 if rev_devices:
                     device_ids = [device["device_id"] for device in rev_devices]
                     log(f"[WaveCan] Detected active CAN devices: {device_ids}")
+                    motor_ids = sorted(set(device_ids))
                 else:
                     log("[WaveCan] Detected CAN traffic on the bus")
             else:
                 log("[WaveCan] WARNING: No CAN traffic detected at startup; continuing in socketcan mode", "WARN")
-
-        if self.runtime_mode == "socketcan" and hasattr(self.can_bus, "sweep_for_sparkmax_devices"):
-            sweep_result = self.can_bus.sweep_for_sparkmax_devices(device_ids=range(0, 63), settle_ms=2)
-            found_ids = sweep_result.get("found_ids", [])
-            if found_ids:
-                motor_ids = found_ids
-                log(f"[WaveCan] Sweep found SPARK MAX IDs: {found_ids}")
-            else:
-                log("[WaveCan] WARNING: SPARK MAX sweep found no responding IDs", "WARN")
 
         if motor_ids != list(MOTOR_IDS):
             log(f"[WaveCan] Using discovered motor IDs: {motor_ids}")
