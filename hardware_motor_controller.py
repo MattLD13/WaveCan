@@ -18,6 +18,7 @@ from rev_sparkmax_protocol import (
     API_INDEX_STATUS_1,
     extract_frc_can_fields,
     make_duty_cycle_setpoint_frame,
+    make_speed_setpoint_frame,
     make_enable_frame,
     make_disable_frame,
     make_trusted_duty_cycle_setpoint_frame,
@@ -174,12 +175,14 @@ class HardwareMotorController:
 
     def _send_output_setpoint(self, motor_id: int, value: float, now_ms: int):
         """
-        Send both setpoint variants so different SPARK MAX firmware behaviors
-        still receive a valid command.
+        Send a compatibility set of output commands so different SPARK MAX
+        firmware/control-mode paths still receive a valid setpoint.
         """
         trusted_no_ack_msg = make_trusted_duty_cycle_setpoint_frame(motor_id, value)
         no_ack_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=True)
         ack_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=False)
+        speed_no_ack_msg = make_speed_setpoint_frame(motor_id, value, no_ack=True)
+        speed_ack_msg = make_speed_setpoint_frame(motor_id, value, no_ack=False)
 
         self._send_heartbeat_if_due(now_ms)
 
@@ -189,12 +192,18 @@ class HardwareMotorController:
         trusted_ok = self.can_bus.send(trusted_no_ack_msg)
         no_ack_ok = self.can_bus.send(no_ack_msg)
         ack_ok = self.can_bus.send(ack_msg)
+        speed_no_ack_ok = self.can_bus.send(speed_no_ack_msg)
+        speed_ack_ok = self.can_bus.send(speed_ack_msg)
         if trusted_ok:
             return True, trusted_no_ack_msg
         if no_ack_ok:
             return True, no_ack_msg
         if ack_ok:
             return True, ack_msg
+        if speed_no_ack_ok:
+            return True, speed_no_ack_msg
+        if speed_ack_ok:
+            return True, speed_ack_msg
         return False, ack_msg
 
     def get_motor(self, motor_id: int) -> Optional[HardwareMotorProxy]:
@@ -307,7 +316,7 @@ class HardwareMotorController:
         motor.target_rpm = pct * motor.config.max_rpm
 
         now_ms = get_ticks_ms()
-        if abs(pct) >= 0.05 and (motor.fault_bits or motor.sticky_fault_bits) and now_ms >= motor.next_fault_warn_ms:
+        if abs(pct) >= 0.05 and motor.fault_bits and now_ms >= motor.next_fault_warn_ms:
             motor.next_fault_warn_ms = now_ms + 1000
             log(
                 "[HardwareMotorController] "
