@@ -8,6 +8,7 @@ frames for dashboard telemetry.
 
 from dataclasses import dataclass
 from typing import Dict, Optional
+import math
 import struct
 
 from rev_sparkmax_protocol import (
@@ -27,6 +28,30 @@ from wavecan_platform import get_ticks_ms, log
 
 def _format_can_bytes(data: bytes) -> str:
     return " ".join(f"{b:02X}" for b in data)
+
+
+SPARK_MAX_FAULT_BIT_NAMES = {
+    0: "brownout",
+    1: "overcurrent",
+    2: "iwdt_reset",
+    3: "motor_fault",
+    4: "sensor_fault",
+    5: "stall",
+    6: "eeprom_crc",
+    7: "can_tx",
+    8: "can_rx",
+    9: "has_reset",
+    10: "drv_fault",
+    11: "other_fault",
+    12: "soft_limit_fwd",
+    13: "soft_limit_rev",
+    14: "hard_limit_fwd",
+    15: "hard_limit_rev",
+}
+
+
+def _decode_fault_names(mask: int) -> list[str]:
+    return [name for bit, name in SPARK_MAX_FAULT_BIT_NAMES.items() if mask & (1 << bit)]
 
 
 @dataclass
@@ -59,6 +84,11 @@ class HardwareMotorProxy:
         self.last_rx_status1_data_hex = ""
         self.last_tx_failure_ms = 0
         self.online = True
+        self.fault_bits = 0
+        self.sticky_fault_bits = 0
+        self.fault_names: list[str] = []
+        self.sticky_fault_names: list[str] = []
+        self.next_fault_warn_ms = 0
 
     def get_state(self) -> dict:
         return {
@@ -74,6 +104,12 @@ class HardwareMotorProxy:
             "enabled": self.enabled,
             "last_command_ms": self.last_command_ms,
             "last_status_ms": self.last_status_ms,
+            "faults": {
+                "active_bits": self.fault_bits,
+                "active": self.fault_names,
+                "sticky_bits": self.sticky_fault_bits,
+                "sticky": self.sticky_fault_names,
+            },
             "can_debug": {
                 "tx_arb_id": self.last_tx_arb_id,
                 "tx_data_hex": self.last_tx_data_hex,
@@ -212,17 +248,52 @@ class HardwareMotorController:
         motor.last_rx_arb_id = arb_id_hex
         motor.last_rx_data_hex = data_hex
 
-        if api_index == API_INDEX_STATUS_0 and len(message.data) >= 6:
-            rpm, temperature_c, voltage_tenths = struct.unpack("<fBB", message.data[:6])
-            motor.current_rpm = rpm
-            motor.temperature = float(temperature_c)
-            motor.output_percent = max(-1.0, min(1.0, (voltage_tenths / 10.0) / 12.0))
+        if api_index == API_INDEX_STATUS_0 and len(message.data) >= 8:
+            applied_output = struct.unpack("<f", message.data[:4])[0]
+            fault_bits, sticky_fault_bits = struct.unpack("<HH", message.data[4:8])
+
+            if math.isfinite(applied_output):
+                motor.output_percent = max(-1.0, min(1.0, applied_output))
+
+            previous_fault_signature = (motor.fault_bits, motor.sticky_fault_bits)
+            motor.fault_bits = int(fault_bits)
+            motor.sticky_fault_bits = int(sticky_fault_bits)
+            motor.fault_names = _decode_fault_names(motor.fault_bits)
+            motor.sticky_fault_names = _decode_fault_names(motor.sticky_fault_bits)
+
+            current_fault_signature = (motor.fault_bits, motor.sticky_fault_bits)
+            if current_fault_signature != previous_fault_signature and (motor.fault_bits or motor.sticky_fault_bits):
+                log(
+                    "[HardwareMotorController] "
+                    f"Motor {motor.motor_id} faults active={motor.fault_names or ['none']} "
+                    f"sticky={motor.sticky_fault_names or ['none']} "
+                    f"raw=0x{motor.fault_bits:04X}/0x{motor.sticky_fault_bits:04X}",
+                    "WARN",
+                )
+
             motor.last_rx_status0_arb_id = arb_id_hex
             motor.last_rx_status0_data_hex = data_hex
         elif api_index == API_INDEX_STATUS_1 and len(message.data) >= 8:
-            output_percent, current_amps = struct.unpack("<ff", message.data[:8])
-            motor.output_percent = max(-1.0, min(1.0, output_percent))
-            motor.current_amps = max(0.0, current_amps)
+            value_a, value_b = struct.unpack("<ff", message.data[:8])
+
+            looks_like_output_current_pair = (
+                math.isfinite(value_a)
+                and math.isfinite(value_b)
+                and -1.2 <= value_a <= 1.2
+                and 0.0 <= value_b <= 300.0
+                and (value_b >= 0.001 or message.data[4:8] == b"\x00\x00\x00\x00")
+            )
+
+            if looks_like_output_current_pair:
+                motor.output_percent = max(-1.0, min(1.0, value_a))
+                motor.current_amps = max(0.0, value_b)
+            else:
+                if math.isfinite(value_a) and abs(value_a) <= 200000.0:
+                    motor.current_rpm = float(value_a)
+                temperature_guess = float(message.data[4])
+                if 0.0 <= temperature_guess <= 200.0:
+                    motor.temperature = temperature_guess
+
             motor.last_rx_status1_arb_id = arb_id_hex
             motor.last_rx_status1_data_hex = data_hex
 
@@ -236,6 +307,15 @@ class HardwareMotorController:
         motor.target_rpm = pct * motor.config.max_rpm
 
         now_ms = get_ticks_ms()
+        if abs(pct) >= 0.05 and (motor.fault_bits or motor.sticky_fault_bits) and now_ms >= motor.next_fault_warn_ms:
+            motor.next_fault_warn_ms = now_ms + 1000
+            log(
+                "[HardwareMotorController] "
+                f"Motor {motor_id} command={pct:+.2f} while faults are active "
+                f"active={motor.fault_names or ['none']} sticky={motor.sticky_fault_names or ['none']}",
+                "WARN",
+            )
+
         if not self._should_attempt_tx(now_ms):
             return
 
