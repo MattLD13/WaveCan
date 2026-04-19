@@ -19,6 +19,8 @@ from rev_sparkmax_protocol import (
     make_duty_cycle_setpoint_frame,
     make_enable_frame,
     make_disable_frame,
+    make_trusted_duty_cycle_setpoint_frame,
+    make_universal_heartbeat_frame,
 )
 from wavecan_platform import get_ticks_ms, log
 
@@ -91,6 +93,7 @@ class HardwareMotorController:
     COMMAND_EPSILON = 0.001
     MIN_RESEND_INTERVAL_MS = 100
     ENABLE_RESEND_INTERVAL_MS = 100
+    HEARTBEAT_RESEND_INTERVAL_MS = 20
     TX_FAILURE_BACKOFF_MS = 5000
     TX_FAILURES_BEFORE_BACKOFF = 3
 
@@ -103,6 +106,7 @@ class HardwareMotorController:
         }
         self._last_command: Dict[int, tuple[float, int]] = {}
         self._last_enable_ms: Dict[int, int] = {}
+        self._last_heartbeat_ms = 0
         self._tx_failure_count = 0
         self._tx_backoff_until_ms = 0
 
@@ -114,12 +118,22 @@ class HardwareMotorController:
             if (now_ms - last_enable_ms) < self.ENABLE_RESEND_INTERVAL_MS:
                 return True
 
-        enable_msg = make_enable_frame(motor_id)
-        ok = self.can_bus.send(enable_msg)
+        normal_enable_ok = self.can_bus.send(make_enable_frame(motor_id, trusted=False, enabled=True))
+        trusted_enable_ok = self.can_bus.send(make_enable_frame(motor_id, trusted=True, enabled=True))
+        ok = normal_enable_ok or trusted_enable_ok
         if ok:
             self._last_enable_ms[motor_id] = now_ms
         else:
             log(f"[HardwareMotorController] CAN enable failed motor={motor_id}", "WARN")
+        return ok
+
+    def _send_heartbeat_if_due(self, now_ms: int, force: bool = False) -> bool:
+        if not force and (now_ms - self._last_heartbeat_ms) < self.HEARTBEAT_RESEND_INTERVAL_MS:
+            return True
+
+        ok = self.can_bus.send(make_universal_heartbeat_frame(enabled=True, watchdog=True))
+        if ok:
+            self._last_heartbeat_ms = now_ms
         return ok
 
     def _send_output_setpoint(self, motor_id: int, value: float, now_ms: int):
@@ -127,14 +141,20 @@ class HardwareMotorController:
         Send both setpoint variants so different SPARK MAX firmware behaviors
         still receive a valid command.
         """
+        trusted_no_ack_msg = make_trusted_duty_cycle_setpoint_frame(motor_id, value)
         no_ack_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=True)
         ack_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=False)
+
+        self._send_heartbeat_if_due(now_ms)
 
         # Keep devices in enabled state; some firmware will ignore setpoints otherwise.
         self._send_enable_if_due(motor_id, now_ms)
 
+        trusted_ok = self.can_bus.send(trusted_no_ack_msg)
         no_ack_ok = self.can_bus.send(no_ack_msg)
         ack_ok = self.can_bus.send(ack_msg)
+        if trusted_ok:
+            return True, trusted_no_ack_msg
         if no_ack_ok:
             return True, no_ack_msg
         if ack_ok:
@@ -242,12 +262,16 @@ class HardwareMotorController:
         does not timeout when no new HTTP command is received.
         """
         now_ms = get_ticks_ms()
+        self._send_heartbeat_if_due(now_ms)
+
         if not self._should_attempt_tx(now_ms):
             return
 
         for motor_id, motor in self.motors.items():
             if not motor.enabled:
                 continue
+
+            self._send_enable_if_due(motor_id, now_ms)
 
             if not motor.online and motor.last_tx_failure_ms and (now_ms - motor.last_tx_failure_ms) < self.TX_FAILURE_BACKOFF_MS:
                 continue
@@ -273,6 +297,7 @@ class HardwareMotorController:
 
     def enable_all(self) -> None:
         now_ms = get_ticks_ms()
+        self._send_heartbeat_if_due(now_ms)
         for motor in self.motors.values():
             motor.enabled = True
             self._send_enable_if_due(motor.motor_id, now_ms, force=True)
@@ -281,6 +306,7 @@ class HardwareMotorController:
         for motor_id in list(self.motors.keys()):
             try:
                 if send_can:
+                    self._send_heartbeat_if_due(get_ticks_ms(), force=True)
                     self.set_motor_output(motor_id, 0.0)
                     last = self._last_command.get(motor_id)
                     if last is None or abs(last[0]) > self.COMMAND_EPSILON:

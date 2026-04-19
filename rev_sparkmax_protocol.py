@@ -36,6 +36,7 @@ API_INDEX_ENABLE_CONTROL = 0
 API_INDEX_DISABLE_CONTROL = 1
 API_INDEX_SET_SETPOINT = 2
 API_INDEX_SET_REFERENCE = 6
+API_INDEX_TRUSTED_ENABLE = 7
 API_INDEX_TRUSTED_SET_NO_ACK = 8
 API_INDEX_TRUSTED_SET_SETPOINT_NO_ACK = 10
 API_INDEX_SET_SETPOINT_NO_ACK = 11
@@ -116,6 +117,21 @@ def make_duty_cycle_setpoint_frame(device_id: int, output_percent: float, no_ack
     return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
 
 
+def make_trusted_duty_cycle_setpoint_frame(device_id: int, output_percent: float) -> CANMessage:
+    """
+    Build a trusted no-ack open-loop command frame.
+
+    Some firmware paths gate output on trusted control + heartbeat.
+    """
+    arbitration_id = build_arbitration_id(
+        device_id=device_id,
+        api_class=API_CLASS_VOLTAGE_CONTROL,
+        api_index=API_INDEX_TRUSTED_SET_SETPOINT_NO_ACK,
+    )
+    data = struct.pack("<f", clamp_unit(output_percent))
+    return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
+
+
 def make_status_0_frame(device_id: int, rpm: float, temperature_c: float, voltage_v: float) -> CANMessage:
     """Build a Spark MAX status-0 telemetry frame."""
     arbitration_id = build_arbitration_id(
@@ -169,11 +185,34 @@ def make_disable_frame(device_id: int) -> CANMessage:
     return CANMessage(arbitration_id=arbitration_id, data=b"", is_extended_id=True)
 
 
-def make_enable_frame(device_id: int) -> CANMessage:
-    """Build a motor enable command frame."""
+def make_enable_frame(device_id: int, trusted: bool = False, enabled: bool = True) -> CANMessage:
+    """
+    Build a motor enable command frame.
+
+    Use trusted=True to emit API index 7 (Trusted Enable).
+    Payload is one byte where 1=enabled and 0=disabled.
+    """
     arbitration_id = build_arbitration_id(
         device_id=device_id,
         api_class=API_CLASS_VOLTAGE_CONTROL,
-        api_index=API_INDEX_ENABLE_CONTROL,
+        api_index=API_INDEX_TRUSTED_ENABLE if trusted else API_INDEX_ENABLE_CONTROL,
     )
-    return CANMessage(arbitration_id=arbitration_id, data=b"", is_extended_id=True)
+    data = b"\x01" if enabled else b"\x00"
+    return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
+
+
+def make_universal_heartbeat_frame(enabled: bool = True, watchdog: bool = True) -> CANMessage:
+    """
+    Build the roboRIO universal heartbeat frame (ID 0x01011840).
+
+    This frame is sent every 20ms on FRC robots. Some CAN motor controllers
+    require watchdog/enabled bits to accept trusted actuator commands.
+    """
+    arbitration_id = 0x01011840
+    state = 0
+    if enabled:
+        state |= (1 << 25)
+    if watchdog:
+        state |= (1 << 28)
+    data = state.to_bytes(8, byteorder="little", signed=False)
+    return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
