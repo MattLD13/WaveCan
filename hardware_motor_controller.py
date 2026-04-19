@@ -144,10 +144,23 @@ class HardwareMotorController:
         self._last_command: Dict[int, tuple[float, int]] = {}
         self._last_enable_ms: Dict[int, int] = {}
         self._last_heartbeat_ms = 0
+        self._last_tx_debug_ms = 0
         self._tx_failure_count = 0
         self._tx_backoff_until_ms = 0
 
         log(f"[HardwareMotorController] Initialized with motors={sorted(self.motors.keys())}")
+        if self.motors:
+            sample_id = sorted(self.motors.keys())[0]
+            log(
+                "[HardwareMotorController] TX template IDs "
+                f"motor={sample_id} "
+                f"V_NA=0x{make_duty_cycle_setpoint_frame(sample_id, 0.0, True).arbitration_id:08X} "
+                f"V_AK=0x{make_duty_cycle_setpoint_frame(sample_id, 0.0, False).arbitration_id:08X} "
+                f"S_NA=0x{make_speed_setpoint_frame(sample_id, 0.0, True).arbitration_id:08X} "
+                f"S_AK=0x{make_speed_setpoint_frame(sample_id, 0.0, False).arbitration_id:08X} "
+                f"EN=0x{make_enable_frame(sample_id, trusted=False, enabled=True).arbitration_id:08X} "
+                f"TEN=0x{make_enable_frame(sample_id, trusted=True, enabled=True).arbitration_id:08X}",
+            )
 
     def _send_enable_if_due(self, motor_id: int, now_ms: int, force: bool = False) -> bool:
         if not force:
@@ -194,6 +207,15 @@ class HardwareMotorController:
         ack_ok = self.can_bus.send(ack_msg)
         speed_no_ack_ok = self.can_bus.send(speed_no_ack_msg)
         speed_ack_ok = self.can_bus.send(speed_ack_msg)
+
+        if not (trusted_ok and no_ack_ok and ack_ok and speed_no_ack_ok and speed_ack_ok):
+            log(
+                "[HardwareMotorController] TX partial "
+                f"motor={motor_id} cmd={value:+.2f} "
+                f"trusted={trusted_ok} v_na={no_ack_ok} v_ack={ack_ok} s_na={speed_no_ack_ok} s_ack={speed_ack_ok}",
+                "WARN",
+            )
+
         if trusted_ok:
             return True, trusted_no_ack_msg
         if no_ack_ok:
@@ -316,6 +338,13 @@ class HardwareMotorController:
         motor.target_rpm = pct * motor.config.max_rpm
 
         now_ms = get_ticks_ms()
+        if abs(pct) > 0.01 and (now_ms - self._last_tx_debug_ms) >= 500:
+            self._last_tx_debug_ms = now_ms
+            log(
+                "[HardwareMotorController] Command request "
+                f"motor={motor_id} pct={pct:+.2f} target_rpm={motor.target_rpm:.0f}",
+            )
+
         if abs(pct) >= 0.05 and motor.fault_bits and now_ms >= motor.next_fault_warn_ms:
             motor.next_fault_warn_ms = now_ms + 1000
             log(

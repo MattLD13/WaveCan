@@ -97,6 +97,9 @@ class WebServer:
         self.is_running = True   # True from init so physics_loop doesn't exit before server binds
         self.request_count = 0
         self.start_time_ms = get_ticks_ms()
+        self._last_nonzero_cmd_ms = {}
+        self._last_nonzero_cmd_value = {}
+        self._zero_suppress_window_ms = 300
 
         log(f"[WebServer] Initialized at {host}:{port}", "INFO")
 
@@ -249,6 +252,7 @@ class WebServer:
             motor_id = command.get('id', 1)
             cmd = command.get('cmd', 'set')
             value = command.get('value', 0.0)
+            force_stop = bool(command.get('force_stop', False))
 
             # Get the motor and apply command
             motor = self.motor_controller.get_motor(motor_id)
@@ -258,11 +262,34 @@ class WebServer:
             if cmd == 'set':
                 # Clamp value to -1.0 to 1.0
                 value = max(-1.0, min(1.0, float(value)))
+
+                # In hardware mode the dashboard can emit rapid zero updates
+                # that immediately cancel nonzero commands from the same gesture.
+                now_ms = get_ticks_ms()
+                if self.runtime_mode == 'socketcan' and not force_stop and abs(value) < 1e-6:
+                    last_nonzero_ms = self._last_nonzero_cmd_ms.get(motor_id, 0)
+                    if (now_ms - last_nonzero_ms) < self._zero_suppress_window_ms:
+                        last_nonzero_value = self._last_nonzero_cmd_value.get(motor_id, 0.0)
+                        log(
+                            f"[WebServer] Suppressed rapid zero for motor {motor_id}; "
+                            f"holding {last_nonzero_value * 100:.0f}% for {self._zero_suppress_window_ms}ms window"
+                        )
+                        return HTTPResponse(200).set_json({
+                            'success': True,
+                            'motor_id': motor_id,
+                            'value': value,
+                            'suppressed': True,
+                        })
+
                 if hasattr(self.motor_controller, 'set_motor_output'):
                     self.motor_controller.set_motor_output(motor_id, value)
                 else:
                     motor.target_rpm = value * motor.config.max_rpm
                     motor.velocity_mode = True
+
+                if abs(value) > 1e-6:
+                    self._last_nonzero_cmd_ms[motor_id] = now_ms
+                    self._last_nonzero_cmd_value[motor_id] = value
                 log(f"[WebServer] Motor {motor_id} set to {value * 100:.0f}%")
 
             return HTTPResponse(200).set_json({'success': True, 'motor_id': motor_id, 'value': value})
