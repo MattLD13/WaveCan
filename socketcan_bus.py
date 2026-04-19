@@ -171,11 +171,21 @@ class SocketCANBus:
                     if response is None:
                         continue
 
+                    # Ignore socketcan loopback of our own probe frame.
+                    if (
+                        response.arbitration_id == probe_message.arbitration_id
+                        and bytes(response.data) == bytes(probe_message.data)
+                    ):
+                        continue
+
                     fields = extract_frc_can_fields(response.arbitration_id)
                     if fields["manufacturer"] != REV_MANUFACTURER_ID or fields["device_type"] != MOTOR_CONTROLLER_DEVICE_TYPE:
                         continue
 
                     response_id = fields["device_id"]
+                    if not (1 <= response_id <= 63):
+                        continue
+
                     found_devices[response_id] = {
                         "device_id": response_id,
                         "arbitration_id": f"0x{response.arbitration_id:08X}",

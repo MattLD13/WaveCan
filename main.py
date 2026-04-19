@@ -69,7 +69,10 @@ class WaveCan:
                     log("[WaveCan] WARNING: No CAN traffic detected at startup; continuing in socketcan mode", "WARN")
 
             if discovered_ids:
-                motor_ids = sorted(set(discovered_ids))
+                motor_ids = sorted({mid for mid in discovered_ids if 1 <= int(mid) <= 63})
+
+        # Guard against invalid IDs from noisy discovery traffic.
+        motor_ids = sorted({mid for mid in motor_ids if 1 <= int(mid) <= 63})
 
         if motor_ids != list(MOTOR_IDS):
             log(f"[WaveCan] Using discovered motor IDs: {motor_ids}")

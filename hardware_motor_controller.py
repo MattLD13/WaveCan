@@ -94,15 +94,32 @@ class HardwareMotorController:
 
     def __init__(self, can_bus, motor_ids):
         self.can_bus = can_bus
+        valid_motor_ids = sorted({int(mid) for mid in motor_ids if 1 <= int(mid) <= 63})
         self.motors: Dict[int, HardwareMotorProxy] = {
             mid: HardwareMotorProxy(HardwareMotorConfig(mid))
-            for mid in motor_ids
+            for mid in valid_motor_ids
         }
         self._last_command: Dict[int, tuple[float, int]] = {}
         self._tx_failure_count = 0
         self._tx_backoff_until_ms = 0
 
         log(f"[HardwareMotorController] Initialized with motors={sorted(self.motors.keys())}")
+
+    def _send_output_setpoint(self, motor_id: int, value: float):
+        """
+        Send both setpoint variants so different SPARK MAX firmware behaviors
+        still receive a valid command.
+        """
+        ack_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=False)
+        no_ack_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=True)
+
+        ack_ok = self.can_bus.send(ack_msg)
+        no_ack_ok = self.can_bus.send(no_ack_msg)
+        if ack_ok:
+            return True, ack_msg
+        if no_ack_ok:
+            return True, no_ack_msg
+        return False, ack_msg
 
     def get_motor(self, motor_id: int) -> Optional[HardwareMotorProxy]:
         return self.motors.get(motor_id)
@@ -190,8 +207,7 @@ class HardwareMotorController:
             if same_value and recent_send:
                 return
 
-        msg = make_duty_cycle_setpoint_frame(motor_id, pct, no_ack=True)
-        ok = self.can_bus.send(msg)
+        ok, msg = self._send_output_setpoint(motor_id, pct)
         if not ok:
             self._record_tx_failure(motor, motor_id, now_ms)
             return
@@ -220,8 +236,8 @@ class HardwareMotorController:
             if (now_ms - last_sent_ms) < 20:
                 continue
 
-            msg = make_duty_cycle_setpoint_frame(motor_id, last_value, no_ack=True)
-            if self.can_bus.send(msg):
+            ok, msg = self._send_output_setpoint(motor_id, last_value)
+            if ok:
                 motor.output_percent = last_value
                 self._record_tx_success(motor, motor_id, msg, now_ms)
             else:
