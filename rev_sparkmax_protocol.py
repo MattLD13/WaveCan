@@ -167,3 +167,13 @@ def make_disable_frame(device_id: int) -> CANMessage:
         api_index=API_INDEX_DISABLE_CONTROL,
     )
     return CANMessage(arbitration_id=arbitration_id, data=b"", is_extended_id=True)
+
+
+def make_enable_frame(device_id: int) -> CANMessage:
+    """Build a motor enable command frame."""
+    arbitration_id = build_arbitration_id(
+        device_id=device_id,
+        api_class=API_CLASS_VOLTAGE_CONTROL,
+        api_index=API_INDEX_ENABLE_CONTROL,
+    )
+    return CANMessage(arbitration_id=arbitration_id, data=b"", is_extended_id=True)

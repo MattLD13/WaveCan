@@ -17,6 +17,7 @@ from rev_sparkmax_protocol import (
     API_INDEX_STATUS_1,
     extract_frc_can_fields,
     make_duty_cycle_setpoint_frame,
+    make_enable_frame,
     make_disable_frame,
 )
 from wavecan_platform import get_ticks_ms, log
@@ -89,6 +90,7 @@ class HardwareMotorController:
 
     COMMAND_EPSILON = 0.001
     MIN_RESEND_INTERVAL_MS = 100
+    ENABLE_RESEND_INTERVAL_MS = 100
     TX_FAILURE_BACKOFF_MS = 5000
     TX_FAILURES_BEFORE_BACKOFF = 3
 
@@ -100,25 +102,43 @@ class HardwareMotorController:
             for mid in valid_motor_ids
         }
         self._last_command: Dict[int, tuple[float, int]] = {}
+        self._last_enable_ms: Dict[int, int] = {}
         self._tx_failure_count = 0
         self._tx_backoff_until_ms = 0
 
         log(f"[HardwareMotorController] Initialized with motors={sorted(self.motors.keys())}")
 
-    def _send_output_setpoint(self, motor_id: int, value: float):
+    def _send_enable_if_due(self, motor_id: int, now_ms: int, force: bool = False) -> bool:
+        if not force:
+            last_enable_ms = self._last_enable_ms.get(motor_id, 0)
+            if (now_ms - last_enable_ms) < self.ENABLE_RESEND_INTERVAL_MS:
+                return True
+
+        enable_msg = make_enable_frame(motor_id)
+        ok = self.can_bus.send(enable_msg)
+        if ok:
+            self._last_enable_ms[motor_id] = now_ms
+        else:
+            log(f"[HardwareMotorController] CAN enable failed motor={motor_id}", "WARN")
+        return ok
+
+    def _send_output_setpoint(self, motor_id: int, value: float, now_ms: int):
         """
         Send both setpoint variants so different SPARK MAX firmware behaviors
         still receive a valid command.
         """
-        ack_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=False)
         no_ack_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=True)
+        ack_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=False)
 
-        ack_ok = self.can_bus.send(ack_msg)
+        # Keep devices in enabled state; some firmware will ignore setpoints otherwise.
+        self._send_enable_if_due(motor_id, now_ms)
+
         no_ack_ok = self.can_bus.send(no_ack_msg)
-        if ack_ok:
-            return True, ack_msg
+        ack_ok = self.can_bus.send(ack_msg)
         if no_ack_ok:
             return True, no_ack_msg
+        if ack_ok:
+            return True, ack_msg
         return False, ack_msg
 
     def get_motor(self, motor_id: int) -> Optional[HardwareMotorProxy]:
@@ -207,7 +227,7 @@ class HardwareMotorController:
             if same_value and recent_send:
                 return
 
-        ok, msg = self._send_output_setpoint(motor_id, pct)
+        ok, msg = self._send_output_setpoint(motor_id, pct, now_ms)
         if not ok:
             self._record_tx_failure(motor, motor_id, now_ms)
             return
@@ -236,7 +256,7 @@ class HardwareMotorController:
             if (now_ms - last_sent_ms) < 20:
                 continue
 
-            ok, msg = self._send_output_setpoint(motor_id, last_value)
+            ok, msg = self._send_output_setpoint(motor_id, last_value, now_ms)
             if ok:
                 motor.output_percent = last_value
                 self._record_tx_success(motor, motor_id, msg, now_ms)
@@ -252,8 +272,10 @@ class HardwareMotorController:
             self._decode_status_message(msg)
 
     def enable_all(self) -> None:
+        now_ms = get_ticks_ms()
         for motor in self.motors.values():
             motor.enabled = True
+            self._send_enable_if_due(motor.motor_id, now_ms, force=True)
 
     def disable_all(self, send_can: bool = False) -> None:
         for motor_id in list(self.motors.keys()):

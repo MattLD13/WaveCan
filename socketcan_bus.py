@@ -138,6 +138,9 @@ class SocketCANBus:
                     continue
 
                 device_id = fields["device_id"]
+                if not (1 <= device_id <= 63):
+                    continue
+
                 devices[device_id] = {
                     "device_id": device_id,
                     "arbitration_id": f"0x{msg.arbitration_id:08X}",
