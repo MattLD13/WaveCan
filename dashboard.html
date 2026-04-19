@@ -592,6 +592,7 @@ const S = {
     latched: false,
     latchedMotorIds: [],
   },
+  autoSelectedOnce: false,
   gpIdx: null,
   lastReqTs: 0,
   reqCount: 0,
@@ -718,6 +719,12 @@ function renderMotors() {
   const list = document.getElementById('motorList');
   const ids  = sortedIds();
   document.getElementById('mCount').textContent = ids.length + (ids.length !== 1 ? ' motors' : ' motor');
+
+  // Convenience for single-motor deployments: pre-select once so manual Send works immediately.
+  if (!S.autoSelectedOnce && !S.selected.size && ids.length === 1) {
+    S.selected.add(ids[0]);
+    S.autoSelectedOnce = true;
+  }
 
   ids.forEach(id => {
     const m   = S.motors[id];
@@ -1245,7 +1252,17 @@ function resetSlider() {
   onSlider(0);
 }
 async function sendManualSpeed() {
-  if (!S.selected.size) { flash('No motors selected'); return; }
+  if (!S.selected.size) {
+    const ids = sortedIds();
+    if (ids.length === 1) {
+      S.selected.add(ids[0]);
+      S.autoSelectedOnce = true;
+      renderMotors();
+    } else {
+      flash('No motors selected');
+      return;
+    }
+  }
   // Keep manual setpoint latched by ensuring drive loop is not actively sending 0.
   setMode('off');
   const ids = [...S.selected].sort((a,b)=>a-b);

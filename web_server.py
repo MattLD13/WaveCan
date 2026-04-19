@@ -251,8 +251,17 @@ class WebServer:
             command = json.loads(request.body)
             motor_id = command.get('id', 1)
             cmd = command.get('cmd', 'set')
-            value = command.get('value', 0.0)
+            value = command.get('value', None)
             force_stop = bool(command.get('force_stop', False))
+
+            # Accept common alternate payload keys and percent-style values.
+            if value is None:
+                for alt_key in ('percent', 'pct', 'output', 'speed', 'setpoint'):
+                    if alt_key in command:
+                        value = command.get(alt_key)
+                        break
+            if value is None:
+                value = 0.0
 
             # Get the motor and apply command
             motor = self.motor_controller.get_motor(motor_id)
@@ -260,8 +269,16 @@ class WebServer:
                 return HTTPResponse(404).set_json({'error': f'Motor {motor_id} not found'})
 
             if cmd == 'set':
-                # Clamp value to -1.0 to 1.0
-                value = max(-1.0, min(1.0, float(value)))
+                raw_value = value
+                value = float(value)
+                if abs(value) > 1.0 and abs(value) <= 100.0:
+                    value = value / 100.0
+                value = max(-1.0, min(1.0, value))
+
+                log(
+                    f"[WebServer] Motor cmd raw motor={motor_id} cmd={cmd} "
+                    f"raw={raw_value!r} normalized={value:+.3f} force_stop={force_stop}"
+                )
 
                 # In hardware mode the dashboard can emit rapid zero updates
                 # that immediately cancel nonzero commands from the same gesture.
