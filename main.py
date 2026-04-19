@@ -43,18 +43,33 @@ class WaveCan:
         # Initialize CAN bus
         self.can_bus = CANBusClass(speed_kbps=int(CAN_BITRATE / 1000), name="WaveCanBus", channel=CAN_INTERFACE)
 
-        if self.runtime_mode == "socketcan" and hasattr(self.can_bus, "probe_bus_activity"):
-            bus_activity = self.can_bus.probe_bus_activity(timeout_ms=1500)
-            if bus_activity.get("traffic_detected"):
-                rev_devices = bus_activity.get("rev_devices", [])
-                if rev_devices:
-                    device_ids = [device["device_id"] for device in rev_devices]
-                    log(f"[WaveCan] Detected active CAN devices: {device_ids}")
-                    motor_ids = sorted(set(device_ids))
+        if self.runtime_mode == "socketcan":
+            discovered_ids = []
+
+            # Active probe first so quiet but connected motors are still discovered.
+            if hasattr(self.can_bus, "sweep_for_sparkmax_devices"):
+                sweep = self.can_bus.sweep_for_sparkmax_devices(device_ids=range(1, 64), settle_ms=4)
+                discovered_ids = list(sweep.get("found_ids", []))
+                if discovered_ids:
+                    log(f"[WaveCan] Active sweep discovered SPARK MAX IDs: {discovered_ids}")
                 else:
-                    log("[WaveCan] Detected CAN traffic on the bus")
-            else:
-                log("[WaveCan] WARNING: No CAN traffic detected at startup; continuing in socketcan mode", "WARN")
+                    log("[WaveCan] Active sweep found no SPARK MAX responses", "WARN")
+
+            # Fallback to passive listen if active sweep found nothing.
+            if not discovered_ids and hasattr(self.can_bus, "probe_bus_activity"):
+                bus_activity = self.can_bus.probe_bus_activity(timeout_ms=1500)
+                if bus_activity.get("traffic_detected"):
+                    rev_devices = bus_activity.get("rev_devices", [])
+                    if rev_devices:
+                        discovered_ids = sorted({device["device_id"] for device in rev_devices})
+                        log(f"[WaveCan] Passive probe detected active CAN devices: {discovered_ids}")
+                    else:
+                        log("[WaveCan] Detected CAN traffic on the bus")
+                else:
+                    log("[WaveCan] WARNING: No CAN traffic detected at startup; continuing in socketcan mode", "WARN")
+
+            if discovered_ids:
+                motor_ids = sorted(set(discovered_ids))
 
         if motor_ids != list(MOTOR_IDS):
             log(f"[WaveCan] Using discovered motor IDs: {motor_ids}")

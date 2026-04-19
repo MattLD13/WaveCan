@@ -21,7 +21,7 @@ from wavecan_platform import get_ticks_ms, log
 class SocketCANBus:
     """CAN adapter built on python-can (SocketCAN backend)."""
 
-    def __init__(self, speed_kbps: int = 500, name: str = "SocketCAN", channel: str = "can0"):
+    def __init__(self, speed_kbps: int = 500, name: str = "SocketCAN", channel: str = "can1"):
         try:
             import can as _can  # type: ignore[import-not-found]
         except ImportError as exc:
@@ -153,7 +153,7 @@ class SocketCANBus:
             "rev_devices": [devices[key] for key in sorted(devices.keys())],
         }
 
-    def sweep_for_sparkmax_devices(self, device_ids=range(0, 63), settle_ms: int = 2) -> dict:
+    def sweep_for_sparkmax_devices(self, device_ids=range(1, 64), settle_ms: int = 2) -> dict:
         """Actively probe every valid SPARK MAX device ID and report which IDs respond."""
         paused_notifier = self._pause_notifier()
         found_devices = {}

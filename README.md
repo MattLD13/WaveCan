@@ -47,18 +47,18 @@ python3 -m pip install -r requirements-dev.txt
 ```
 
 ### 2. Configure SocketCAN
-Use your Waveshare HAT instructions to bring up CAN. For a typical `can0` bring-up:
+Use your Waveshare HAT instructions to bring up CAN. For a typical `can1` bring-up:
 ```bash
-sudo ip link set can0 down
-sudo ip link set can0 type can bitrate 500000
-sudo ip link set can0 up
-ip -details link show can0
+sudo ip link set can1 down
+sudo ip link set can1 type can bitrate 500000
+sudo ip link set can1 up
+ip -details link show can1
 ```
 
 ### 3. Run WaveCan in hardware mode
 ```bash
 export WAVECAN_RUNTIME_MODE=socketcan
-export WAVECAN_CAN_INTERFACE=can0
+export WAVECAN_CAN_INTERFACE=can1
 export WAVECAN_HTTP_HOST=0.0.0.0
 python3 main.py
 ```

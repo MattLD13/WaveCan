@@ -9,7 +9,7 @@ import subprocess
 
 
 # Helper function to check if CAN interface is available
-def is_can_interface_available(interface: str = "can0") -> bool:
+def is_can_interface_available(interface: str = "can1") -> bool:
     """Check if a CAN interface exists and is up on Linux"""
     if not sys.platform.startswith("linux"):
         return False
@@ -41,7 +41,7 @@ MOTORS = {
 # CAN Configuration
 CAN_BUS_SPEED = 500000  # 500 kbps, matches the currently working bus
 CAN_TIMEOUT = 1000  # milliseconds
-CAN_INTERFACE = os.getenv("WAVECAN_CAN_INTERFACE", "can0")
+CAN_INTERFACE = os.getenv("WAVECAN_CAN_INTERFACE", "can1")
 CAN_BITRATE = int(os.getenv("WAVECAN_CAN_BITRATE", str(CAN_BUS_SPEED)))
 
 # SPI Configuration (for XL2515 on RP2350)
