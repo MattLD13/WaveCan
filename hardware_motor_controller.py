@@ -268,28 +268,14 @@ class HardwareMotorController:
         motor.last_rx_arb_id = arb_id_hex
         motor.last_rx_data_hex = data_hex
 
-        if api_index == API_INDEX_STATUS_0 and len(message.data) >= 8:
+        if api_index == API_INDEX_STATUS_0 and len(message.data) >= 4:
             applied_output = struct.unpack("<f", message.data[:4])[0]
-            fault_bits, sticky_fault_bits = struct.unpack("<HH", message.data[4:8])
 
             if math.isfinite(applied_output):
                 motor.output_percent = max(-1.0, min(1.0, applied_output))
 
-            previous_fault_signature = (motor.fault_bits, motor.sticky_fault_bits)
-            motor.fault_bits = int(fault_bits)
-            motor.sticky_fault_bits = int(sticky_fault_bits)
-            motor.fault_names = _decode_fault_names(motor.fault_bits)
-            motor.sticky_fault_names = _decode_fault_names(motor.sticky_fault_bits)
-
-            current_fault_signature = (motor.fault_bits, motor.sticky_fault_bits)
-            if current_fault_signature != previous_fault_signature and (motor.fault_bits or motor.sticky_fault_bits):
-                log(
-                    "[HardwareMotorController] "
-                    f"Motor {motor.motor_id} faults active={motor.fault_names or ['none']} "
-                    f"sticky={motor.sticky_fault_names or ['none']} "
-                    f"raw=0x{motor.fault_bits:04X}/0x{motor.sticky_fault_bits:04X}",
-                    "WARN",
-                )
+            # Status-0 telemetry only updates the applied output in hardware mode.
+            # Fault bits are not derived from this frame.
 
             motor.last_rx_status0_arb_id = arb_id_hex
             motor.last_rx_status0_data_hex = data_hex
