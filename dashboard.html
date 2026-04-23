@@ -340,6 +340,27 @@ canvas#rpmChart { display: block; }
 /* scrollbar */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+/* Fault badges */
+.fault-badge {
+  font-size: 0.6rem; padding: 1px 5px; border-radius: 4px; font-weight: 700;
+  display: inline-block; white-space: nowrap;
+}
+.fault-badge.active { background: #3d1a18; color: var(--red);    border: 1px solid #7a2a26; }
+.fault-badge.sticky { background: #2a2010; color: var(--yellow); border: 1px solid #5a4010; }
+.fault-badge.none   { background: #112a18; color: var(--green);  border: 1px solid #1a5a28; }
+
+/* Speed preset buttons */
+.preset-row { display: flex; gap: 4px; margin-top: 8px; }
+.btn-preset {
+  flex: 1; padding: 5px 2px; font-size: 0.72rem; font-weight: 700;
+  border-radius: 5px; border: 1px solid var(--border); background: var(--surface2);
+  color: var(--muted); cursor: pointer; transition: all .15s; text-align: center;
+}
+.btn-preset:hover      { border-color: var(--accent); color: var(--accent); background: #131c2e; }
+.btn-preset.neg:hover  { border-color: var(--red);    color: var(--red);    background: #1e1013; }
+.btn-preset.zero-btn   { font-weight: 900; }
+.btn-preset.zero-btn:hover { border-color: var(--yellow); color: var(--yellow); }
 </style>
 </head>
 <body>
@@ -444,6 +465,15 @@ canvas#rpmChart { display: block; }
           <button class="btn btn-primary" id="manualToggleBtn" onclick="toggleManualLatch()">▶ Send</button>
           <button class="btn btn-danger"  onclick="emergencyStop()">⏹ E-Stop</button>
           <button class="btn btn-ghost"   onclick="resetSlider()">↺ Reset</button>
+        </div>
+        <div class="preset-row">
+          <button class="btn-preset neg"      onclick="applyPreset(-30)">−30%</button>
+          <button class="btn-preset neg"      onclick="applyPreset(-20)">−20%</button>
+          <button class="btn-preset neg"      onclick="applyPreset(-10)">−10%</button>
+          <button class="btn-preset zero-btn" onclick="applyPreset(0)">0%</button>
+          <button class="btn-preset"          onclick="applyPreset(10)">+10%</button>
+          <button class="btn-preset"          onclick="applyPreset(20)">+20%</button>
+          <button class="btn-preset"          onclick="applyPreset(30)">+30%</button>
         </div>
       </div>
     </div>
@@ -750,6 +780,17 @@ function renderMotors() {
     const cmdCls = cmdAge === null ? 'var(--red)' : (cmdAge < 1000 ? 'var(--green)' : 'var(--yellow)');
     const statusCls = statusAge === null ? 'var(--red)' : (statusAge < 1000 ? 'var(--green)' : 'var(--yellow)');
 
+    const faults = m.faults || {};
+    const activeNames = faults.active || [];
+    const stickyNames = faults.sticky || [];
+    const hasFault = activeNames.length || stickyNames.length;
+    const faultHtml = hasFault
+      ? `<div style="grid-column:1/-1;margin-top:5px;display:flex;flex-wrap:wrap;gap:3px">
+           ${activeNames.map(f => `<span class="fault-badge active">⚡ ${f}</span>`).join('')}
+           ${stickyNames.map(f => `<span class="fault-badge sticky">⚠ ${f}</span>`).join('')}
+         </div>`
+      : `<div style="grid-column:1/-1;margin-top:5px"><span class="fault-badge none">✓ no faults</span></div>`;
+
     card.className = 'mcard' + (sel ? ' sel' : '');
     card.innerHTML = `
       <div class="chk">${sel ? '✓' : ''}</div>
@@ -767,6 +808,7 @@ function renderMotors() {
         <div><div class="stat-lbl">CAN Cmd</div><div class="stat-val" style="color:${cmdCls}">${cmdText}</div></div>
         <div><div class="stat-lbl">CAN Stat</div><div class="stat-val" style="color:${statusCls}">${statusText}</div></div>
         <div class="rbar-wrap"><div class="rbar-track"><div class="rbar-fill ${rev?'rev':''}" style="width:${pct}%"></div></div></div>
+        ${faultHtml}
       </div>`;
     card.onclick = () => toggleMotor(id);
   });
@@ -1250,6 +1292,13 @@ function resetSlider() {
   S.manualPct = 0;
   document.getElementById('spdSlider').value = 0;
   onSlider(0);
+}
+
+function applyPreset(pct) {
+  const slider = document.getElementById('spdSlider');
+  if (slider) slider.value = pct;
+  onSlider(pct);
+  sendManualSpeed();
 }
 async function sendManualSpeed() {
   if (!S.selected.size) {
@@ -1773,9 +1822,20 @@ function renderCanTelemetry() {
     const rx0Bytes = dbg.rx_status0_data_hex || '—';
     const rx1Id = dbg.rx_status1_arb_id || '—';
     const rx1Bytes = dbg.rx_status1_data_hex || '—';
+    const faults = m.faults || {};
+    const activeNames = faults.active || [];
+    const stickyNames = faults.sticky || [];
+    const activeFaultHtml = activeNames.length
+      ? activeNames.map(f => `<span style="color:var(--red);font-weight:700">⚡${f}</span>`).join(' ')
+      : '<span style="color:var(--green)">none</span>';
+    const stickyFaultHtml = stickyNames.length
+      ? stickyNames.map(f => `<span style="color:var(--yellow);font-weight:700">⚠${f}</span>`).join(' ')
+      : '<span style="color:var(--green)">none</span>';
     return `
       <div class="can-block">
         <div class="can-title">Motor ${id}</div>
+        <div class="can-line"><span>Active Faults</span><b>${activeFaultHtml}</b></div>
+        <div class="can-line"><span>Sticky Faults</span><b>${stickyFaultHtml}</b></div>
         <div class="can-line"><span>TX ID</span><b>${txId}</b></div>
         <div class="can-line"><span>TX Bytes</span><b>${txBytes}</b></div>
         <div class="can-line"><span>TX Age</span><b>${fmtAge(txAge)}</b></div>

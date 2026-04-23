@@ -65,6 +65,34 @@ class SocketCANBus:
             # If the listener cannot be restarted, leave the bus usable for direct recv/send.
             pass
 
+    def _mark_bus_down(self, exc: Exception) -> None:
+        if not self.is_open:
+            return
+
+        self.is_open = False
+        self._pause_notifier()
+
+        log(f"[{self.name}] CAN interface unavailable; suppressing further TX until reopened: {exc}", "ERROR")
+        log(
+            f"[{self.name}] Hint: bring '{self.channel}' up or switch WAVECAN_RUNTIME_MODE=mock",
+            "ERROR",
+        )
+
+    @staticmethod
+    def _is_network_down_error(exc: Exception) -> bool:
+        errno_value = getattr(exc, "errno", None)
+        if errno_value in (100, 19):
+            return True
+
+        args = getattr(exc, "args", ())
+        if args:
+            first = args[0]
+            if first in (100, 19):
+                return True
+
+        message = str(exc).lower()
+        return "network is down" in message or "no such device" in message
+
     def _on_message(self, msg) -> None:
         can_msg = CANMessage(
             arbitration_id=msg.arbitration_id,
@@ -93,9 +121,14 @@ class SocketCANBus:
             return True
         except Exception as exc:
             log(f"[{self.name}] TX error: {exc}", "ERROR")
+            if self._is_network_down_error(exc):
+                self._mark_bus_down(exc)
             return False
 
     def recv(self, timeout_ms: Optional[int] = None) -> Optional[CANMessage]:
+        if not self.is_open:
+            return None
+
         timeout_sec = None if timeout_ms is None else max(0.0, timeout_ms / 1000.0)
         msg = self._bus.recv(timeout=timeout_sec)
         if msg is None:
@@ -120,6 +153,13 @@ class SocketCANBus:
 
     def probe_bus_activity(self, timeout_ms: int = 250) -> dict:
         """Listen briefly for CAN traffic and report any active devices found."""
+        if not self.is_open:
+            return {
+                "traffic_detected": False,
+                "traffic_count": 0,
+                "rev_devices": [],
+            }
+
         paused_notifier = self._pause_notifier()
         deadline_ms = get_ticks_ms() + max(0, timeout_ms)
         traffic_count = 0
@@ -158,6 +198,13 @@ class SocketCANBus:
 
     def sweep_for_sparkmax_devices(self, device_ids=range(1, 64), settle_ms: int = 2) -> dict:
         """Actively probe every valid SPARK MAX device ID and report which IDs respond."""
+        if not self.is_open:
+            return {
+                "scanned_ids": list(device_ids),
+                "found_ids": [],
+                "devices": [],
+            }
+
         paused_notifier = self._pause_notifier()
         found_devices = {}
 

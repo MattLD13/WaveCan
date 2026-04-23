@@ -205,14 +205,17 @@ def make_universal_heartbeat_frame(enabled: bool = True, watchdog: bool = True) 
     """
     Build the roboRIO universal heartbeat frame (ID 0x01011840).
 
-    This frame is sent every 20ms on FRC robots. Some CAN motor controllers
-    require watchdog/enabled bits to accept trusted actuator commands.
+    This frame is sent every 20ms. SPARK MAX reads byte 0 of the payload as
+    the FRC control word and will disable motor output if the enabled bit is 0.
+
+    Byte 0 control word:
+      bit 0: Robot Enabled
+      bit 5: DS Attached
     """
     arbitration_id = 0x01011840
-    state = 0
+    control_byte = 0
     if enabled:
-        state |= (1 << 25)
-    if watchdog:
-        state |= (1 << 28)
-    data = state.to_bytes(8, byteorder="little", signed=False)
+        control_byte |= (1 << 0)  # robot enabled
+        control_byte |= (1 << 5)  # DS attached
+    data = bytes([control_byte]) + b"\x00" * 7
     return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
