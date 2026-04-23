@@ -104,8 +104,8 @@ def make_duty_cycle_setpoint_frame(device_id: int, output_percent: float, no_ack
     """
     Build an open-loop output command frame for a SPARK MAX.
 
-    Payload is IEEE754 float32 little-endian in [-1.0, 1.0].
-    Uses Voltage Control API class and setpoint message index.
+    Full 8-byte control frame: [float32 setpoint LE][enable_flags][pid_slot][reserved x2].
+    Byte 4 enable_flags bit 0 must be 1 or the SPARK MAX gates off the output.
     """
     api_index = API_INDEX_SET_SETPOINT_NO_ACK if no_ack else API_INDEX_SET_SETPOINT
     arbitration_id = build_arbitration_id(
@@ -113,7 +113,7 @@ def make_duty_cycle_setpoint_frame(device_id: int, output_percent: float, no_ack
         api_class=API_CLASS_VOLTAGE_CONTROL,
         api_index=api_index,
     )
-    data = struct.pack("<f", clamp_unit(output_percent))
+    data = struct.pack("<fBBBB", clamp_unit(output_percent), 0x01, 0x00, 0x00, 0x00)
     return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
 
 
@@ -128,7 +128,7 @@ def make_trusted_duty_cycle_setpoint_frame(device_id: int, output_percent: float
         api_class=API_CLASS_VOLTAGE_CONTROL,
         api_index=API_INDEX_TRUSTED_SET_SETPOINT_NO_ACK,
     )
-    data = struct.pack("<f", clamp_unit(output_percent))
+    data = struct.pack("<fBBBB", clamp_unit(output_percent), 0x01, 0x00, 0x00, 0x00)
     return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
 
 
@@ -163,7 +163,7 @@ def make_speed_setpoint_frame(device_id: int, normalized_speed: float, no_ack: b
     """
     Build a speed-control setpoint frame.
 
-    Payload is IEEE754 float32 little-endian in [-1.0, 1.0].
+    Full 8-byte control frame: [float32 setpoint LE][enable_flags][pid_slot][reserved x2].
     """
     api_index = API_INDEX_SET_SETPOINT_NO_ACK if no_ack else API_INDEX_SET_SETPOINT
     arbitration_id = build_arbitration_id(
@@ -171,7 +171,7 @@ def make_speed_setpoint_frame(device_id: int, normalized_speed: float, no_ack: b
         api_class=API_CLASS_SPEED_CONTROL,
         api_index=api_index,
     )
-    data = struct.pack("<f", clamp_unit(normalized_speed))
+    data = struct.pack("<fBBBB", clamp_unit(normalized_speed), 0x01, 0x00, 0x00, 0x00)
     return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
 
 
