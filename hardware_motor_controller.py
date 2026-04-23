@@ -18,7 +18,6 @@ from rev_sparkmax_protocol import (
     API_INDEX_STATUS_1,
     extract_frc_can_fields,
     make_duty_cycle_setpoint_frame,
-    make_speed_setpoint_frame,
     make_enable_frame,
     make_disable_frame,
     make_trusted_duty_cycle_setpoint_frame,
@@ -156,8 +155,6 @@ class HardwareMotorController:
                 f"motor={sample_id} "
                 f"V_NA=0x{make_duty_cycle_setpoint_frame(sample_id, 0.0, True).arbitration_id:08X} "
                 f"V_AK=0x{make_duty_cycle_setpoint_frame(sample_id, 0.0, False).arbitration_id:08X} "
-                f"S_NA=0x{make_speed_setpoint_frame(sample_id, 0.0, True).arbitration_id:08X} "
-                f"S_AK=0x{make_speed_setpoint_frame(sample_id, 0.0, False).arbitration_id:08X} "
                 f"EN=0x{make_enable_frame(sample_id, trusted=False, enabled=True).arbitration_id:08X} "
                 f"TEN=0x{make_enable_frame(sample_id, trusted=True, enabled=True).arbitration_id:08X}",
             )
@@ -188,14 +185,12 @@ class HardwareMotorController:
 
     def _send_output_setpoint(self, motor_id: int, value: float, now_ms: int):
         """
-        Send a compatibility set of output commands so different SPARK MAX
-        firmware/control-mode paths still receive a valid setpoint.
+        Send a compatibility set of open-loop output commands so different
+        SPARK MAX firmware paths still receive a valid setpoint.
         """
         trusted_no_ack_msg = make_trusted_duty_cycle_setpoint_frame(motor_id, value)
         no_ack_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=True)
         ack_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=False)
-        speed_no_ack_msg = make_speed_setpoint_frame(motor_id, value, no_ack=True)
-        speed_ack_msg = make_speed_setpoint_frame(motor_id, value, no_ack=False)
 
         self._send_heartbeat_if_due(now_ms)
 
@@ -205,14 +200,12 @@ class HardwareMotorController:
         trusted_ok = self.can_bus.send(trusted_no_ack_msg)
         no_ack_ok = self.can_bus.send(no_ack_msg)
         ack_ok = self.can_bus.send(ack_msg)
-        speed_no_ack_ok = self.can_bus.send(speed_no_ack_msg)
-        speed_ack_ok = self.can_bus.send(speed_ack_msg)
 
-        if not (trusted_ok and no_ack_ok and ack_ok and speed_no_ack_ok and speed_ack_ok):
+        if not (trusted_ok and no_ack_ok and ack_ok):
             log(
                 "[HardwareMotorController] TX partial "
                 f"motor={motor_id} cmd={value:+.2f} "
-                f"trusted={trusted_ok} v_na={no_ack_ok} v_ack={ack_ok} s_na={speed_no_ack_ok} s_ack={speed_ack_ok}",
+                f"trusted={trusted_ok} v_na={no_ack_ok} v_ack={ack_ok}",
                 "WARN",
             )
 
@@ -222,10 +215,6 @@ class HardwareMotorController:
             return True, no_ack_msg
         if ack_ok:
             return True, ack_msg
-        if speed_no_ack_ok:
-            return True, speed_no_ack_msg
-        if speed_ack_ok:
-            return True, speed_ack_msg
         return False, ack_msg
 
     def get_motor(self, motor_id: int) -> Optional[HardwareMotorProxy]:
