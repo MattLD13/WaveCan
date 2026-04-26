@@ -132,6 +132,25 @@ def make_trusted_duty_cycle_setpoint_frame(device_id: int, output_percent: float
     return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
 
 
+def make_set_control_type_frame(device_id: int, control_type: int) -> CANMessage:
+    """
+    Build a set control type frame.
+
+    Control types:
+    0: Duty Cycle
+    1: Velocity
+    2: Position
+    3: Voltage
+    """
+    arbitration_id = build_arbitration_id(
+        device_id=device_id,
+        api_class=API_CLASS_VOLTAGE_CONTROL,
+        api_index=API_INDEX_SET_REFERENCE,
+    )
+    data = struct.pack("<B", control_type)
+    return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
+
+
 def make_status_0_frame(device_id: int, rpm: float, temperature_c: float, voltage_v: float) -> CANMessage:
     """Build a Spark MAX status-0 telemetry frame."""
     arbitration_id = build_arbitration_id(

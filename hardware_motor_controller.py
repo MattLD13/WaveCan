@@ -22,6 +22,7 @@ from rev_sparkmax_protocol import (
     make_disable_frame,
     make_trusted_duty_cycle_setpoint_frame,
     make_universal_heartbeat_frame,
+    make_set_control_type_frame,
 )
 from wavecan_platform import get_ticks_ms, log
 
@@ -393,6 +394,8 @@ class HardwareMotorController:
         self._send_heartbeat_if_due(now_ms)
         for motor in self.motors.values():
             motor.enabled = True
+            # Set control type to duty cycle (0)
+            self.can_bus.send(make_set_control_type_frame(motor.motor_id, 0))
             self._send_enable_if_due(motor.motor_id, now_ms, force=True)
 
     def disable_all(self, send_can: bool = False) -> None:
