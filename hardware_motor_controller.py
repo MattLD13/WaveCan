@@ -204,6 +204,16 @@ class HardwareMotorController:
         no_ack_ok = self.can_bus.send(no_ack_msg)
         ack_ok = self.can_bus.send(ack_msg)
 
+        if abs(value) >= 0.01 and (now_ms - self._last_tx_debug_ms) >= 500:
+            self._last_tx_debug_ms = now_ms
+            log(
+                "[HardwareMotorController] TX variants "
+                f"motor={motor_id} pct={value:+.2f} voltage={voltage:+.2f} "
+                f"trusted(id=0x{trusted_no_ack_msg.arbitration_id:08X})={trusted_ok} "
+                f"no_ack(id=0x{no_ack_msg.arbitration_id:08X})={no_ack_ok} "
+                f"ack(id=0x{ack_msg.arbitration_id:08X})={ack_ok}",
+            )
+
         if not (trusted_ok and no_ack_ok and ack_ok):
             log(
                 "[HardwareMotorController] TX partial "
