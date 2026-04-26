@@ -101,37 +101,18 @@ def build_arbitration_id(
 
 
 def make_duty_cycle_setpoint_frame(device_id: int, output_percent: float, no_ack: bool = True) -> CANMessage:
-    """
-    Build an open-loop output command frame for a SPARK MAX.
-
-    Full 8-byte control frame: [float32 setpoint LE][enable_flags][pid_slot][reserved x2].
-    Byte 4 enable_flags bit 0 must be 1 or the SPARK MAX gates off the output.
-    """
-    api_index = API_INDEX_SET_SETPOINT_NO_ACK if no_ack else API_INDEX_SET_SETPOINT
+    # SPARK MAX firmware 24.x expects API class 0/index 2 with only the float32
+    # setpoint in bytes 0..3 and zeros in bytes 4..7.
     arbitration_id = build_arbitration_id(
         device_id=device_id,
-        api_class=API_CLASS_VOLTAGE_CONTROL,
-        api_index=api_index,
+        api_class=0,
+        api_index=2,
     )
-    data = struct.pack("<fBBBB", clamp_unit(output_percent), 0x01, 0x00, 0x00, 0x00)
+    data = struct.pack("<f", clamp_unit(output_percent)) + b"\x00\x00\x00\x00"
     return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
-
-
 def make_trusted_duty_cycle_setpoint_frame(device_id: int, output_percent: float) -> CANMessage:
-    """
-    Build a trusted no-ack open-loop command frame.
-
-    Some firmware paths gate output on trusted control + heartbeat.
-    """
-    arbitration_id = build_arbitration_id(
-        device_id=device_id,
-        api_class=API_CLASS_VOLTAGE_CONTROL,
-        api_index=API_INDEX_TRUSTED_SET_SETPOINT_NO_ACK,
-    )
-    data = struct.pack("<fBBBB", clamp_unit(output_percent), 0x01, 0x00, 0x00, 0x00)
-    return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
-
-
+    # Alias the trusted helper to the 24.x-compatible duty-cycle frame.
+    return make_duty_cycle_setpoint_frame(device_id, output_percent, no_ack=True)
 def make_voltage_setpoint_frame(
     device_id: int,
     voltage: float,
@@ -262,20 +243,12 @@ def make_enable_frame(device_id: int, trusted: bool = False, enabled: bool = Tru
 
 
 def make_universal_heartbeat_frame(enabled: bool = True, watchdog: bool = True) -> CANMessage:
-    """
-    Build the roboRIO universal heartbeat frame (ID 0x01011840).
-
-    This frame is sent every 20ms. SPARK MAX reads byte 0 of the payload as
-    the FRC control word and will disable motor output if the enabled bit is 0.
-
-    Byte 0 control word:
-      bit 0: Robot Enabled
-      bit 5: DS Attached
-    """
-    arbitration_id = 0x01011840
-    control_byte = 0
-    if enabled:
-        control_byte |= (1 << 0)  # robot enabled
-        control_byte |= (1 << 5)  # DS attached
-    data = bytes([control_byte]) + b"\x00" * 7
+    # SPARK MAX firmware 24.x uses API class 11/index 2 as a broadcast heartbeat
+    # with all 0xFF bytes while enabled.
+    arbitration_id = build_arbitration_id(
+        device_id=0,
+        api_class=11,
+        api_index=2,
+    )
+    data = (b"\xFF" * 8) if enabled else (b"\x00" * 8)
     return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)

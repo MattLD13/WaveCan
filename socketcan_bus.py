@@ -3,8 +3,9 @@ SocketCAN Bus Adapter for Linux/Raspberry Pi
 Provides the same high-level API as MockCANBus using python-can.
 """
 
-from collections import defaultdict
+from collections import defaultdict, deque
 from typing import Callable, Optional
+from threading import Lock
 
 from mock_can import CANMessage
 from rev_sparkmax_protocol import (
@@ -34,6 +35,8 @@ class SocketCANBus:
         self.listeners = defaultdict(list)
         self.is_open = True
         self.message_count = 0
+        self._rx_queue = deque(maxlen=4096)
+        self._rx_lock = Lock()
 
         try:
             self._bus = self._can.interface.Bus(channel=self.channel, interface="socketcan")
@@ -100,6 +103,8 @@ class SocketCANBus:
             is_extended_id=bool(msg.is_extended_id),
             timestamp=get_ticks_ms(),
         )
+        with self._rx_lock:
+            self._rx_queue.append(can_msg)
         callbacks = self.listeners.get(can_msg.arbitration_id, [])
         for callback in callbacks:
             try:
@@ -128,6 +133,10 @@ class SocketCANBus:
     def recv(self, timeout_ms: Optional[int] = None) -> Optional[CANMessage]:
         if not self.is_open:
             return None
+
+        with self._rx_lock:
+            if self._rx_queue:
+                return self._rx_queue.popleft()
 
         timeout_sec = None if timeout_ms is None else max(0.0, timeout_ms / 1000.0)
         msg = self._bus.recv(timeout=timeout_sec)

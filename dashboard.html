@@ -361,6 +361,104 @@ canvas#rpmChart { display: block; }
 .btn-preset.neg:hover  { border-color: var(--red);    color: var(--red);    background: #1e1013; }
 .btn-preset.zero-btn   { font-weight: 900; }
 .btn-preset.zero-btn:hover { border-color: var(--yellow); color: var(--yellow); }
+.pid-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.field label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: 700;
+}
+.field input,
+.field select {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 7px 8px;
+  font-size: 0.82rem;
+}
+.pid-summary {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+.mini-stat {
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.mini-stat .k {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.mini-stat .v {
+  margin-top: 3px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.pid-note {
+  margin-top: 8px;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+.curve-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.curve-toolbar .field {
+  flex: 1 1 150px;
+}
+.curve-wrap {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 10px;
+}
+.curve-help {
+  margin-top: 8px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.curve-canvas {
+  display: block;
+  width: 100%;
+  height: 220px;
+  border-radius: 6px;
+  background: #0f141b;
+  cursor: crosshair;
+  touch-action: none;
+}
+.curve-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.curve-point-readout {
+  margin-top: 8px;
+  font-size: 0.74rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
 </style>
 </head>
 <body>
@@ -502,6 +600,127 @@ canvas#rpmChart { display: block; }
       </div>
     </div>
 
+    <div class="card" data-collapse-id="pid-control">
+      <div class="card-head">PID / Velocity Control</div>
+      <div class="card-body">
+        <div class="pid-grid">
+          <div class="field">
+            <label for="pidTargetRpm">Target RPM</label>
+            <input id="pidTargetRpm" type="number" value="1000" step="50">
+          </div>
+          <div class="field">
+            <label for="pidKp">Kp</label>
+            <input id="pidKp" type="number" value="0.00018" step="0.00001">
+          </div>
+          <div class="field">
+            <label for="pidKi">Ki</label>
+            <input id="pidKi" type="number" value="0.00005" step="0.00001">
+          </div>
+          <div class="field">
+            <label for="pidKd">Kd</label>
+            <input id="pidKd" type="number" value="0" step="0.00001">
+          </div>
+          <div class="field">
+            <label for="pidKf">Kf</label>
+            <input id="pidKf" type="number" value="0.000175" step="0.000001">
+          </div>
+          <div class="field">
+            <label for="pidIntegralLimit">I Clamp</label>
+            <input id="pidIntegralLimit" type="number" value="0.35" step="0.01">
+          </div>
+          <div class="field">
+            <label for="pidOutputLimit">Output Limit</label>
+            <input id="pidOutputLimit" type="number" value="1" min="0.05" max="1" step="0.05">
+          </div>
+          <div class="field">
+            <label for="pidTelemetryTimeout">Telemetry Timeout ms</label>
+            <input id="pidTelemetryTimeout" type="number" value="750" min="100" step="25">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="applyPidSettings()">Save Gains</button>
+          <button class="btn btn-primary" onclick="sendPidTarget()">Hold RPM</button>
+          <button class="btn btn-danger" onclick="stopPidMode()">Stop PID</button>
+        </div>
+        <div class="pid-grid" style="margin-top:10px">
+          <div class="field">
+            <label for="pidLowRpm">Low RPM</label>
+            <input id="pidLowRpm" type="number" value="500" step="50">
+          </div>
+          <div class="field">
+            <label for="pidHighRpm">High RPM</label>
+            <input id="pidHighRpm" type="number" value="1500" step="50">
+          </div>
+          <div class="field">
+            <label for="pidDwellMs">Dwell ms</label>
+            <input id="pidDwellMs" type="number" value="2000" min="200" step="100">
+          </div>
+          <div class="field">
+            <label for="pidCycles">Cycles</label>
+            <input id="pidCycles" type="number" value="6" min="1" step="1">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="startPidTuning()">Start Step Test</button>
+          <button class="btn btn-ghost" onclick="primePidLow()">Go Low</button>
+          <button class="btn btn-ghost" onclick="primePidHigh()">Go High</button>
+          <button class="btn btn-danger" onclick="stopPidTuning()">Stop Test</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="startAutoTune()">Start Auto Tune</button>
+          <button class="btn btn-danger" onclick="stopAutoTune()">Stop Auto Tune</button>
+        </div>
+        <div class="curve-toolbar">
+          <div class="field">
+            <label for="curvePreset">Curve Preset</label>
+            <select id="curvePreset" onchange="loadCurvePreset(this.value)">
+              <option value="step">Step</option>
+              <option value="sCurve">S-Curve</option>
+              <option value="triangle">Triangle</option>
+              <option value="wave">Wave</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="curveDurationMs">Duration ms</label>
+            <input id="curveDurationMs" type="number" value="4000" min="250" step="100">
+          </div>
+          <div class="field">
+            <label for="curveMinRpm">Min RPM</label>
+            <input id="curveMinRpm" type="number" value="500" step="50">
+          </div>
+          <div class="field">
+            <label for="curveMaxRpm">Max RPM</label>
+            <input id="curveMaxRpm" type="number" value="1500" step="50">
+          </div>
+        </div>
+        <div class="curve-wrap">
+          <canvas id="curveEditor" class="curve-canvas" width="720" height="220"></canvas>
+          <div class="curve-point-readout" id="curvePointReadout">Curve point: none selected</div>
+          <div class="curve-help">Drag the spline points to shape the RPM profile. Endpoints stay pinned to the start and end of the run.</div>
+          <div class="curve-presets">
+            <button class="btn btn-ghost" onclick="resetCurvePoints()">Reset Points</button>
+            <button class="btn btn-primary" onclick="runCurveProfile()">Run Curve</button>
+            <button class="btn btn-danger" onclick="stopCurveProfile()">Stop Curve</button>
+          </div>
+        </div>
+        <div class="pid-summary">
+          <div class="mini-stat"><div class="k">Selected Motor</div><div class="v" id="pidSelectedMotor">-</div></div>
+          <div class="mini-stat"><div class="k">Control Mode</div><div class="v" id="pidMode">-</div></div>
+          <div class="mini-stat"><div class="k">Measured RPM</div><div class="v" id="pidMeasured">-</div></div>
+          <div class="mini-stat"><div class="k">Error RPM</div><div class="v" id="pidError">-</div></div>
+          <div class="mini-stat"><div class="k">PID Output</div><div class="v" id="pidOutput">-</div></div>
+          <div class="mini-stat"><div class="k">Test State</div><div class="v" id="pidTuneState">Idle</div></div>
+          <div class="mini-stat"><div class="k">Test Phase</div><div class="v" id="pidTunePhase">-</div></div>
+          <div class="mini-stat"><div class="k">Cycle</div><div class="v" id="pidTuneCycle">-</div></div>
+          <div class="mini-stat"><div class="k">Curve State</div><div class="v" id="pidCurveState">Idle</div></div>
+          <div class="mini-stat"><div class="k">Autotune</div><div class="v" id="pidAutoState">Idle</div></div>
+          <div class="mini-stat"><div class="k">Auto Score</div><div class="v" id="pidAutoScore">-</div></div>
+          <div class="mini-stat"><div class="k">Auto Pass</div><div class="v" id="pidAutoPass">-</div></div>
+        </div>
+        <div class="pid-note" id="pidNote">Select a motor to tune and hold speed with software PID.</div>
+      </div>
+    </div>
+
     <!-- Drivetrain Visualization -->
     <div class="card" data-collapse-id="drivetrain-view">
       <div class="card-head">🚗 Drivetrain View
@@ -572,6 +791,7 @@ const S = {
   motors: {},        // id → motor state object
   selected: new Set(),
   history: {},       // id → [rpm, ...]
+  targetHistory: {}, // id -> [target rpm, ...]
   historyLen: 80,
   statusTimeMs: 0,
   roles: {},         // id → 'L' | 'R' | 'AUX' | null
@@ -621,6 +841,52 @@ const S = {
   manual: {
     latched: false,
     latchedMotorIds: [],
+  },
+  controller: {
+    supportsVelocityPid: false,
+    supportsPidConfig: false,
+  },
+  tuning: {
+    running: false,
+    runner: 'manual',
+    motorId: null,
+    lowRpm: 500,
+    highRpm: 1500,
+    dwellMs: 2000,
+    cycles: 6,
+    currentCycle: 0,
+    phase: 'idle',
+    phaseStartedAt: 0,
+  },
+  autotune: {
+    running: false,
+    collecting: false,
+    motorId: null,
+    pass: 0,
+    maxPasses: 4,
+    evaluation: 0,
+    bestScore: null,
+    lastScore: null,
+    bestGains: null,
+    candidateGains: null,
+    steps: null,
+    paramOrder: ['kf', 'kp', 'ki'],
+    paramIndex: 0,
+    directionIndex: -1,
+    directions: [1, -1],
+    samples: [],
+  },
+  curve: {
+    points: [],
+    selectedIndex: null,
+    dragging: false,
+    running: false,
+    motorId: null,
+    startTs: 0,
+    durationMs: 4000,
+    minRpm: 500,
+    maxRpm: 1500,
+    lastSentAt: 0,
   },
   autoSelectedOnce: false,
   gpIdx: null,
@@ -769,6 +1035,10 @@ function renderMotors() {
     const pct  = Math.min(100, Math.abs(m.output_percent || 0));
     const rev  = (m.rpm || 0) < -20;
     const tCls = m.temperature_c > 60 ? 'var(--red)' : m.temperature_c > 45 ? 'var(--yellow)' : 'var(--text)';
+    const controlMode = m.control_mode === 'velocity_pid' ? 'PID RPM' : 'Duty';
+    const pid = m.pid || {};
+    const targetRpm = pid.target_rpm ?? m.target_rpm ?? 0;
+    const errorRpm = pid.error_rpm ?? 0;
     const cmdAge = (S.statusTimeMs && m.last_command_ms)
       ? Math.max(0, S.statusTimeMs - m.last_command_ms)
       : null;
@@ -803,8 +1073,11 @@ function renderMotors() {
       <div class="mcard-stats">
         <div><div class="stat-lbl">RPM</div><div class="stat-val">${(m.rpm||0).toFixed(0)}</div></div>
         <div><div class="stat-lbl">Output</div><div class="stat-val">${(m.output_percent||0).toFixed(1)}%</div></div>
+        <div><div class="stat-lbl">Mode</div><div class="stat-val">${controlMode}</div></div>
+        <div><div class="stat-lbl">Target</div><div class="stat-val">${targetRpm.toFixed(0)} rpm</div></div>
         <div><div class="stat-lbl">Amps</div><div class="stat-val">${(m.current_amps||0).toFixed(1)} A</div></div>
         <div><div class="stat-lbl">Temp</div><div class="stat-val" style="color:${tCls}">${(m.temperature_c||0).toFixed(1)}°C</div></div>
+        <div><div class="stat-lbl">Err</div><div class="stat-val">${errorRpm.toFixed(0)} rpm</div></div>
         <div><div class="stat-lbl">CAN Cmd</div><div class="stat-val" style="color:${cmdCls}">${cmdText}</div></div>
         <div><div class="stat-lbl">CAN Stat</div><div class="stat-val" style="color:${statusCls}">${statusText}</div></div>
         <div class="rbar-wrap"><div class="rbar-track"><div class="rbar-fill ${rev?'rev':''}" style="width:${pct}%"></div></div></div>
@@ -821,6 +1094,334 @@ function renderMotors() {
 
   updateSelLabel();
   updateChartLegend();
+  renderPidPanel();
+}
+
+const curveCanvas = document.getElementById('curveEditor');
+const curveCtx = curveCanvas.getContext('2d');
+
+function curvePresetPoints(name) {
+  const presets = {
+    step: [
+      { x: 0.00, y: 0.10 },
+      { x: 0.18, y: 0.12 },
+      { x: 0.22, y: 0.88 },
+      { x: 0.60, y: 0.90 },
+      { x: 1.00, y: 0.90 },
+    ],
+    sCurve: [
+      { x: 0.00, y: 0.10 },
+      { x: 0.22, y: 0.18 },
+      { x: 0.50, y: 0.52 },
+      { x: 0.78, y: 0.84 },
+      { x: 1.00, y: 0.92 },
+    ],
+    triangle: [
+      { x: 0.00, y: 0.10 },
+      { x: 0.25, y: 0.36 },
+      { x: 0.50, y: 0.92 },
+      { x: 0.75, y: 0.36 },
+      { x: 1.00, y: 0.10 },
+    ],
+    wave: [
+      { x: 0.00, y: 0.48 },
+      { x: 0.25, y: 0.90 },
+      { x: 0.50, y: 0.18 },
+      { x: 0.75, y: 0.84 },
+      { x: 1.00, y: 0.48 },
+    ],
+  };
+  return (presets[name] || presets.sCurve).map(pt => ({ ...pt }));
+}
+
+function syncCurveFieldsFromUi() {
+  S.curve.durationMs = Math.max(250, readNum('curveDurationMs', 4000));
+  S.curve.minRpm = readNum('curveMinRpm', 500);
+  S.curve.maxRpm = readNum('curveMaxRpm', 1500);
+  if (S.curve.maxRpm < S.curve.minRpm) {
+    const tmp = S.curve.minRpm;
+    S.curve.minRpm = S.curve.maxRpm;
+    S.curve.maxRpm = tmp;
+  }
+}
+
+function ensureCurveState() {
+  if (!S.curve.points.length) S.curve.points = curvePresetPoints('step');
+  syncCurveFieldsFromUi();
+}
+
+function loadCurvePreset(name) {
+  S.curve.points = curvePresetPoints(name);
+  S.curve.selectedIndex = null;
+  drawCurveEditor();
+}
+
+function resetCurvePoints() {
+  const presetEl = document.getElementById('curvePreset');
+  loadCurvePreset(presetEl ? presetEl.value : 'step');
+}
+
+function curveCanvasMetrics() {
+  const pad = { l: 34, r: 16, t: 14, b: 24 };
+  const w = curveCanvas.width;
+  const h = curveCanvas.height;
+  return {
+    plotX: pad.l,
+    plotY: pad.t,
+    plotW: w - pad.l - pad.r,
+    plotH: h - pad.t - pad.b,
+    w,
+    h,
+  };
+}
+
+function curvePointToCanvas(pt) {
+  const m = curveCanvasMetrics();
+  return {
+    x: m.plotX + pt.x * m.plotW,
+    y: m.plotY + (1 - pt.y) * m.plotH,
+  };
+}
+
+function curveCanvasToPoint(x, y) {
+  const m = curveCanvasMetrics();
+  return {
+    x: Math.min(1, Math.max(0, (x - m.plotX) / m.plotW)),
+    y: Math.min(1, Math.max(0, 1 - ((y - m.plotY) / m.plotH))),
+  };
+}
+
+function resizeCurveCanvas() {
+  const rect = curveCanvas.getBoundingClientRect();
+  const width = Math.max(320, Math.round(rect.width || 720));
+  if (curveCanvas.width !== width) curveCanvas.width = width;
+  if (curveCanvas.height !== 220) curveCanvas.height = 220;
+}
+
+function curveSample(t) {
+  const pts = S.curve.points;
+  if (!pts.length) return 0;
+  if (t <= pts[0].x) return pts[0].y;
+  if (t >= pts[pts.length - 1].x) return pts[pts.length - 1].y;
+
+  let seg = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    if (t >= pts[i].x && t <= pts[i + 1].x) {
+      seg = i;
+      break;
+    }
+  }
+
+  const p0 = pts[Math.max(0, seg - 1)];
+  const p1 = pts[seg];
+  const p2 = pts[seg + 1];
+  const p3 = pts[Math.min(pts.length - 1, seg + 2)];
+  const span = Math.max(0.00001, p2.x - p1.x);
+  const u = (t - p1.x) / span;
+  const u2 = u * u;
+  const u3 = u2 * u;
+  const y = 0.5 * (
+    (2 * p1.y) +
+    (-p0.y + p2.y) * u +
+    (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * u2 +
+    (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * u3
+  );
+  return Math.min(1, Math.max(0, y));
+}
+
+function curveRpmAt(t) {
+  const y = curveSample(t);
+  return S.curve.minRpm + (S.curve.maxRpm - S.curve.minRpm) * y;
+}
+
+function drawCurveEditor() {
+  if (!curveCanvas || !curveCtx) return;
+  ensureCurveState();
+  resizeCurveCanvas();
+  const m = curveCanvasMetrics();
+  curveCtx.clearRect(0, 0, m.w, m.h);
+  curveCtx.fillStyle = '#0f141b';
+  curveCtx.fillRect(0, 0, m.w, m.h);
+
+  curveCtx.strokeStyle = 'rgba(48,54,61,0.8)';
+  curveCtx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = m.plotY + (m.plotH * i / 4);
+    curveCtx.beginPath();
+    curveCtx.moveTo(m.plotX, y);
+    curveCtx.lineTo(m.plotX + m.plotW, y);
+    curveCtx.stroke();
+  }
+  for (let i = 0; i <= 4; i++) {
+    const x = m.plotX + (m.plotW * i / 4);
+    curveCtx.beginPath();
+    curveCtx.moveTo(x, m.plotY);
+    curveCtx.lineTo(x, m.plotY + m.plotH);
+    curveCtx.stroke();
+  }
+
+  curveCtx.strokeStyle = 'rgba(88,166,255,0.95)';
+  curveCtx.lineWidth = 2.5;
+  curveCtx.beginPath();
+  const samples = 120;
+  for (let i = 0; i <= samples; i++) {
+    const t = i / samples;
+    const p = curvePointToCanvas({ x: t, y: curveSample(t) });
+    if (i === 0) curveCtx.moveTo(p.x, p.y);
+    else curveCtx.lineTo(p.x, p.y);
+  }
+  curveCtx.stroke();
+
+  S.curve.points.forEach((pt, idx) => {
+    const p = curvePointToCanvas(pt);
+    curveCtx.fillStyle = idx === S.curve.selectedIndex ? '#d29922' : '#58a6ff';
+    curveCtx.strokeStyle = '#0d1117';
+    curveCtx.lineWidth = 2;
+    curveCtx.beginPath();
+    curveCtx.arc(p.x, p.y, idx === S.curve.selectedIndex ? 7 : 6, 0, Math.PI * 2);
+    curveCtx.fill();
+    curveCtx.stroke();
+  });
+
+  curveCtx.fillStyle = '#8b949e';
+  curveCtx.font = '12px Segoe UI';
+  curveCtx.fillText(`${S.curve.minRpm.toFixed(0)} rpm`, 6, m.h - 6);
+  curveCtx.fillText(`${S.curve.maxRpm.toFixed(0)} rpm`, 6, 16);
+  curveCtx.fillText(`${(S.curve.durationMs / 1000).toFixed(1)} s`, m.w - 46, m.h - 6);
+
+  const readout = document.getElementById('curvePointReadout');
+  if (readout) {
+    if (S.curve.selectedIndex === null) {
+      readout.textContent = 'Curve point: none selected';
+    } else {
+      const pt = S.curve.points[S.curve.selectedIndex];
+      const rpm = curveRpmAt(pt.x);
+      readout.textContent = `Curve point ${S.curve.selectedIndex + 1}: t ${(pt.x * S.curve.durationMs / 1000).toFixed(2)} s, ${(pt.y * 100).toFixed(1)}%, ${rpm.toFixed(0)} rpm`;
+    }
+  }
+}
+
+function curvePointerPosition(ev) {
+  const rect = curveCanvas.getBoundingClientRect();
+  return {
+    x: (ev.clientX - rect.left) * (curveCanvas.width / rect.width),
+    y: (ev.clientY - rect.top) * (curveCanvas.height / rect.height),
+  };
+}
+
+function hitCurvePoint(x, y) {
+  let best = null;
+  let bestDist = 16;
+  S.curve.points.forEach((pt, idx) => {
+    const p = curvePointToCanvas(pt);
+    const d = Math.hypot(p.x - x, p.y - y);
+    if (d < bestDist) {
+      best = idx;
+      bestDist = d;
+    }
+  });
+  return best;
+}
+
+function updateCurvePointFromPointer(x, y) {
+  if (S.curve.selectedIndex === null) return;
+  const idx = S.curve.selectedIndex;
+  const next = curveCanvasToPoint(x, y);
+  const pts = S.curve.points;
+  const prevX = idx === 0 ? 0 : pts[idx - 1].x + 0.03;
+  const nextX = idx === pts.length - 1 ? 1 : pts[idx + 1].x - 0.03;
+  pts[idx].x = idx === 0 ? 0 : idx === pts.length - 1 ? 1 : Math.min(nextX, Math.max(prevX, next.x));
+  pts[idx].y = Math.min(1, Math.max(0, next.y));
+  drawCurveEditor();
+}
+
+curveCanvas.addEventListener('pointerdown', ev => {
+  ensureCurveState();
+  const pos = curvePointerPosition(ev);
+  const hit = hitCurvePoint(pos.x, pos.y);
+  if (hit === null) return;
+  S.curve.selectedIndex = hit;
+  S.curve.dragging = true;
+  curveCanvas.setPointerCapture(ev.pointerId);
+  updateCurvePointFromPointer(pos.x, pos.y);
+});
+
+curveCanvas.addEventListener('pointermove', ev => {
+  if (!S.curve.dragging) return;
+  const pos = curvePointerPosition(ev);
+  updateCurvePointFromPointer(pos.x, pos.y);
+});
+
+curveCanvas.addEventListener('pointerup', ev => {
+  if (S.curve.dragging) curveCanvas.releasePointerCapture(ev.pointerId);
+  S.curve.dragging = false;
+});
+
+curveCanvas.addEventListener('pointerleave', () => {
+  S.curve.dragging = false;
+});
+
+async function runCurveProfile() {
+  const id = selectedMotorId();
+  if (!id) {
+    flash('Select one motor first');
+    return;
+  }
+  syncCurveFieldsFromUi();
+  await applyPidSettings();
+  setMode('off');
+  S.manual.latched = false;
+  S.manual.latchedMotorIds = [];
+  S.tuning.running = false;
+  S.tuning.runner = 'manual';
+  S.tuning.phase = 'idle';
+  S.autotune.running = false;
+  S.curve.running = true;
+  S.curve.motorId = id;
+  S.curve.startTs = Date.now();
+  S.curve.lastSentAt = 0;
+  flash(`Running curve profile on Motor ${id}`);
+  renderPidPanel();
+}
+
+async function stopCurveProfile(stopMotor = true) {
+  const id = S.curve.motorId;
+  const wasRunning = S.curve.running;
+  S.curve.running = false;
+  S.curve.motorId = null;
+  S.curve.startTs = 0;
+  S.curve.lastSentAt = 0;
+  if (wasRunning && stopMotor && id) {
+    try {
+      await postJson('/api/motor/cmd', { id, cmd: 'stop_pid', value: 0 });
+    } catch (_) {}
+    flash(`Curve profile stopped on Motor ${id}`);
+  }
+  renderPidPanel();
+}
+
+async function curveTick() {
+  if (!S.curve.running || !S.curve.motorId) return;
+  const id = S.curve.motorId;
+  if (selectedMotorId() !== id) {
+    await stopCurveProfile(false);
+    flash('Curve profile stopped: selected motor changed');
+    return;
+  }
+  const now = Date.now();
+  if (now - S.curve.lastSentAt < 120) return;
+  const elapsed = now - S.curve.startTs;
+  const progress = Math.min(1, elapsed / Math.max(250, S.curve.durationMs));
+  const rpm = curveRpmAt(progress);
+  S.curve.lastSentAt = now;
+  try {
+    await postJson('/api/motor/cmd', { id, cmd: 'set_rpm', value: rpm });
+  } catch (_) {}
+  if (progress >= 1) {
+    await stopCurveProfile(false);
+    flash(`Curve profile complete on Motor ${id}`);
+  }
+  renderPidPanel();
 }
 
 function cycleRole(id) {
@@ -847,6 +1448,482 @@ function updateSelLabel() {
 }
 
 function sortedIds() { return Object.keys(S.motors).map(Number).sort((a,b)=>a-b); }
+
+function selectedMotorId() {
+  const ids = [...S.selected].sort((a, b) => a - b);
+  return ids.length ? ids[0] : null;
+}
+
+function readNum(id, fallback = 0) {
+  const el = document.getElementById(id);
+  if (!el) return fallback;
+  const value = Number(el.value);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function readPidGainInputs() {
+  return {
+    kp: Math.max(0, readNum('pidKp', 0.00018)),
+    ki: Math.max(0, readNum('pidKi', 0.00005)),
+    kd: Math.max(0, readNum('pidKd', 0)),
+    kf: Math.max(0, readNum('pidKf', 0)),
+    integral_limit: Math.max(0, readNum('pidIntegralLimit', 0.35)),
+    output_limit: Math.max(0.05, Math.min(1, readNum('pidOutputLimit', 1))),
+    telemetry_timeout_ms: Math.max(100, readNum('pidTelemetryTimeout', 750)),
+  };
+}
+
+function writePidGainInputs(gains) {
+  const map = {
+    pidKp: gains.kp,
+    pidKi: gains.ki,
+    pidKd: gains.kd,
+    pidKf: gains.kf,
+    pidIntegralLimit: gains.integral_limit,
+    pidOutputLimit: gains.output_limit,
+    pidTelemetryTimeout: gains.telemetry_timeout_ms,
+  };
+  Object.entries(map).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el && value !== undefined && value !== null) el.value = String(value);
+  });
+}
+
+async function postJson(url, body) {
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+  return r.json();
+}
+
+function renderPidPanel() {
+  const selectedId = selectedMotorId();
+  const selectedEl = document.getElementById('pidSelectedMotor');
+  const modeEl = document.getElementById('pidMode');
+  const measuredEl = document.getElementById('pidMeasured');
+  const errorEl = document.getElementById('pidError');
+  const outputEl = document.getElementById('pidOutput');
+  const tuneStateEl = document.getElementById('pidTuneState');
+  const tunePhaseEl = document.getElementById('pidTunePhase');
+  const tuneCycleEl = document.getElementById('pidTuneCycle');
+  const curveStateEl = document.getElementById('pidCurveState');
+  const autoStateEl = document.getElementById('pidAutoState');
+  const autoScoreEl = document.getElementById('pidAutoScore');
+  const autoPassEl = document.getElementById('pidAutoPass');
+  const noteEl = document.getElementById('pidNote');
+  if (!selectedEl || !modeEl || !measuredEl || !errorEl || !outputEl || !tuneStateEl || !tunePhaseEl || !tuneCycleEl || !curveStateEl || !autoStateEl || !autoScoreEl || !autoPassEl || !noteEl) return;
+
+  if (!selectedId || !S.motors[selectedId]) {
+    selectedEl.textContent = '-';
+    modeEl.textContent = S.controller.supportsVelocityPid ? 'Ready' : 'Unavailable';
+    measuredEl.textContent = '-';
+    errorEl.textContent = '-';
+    outputEl.textContent = '-';
+    tuneStateEl.textContent = S.tuning.running ? 'Running' : 'Idle';
+    tunePhaseEl.textContent = S.tuning.phase === 'idle' ? '-' : S.tuning.phase;
+    tuneCycleEl.textContent = S.tuning.currentCycle ? `${S.tuning.currentCycle}/${S.tuning.cycles}` : '-';
+    curveStateEl.textContent = S.curve.running ? 'Running' : 'Idle';
+    autoStateEl.textContent = S.autotune.running ? 'Running' : 'Idle';
+    autoScoreEl.textContent = S.autotune.bestScore === null ? '-' : S.autotune.bestScore.toFixed(1);
+    autoPassEl.textContent = S.autotune.pass ? `${S.autotune.pass}/${S.autotune.maxPasses}` : '-';
+    noteEl.textContent = S.controller.supportsVelocityPid
+      ? 'Select a motor to tune and hold speed with software PID.'
+      : 'This controller is not advertising software PID support.';
+    return;
+  }
+
+  const motor = S.motors[selectedId];
+  const pid = motor.pid || {};
+  const cfg = pid.config || {};
+  selectedEl.textContent = `Motor ${selectedId}`;
+  modeEl.textContent = motor.control_mode === 'velocity_pid' ? 'PID RPM' : 'Duty';
+  measuredEl.textContent = `${(motor.rpm || 0).toFixed(0)} rpm`;
+  errorEl.textContent = `${(pid.error_rpm || 0).toFixed(0)} rpm`;
+  outputEl.textContent = `${(((pid.last_output ?? 0) * 100)).toFixed(1)}%`;
+  tuneStateEl.textContent = S.tuning.running ? 'Running' : 'Idle';
+  tunePhaseEl.textContent = S.tuning.phase === 'idle' ? '-' : S.tuning.phase;
+  tuneCycleEl.textContent = S.tuning.currentCycle ? `${S.tuning.currentCycle}/${S.tuning.cycles}` : '-';
+  curveStateEl.textContent = S.curve.running ? `Running M${S.curve.motorId}` : 'Idle';
+  autoStateEl.textContent = S.autotune.running ? 'Running' : 'Idle';
+  autoScoreEl.textContent = S.autotune.bestScore === null ? '-' : S.autotune.bestScore.toFixed(1);
+  autoPassEl.textContent = S.autotune.pass ? `${S.autotune.pass}/${S.autotune.maxPasses}` : '-';
+  noteEl.textContent = S.autotune.running
+    ? `Autotune is scoring the ${S.tuning.lowRpm.toFixed(0)} to ${S.tuning.highRpm.toFixed(0)} rpm profile and iterating gains.`
+    : (S.curve.running
+    ? `Curve profile is driving Motor ${S.curve.motorId} over ${(S.curve.durationMs / 1000).toFixed(1)} seconds.`
+    : (S.tuning.running
+    ? `Step test running on Motor ${S.tuning.motorId}: ${S.tuning.lowRpm.toFixed(0)} to ${S.tuning.highRpm.toFixed(0)} rpm.`
+    : (motor.control_mode === 'velocity_pid'
+      ? `Holding ${(pid.target_rpm || 0).toFixed(0)} rpm with software PID.`
+      : 'Save gains, then switch the selected motor into Hold RPM mode.')));
+
+  const active = document.activeElement;
+  const activeId = active && active.id;
+  const fieldMap = {
+    pidTargetRpm: pid.target_rpm ?? motor.target_rpm ?? 0,
+    pidKp: cfg.kp ?? 0.00018,
+    pidKi: cfg.ki ?? 0.00005,
+    pidKd: cfg.kd ?? 0,
+    pidKf: cfg.kf ?? (1 / Math.max(1, motor.max_rpm || 5700)),
+    pidIntegralLimit: cfg.integral_limit ?? 0.35,
+    pidOutputLimit: cfg.output_limit ?? 1,
+    pidTelemetryTimeout: pid.telemetry_timeout_ms ?? 750,
+    pidLowRpm: S.tuning.lowRpm,
+    pidHighRpm: S.tuning.highRpm,
+    pidDwellMs: S.tuning.dwellMs,
+    pidCycles: S.tuning.cycles,
+    curveDurationMs: S.curve.durationMs,
+    curveMinRpm: S.curve.minRpm,
+    curveMaxRpm: S.curve.maxRpm,
+  };
+  Object.entries(fieldMap).forEach(([id, value]) => {
+    if (activeId === id) return;
+    const el = document.getElementById(id);
+    if (el && value !== undefined && value !== null) el.value = String(value);
+  });
+  drawCurveEditor();
+}
+
+async function applyPidSettings() {
+  const id = selectedMotorId();
+  if (!id) {
+    flash('Select one motor first');
+    return;
+  }
+  try {
+    await postJson('/api/motor/pid', {
+      id,
+      ...readPidGainInputs(),
+    });
+    flash(`Saved PID gains for Motor ${id}`);
+  } catch(e) {
+    flash('PID save failed');
+  }
+}
+
+async function setPidTargetValue(targetRpm, announceText = null) {
+  const id = selectedMotorId();
+  if (!id) {
+    flash('Select one motor first');
+    return;
+  }
+  try {
+    await postJson('/api/motor/cmd', { id, cmd: 'set_rpm', value: targetRpm });
+    if (announceText) flash(announceText);
+  } catch(e) {
+    flash('PID target send failed');
+  }
+}
+
+async function sendPidTarget() {
+  await applyPidSettings();
+  const id = selectedMotorId();
+  if (!id) return;
+  await setPidTargetValue(readNum('pidTargetRpm', 0), `Holding Motor ${id} at target RPM`);
+}
+
+async function stopPidMode() {
+  const id = selectedMotorId();
+  if (!id) {
+    flash('Select one motor first');
+    return;
+  }
+  S.tuning.running = false;
+  S.tuning.phase = 'idle';
+  S.tuning.phaseStartedAt = 0;
+  S.tuning.currentCycle = 0;
+  S.tuning.motorId = null;
+  try {
+    await postJson('/api/motor/cmd', { id, cmd: 'stop_pid', value: 0 });
+    flash(`Stopped PID for Motor ${id}`);
+  } catch(e) {
+    flash('PID stop failed');
+  }
+  renderPidPanel();
+}
+
+function syncTuningFields() {
+  S.tuning.lowRpm = readNum('pidLowRpm', 500);
+  S.tuning.highRpm = readNum('pidHighRpm', 1500);
+  S.tuning.dwellMs = Math.max(200, readNum('pidDwellMs', 2000));
+  S.tuning.cycles = Math.max(1, Math.round(readNum('pidCycles', 6)));
+}
+
+async function primePidLow() {
+  syncTuningFields();
+  await applyPidSettings();
+  await setPidTargetValue(S.tuning.lowRpm, `Motor ${selectedMotorId()} to low RPM`);
+}
+
+async function primePidHigh() {
+  syncTuningFields();
+  await applyPidSettings();
+  await setPidTargetValue(S.tuning.highRpm, `Motor ${selectedMotorId()} to high RPM`);
+}
+
+async function startPidTuning() {
+  const id = selectedMotorId();
+  if (!id) {
+    flash('Select one motor first');
+    return;
+  }
+  syncTuningFields();
+  await applyPidSettings();
+  setMode('off');
+  S.manual.latched = false;
+  S.manual.latchedMotorIds = [];
+  S.tuning.runner = 'manual';
+  S.tuning.running = true;
+  S.tuning.motorId = id;
+  S.tuning.currentCycle = 1;
+  S.tuning.phase = 'low';
+  S.tuning.phaseStartedAt = Date.now();
+  await setPidTargetValue(S.tuning.lowRpm, `Step test started on Motor ${id}`);
+  renderPidPanel();
+}
+
+async function stopPidTuning(stopMotor = false) {
+  const wasRunning = S.tuning.running;
+  const motorId = S.tuning.motorId;
+  S.tuning.running = false;
+  S.tuning.runner = 'manual';
+  S.tuning.phase = 'idle';
+  S.tuning.phaseStartedAt = 0;
+  S.tuning.currentCycle = 0;
+  S.tuning.motorId = null;
+  if (stopMotor && motorId && S.motors[motorId]) {
+    await stopPidMode();
+  } else if (wasRunning) {
+    flash('Step test stopped');
+  }
+  renderPidPanel();
+}
+
+function createAutoTuneSteps(gains) {
+  return {
+    kf: Math.max(Math.abs(gains.kf || 0) * 0.25, 0.00001),
+    kp: Math.max(Math.abs(gains.kp || 0) * 0.40, 0.00002),
+    ki: Math.max(Math.abs(gains.ki || 0) * 0.50, 0.00001),
+  };
+}
+
+function scoreAutoTuneSamples(samples) {
+  if (!samples || samples.length < 2) return Infinity;
+  let iae = 0;
+  let overshoot = 0;
+  let settleError = 0;
+  const tailCount = Math.max(3, Math.floor(samples.length * 0.2));
+
+  for (let i = 1; i < samples.length; i++) {
+    const prev = samples[i - 1];
+    const cur = samples[i];
+    const dt = Math.max(0.02, (cur.ts - prev.ts) / 1000);
+    iae += Math.abs(cur.error) * dt;
+
+    const targetMag = Math.abs(cur.target);
+    if (targetMag > 1) {
+      const overshootNow = Math.max(0, Math.abs(cur.rpm) - targetMag);
+      overshoot = Math.max(overshoot, overshootNow);
+    }
+  }
+
+  const tail = samples.slice(-tailCount);
+  if (tail.length) {
+    settleError = tail.reduce((sum, sample) => sum + Math.abs(sample.error), 0) / tail.length;
+  }
+
+  return iae + overshoot * 0.35 + settleError * 1.5;
+}
+
+async function applyPidGainsObject(id, gains) {
+  writePidGainInputs(gains);
+  await postJson('/api/motor/pid', { id, ...gains });
+}
+
+async function launchAutoTuneRun(gains, label) {
+  const id = S.autotune.motorId;
+  if (!id) return;
+  await applyPidGainsObject(id, gains);
+  setMode('off');
+  S.manual.latched = false;
+  S.manual.latchedMotorIds = [];
+  S.tuning.runner = 'autotune';
+  S.tuning.running = true;
+  S.tuning.motorId = id;
+  S.tuning.currentCycle = 1;
+  S.tuning.phase = 'low';
+  S.tuning.phaseStartedAt = Date.now();
+  S.autotune.collecting = true;
+  S.autotune.samples = [];
+  await setPidTargetValue(S.tuning.lowRpm, label);
+  renderPidPanel();
+}
+
+function queueNextAutoTuneCandidate() {
+  const at = S.autotune;
+  if (!at.running) return null;
+  if (at.pass >= at.maxPasses) return null;
+
+  const param = at.paramOrder[at.paramIndex];
+  const direction = at.directions[at.directionIndex];
+  const step = at.steps[param];
+  const candidate = { ...at.bestGains };
+  candidate[param] = Math.max(0, candidate[param] + direction * step);
+  at.candidateGains = candidate;
+  return { param, direction, step, candidate };
+}
+
+async function advanceAutoTune() {
+  const at = S.autotune;
+  if (!at.running) return;
+  if (at.directionIndex < 0) at.directionIndex = 0;
+  if (at.pass >= at.maxPasses || Object.values(at.steps).every(step => step < 0.000005)) {
+    await stopAutoTune(true);
+    flash('Autotune complete');
+    return;
+  }
+  const next = queueNextAutoTuneCandidate();
+  if (!next) {
+    await stopAutoTune(true);
+    flash('Autotune complete');
+    return;
+  }
+  await launchAutoTuneRun(next.candidate, `Autotune ${next.param} ${next.direction > 0 ? '+' : '-'}`);
+}
+
+async function finishAutoTuneRun() {
+  const at = S.autotune;
+  if (!at.running) return;
+  at.collecting = false;
+  const score = scoreAutoTuneSamples(at.samples);
+  at.lastScore = score;
+  at.evaluation += 1;
+
+  if (at.bestScore === null) {
+    at.bestScore = score;
+    at.bestGains = { ...(at.candidateGains || at.bestGains) };
+    at.paramIndex = 0;
+    at.directionIndex = 0;
+  } else if (score < at.bestScore) {
+    at.bestScore = score;
+    at.bestGains = { ...(at.candidateGains || at.bestGains) };
+    if (at.directionIndex >= 0) {
+      const improvedParam = at.paramOrder[at.paramIndex];
+      at.steps[improvedParam] *= 1.15;
+    }
+    writePidGainInputs(at.bestGains);
+    at.paramIndex += 1;
+    at.directionIndex = 0;
+    if (at.paramIndex >= at.paramOrder.length) {
+      at.paramIndex = 0;
+      at.pass += 1;
+    }
+  } else if (at.directionIndex === 0) {
+    at.directionIndex = 1;
+  } else {
+    const failedParam = at.paramOrder[at.paramIndex];
+    at.steps[failedParam] *= 0.6;
+    at.paramIndex += 1;
+    at.directionIndex = 0;
+    if (at.paramIndex >= at.paramOrder.length) {
+      at.paramIndex = 0;
+      at.pass += 1;
+    }
+  }
+
+  renderPidPanel();
+  if (at.pass >= at.maxPasses) {
+    await stopAutoTune(true);
+    flash('Autotune complete');
+    return;
+  }
+  await advanceAutoTune();
+}
+
+async function startAutoTune() {
+  const id = selectedMotorId();
+  if (!id) {
+    flash('Select one motor first');
+    return;
+  }
+  syncTuningFields();
+  const gains = readPidGainInputs();
+  S.autotune.running = true;
+  S.autotune.collecting = false;
+  S.autotune.motorId = id;
+  S.autotune.pass = 0;
+  S.autotune.evaluation = 0;
+  S.autotune.bestScore = null;
+  S.autotune.lastScore = null;
+  S.autotune.bestGains = { ...gains };
+  S.autotune.candidateGains = { ...gains };
+  S.autotune.steps = createAutoTuneSteps(gains);
+  S.autotune.paramIndex = 0;
+  S.autotune.directionIndex = -1;
+  S.autotune.samples = [];
+  await launchAutoTuneRun(gains, `Autotune baseline Motor ${id}`);
+}
+
+async function stopAutoTune(keepBest = true) {
+  const at = S.autotune;
+  const best = at.bestGains ? { ...at.bestGains } : null;
+  S.tuning.running = false;
+  S.tuning.runner = 'manual';
+  S.tuning.phase = 'idle';
+  S.tuning.phaseStartedAt = 0;
+  S.tuning.currentCycle = 0;
+  S.tuning.motorId = null;
+  at.running = false;
+  at.collecting = false;
+  at.samples = [];
+  at.motorId = null;
+  at.directionIndex = -1;
+  if (keepBest && best && selectedMotorId()) {
+    try {
+      await applyPidGainsObject(selectedMotorId(), best);
+    } catch (_) {}
+  }
+  renderPidPanel();
+}
+
+async function tuningTick() {
+  if (!S.tuning.running) return;
+  const activeId = selectedMotorId();
+  if (!activeId || activeId !== S.tuning.motorId) {
+    await stopPidTuning(false);
+    flash(S.autotune.running ? 'Autotune stopped: selected motor changed' : 'Step test stopped: selected motor changed');
+    return;
+  }
+  const now = Date.now();
+  if ((now - S.tuning.phaseStartedAt) < S.tuning.dwellMs) return;
+
+  if (S.tuning.phase === 'low') {
+    S.tuning.phase = 'high';
+    S.tuning.phaseStartedAt = now;
+    await setPidTargetValue(S.tuning.highRpm, `Cycle ${S.tuning.currentCycle}: high step`);
+    renderPidPanel();
+    return;
+  }
+
+  if (S.tuning.currentCycle >= S.tuning.cycles) {
+    const runner = S.tuning.runner;
+    await stopPidTuning(false);
+    if (runner === 'autotune') {
+      await finishAutoTuneRun();
+    } else {
+      flash('Step test complete');
+    }
+    return;
+  }
+
+  S.tuning.currentCycle += 1;
+  S.tuning.phase = 'low';
+  S.tuning.phaseStartedAt = now;
+  await setPidTargetValue(S.tuning.lowRpm, `Cycle ${S.tuning.currentCycle}: low step`);
+  renderPidPanel();
+}
 
 // ══════════════════════════════════════════════════════════
 //  Drive Modes
@@ -1753,6 +2830,7 @@ function resizeChart() {
   rpmCanvas.height = 130;
 }
 window.addEventListener('resize', resizeChart);
+window.addEventListener('resize', drawCurveEditor);
 resizeChart();
 
 function drawChart() {
@@ -1780,6 +2858,22 @@ function drawChart() {
     });
     rpmCtx.stroke();
   });
+  const selectedId = selectedMotorId();
+  const targetSeries = selectedId ? S.targetHistory[selectedId] : null;
+  if (targetSeries && targetSeries.length > 1) {
+    rpmCtx.strokeStyle = 'rgba(210, 153, 34, 0.85)';
+    rpmCtx.lineWidth = 1.5;
+    rpmCtx.setLineDash([6, 4]);
+    const dx = W / (S.historyLen - 1);
+    rpmCtx.beginPath();
+    targetSeries.forEach((rpm, i) => {
+      const x = i * dx;
+      const y = zeroY - rpm * scaleY;
+      i === 0 ? rpmCtx.moveTo(x, y) : rpmCtx.lineTo(x, y);
+    });
+    rpmCtx.stroke();
+    rpmCtx.setLineDash([]);
+  }
   rpmCtx.strokeStyle = 'rgba(139,148,158,0.25)'; rpmCtx.setLineDash([4,4]);
   rpmCtx.beginPath(); rpmCtx.moveTo(0, zeroY); rpmCtx.lineTo(W, zeroY); rpmCtx.stroke();
   rpmCtx.setLineDash([]);
@@ -1788,9 +2882,13 @@ setInterval(drawChart, 100);
 
 function updateChartLegend() {
   const el = document.getElementById('chartLegend');
+  const selectedId = selectedMotorId();
+  const targetLegend = selectedId && S.motors[selectedId]
+    ? `<div class="leg-item"><div class="leg-dot" style="background:#d29922"></div>Target M${selectedId} (${((((S.motors[selectedId]?.pid||{}).target_rpm ?? S.motors[selectedId]?.target_rpm ?? 0))).toFixed(0)} rpm)</div>`
+    : '';
   el.innerHTML = sortedIds().map((id, ci) =>
     `<div class="leg-item"><div class="leg-dot" style="background:${COLORS[ci%COLORS.length]}"></div>M${id} (${(S.motors[id]?.rpm||0).toFixed(0)} rpm)</div>`
-  ).join('');
+  ).join('') + targetLegend;
 }
 
 function fmtAge(ms) {
@@ -1859,18 +2957,36 @@ async function pollStatus() {
     const r = await fetch('/api/status');
     const d = await r.json();
     S.statusTimeMs = d.timestamp_ms || 0;
+    S.controller.supportsVelocityPid = !!(d.controller && d.controller.supports_velocity_pid);
+    S.controller.supportsPidConfig = !!(d.controller && d.controller.supports_pid_config);
     document.getElementById('connPill').className = 'pill ok';
     document.getElementById('connPill').innerHTML = '<span class="dot"></span> Connected';
     d.motors.forEach(m => {
       S.motors[m.motor_id] = m;
       if (!S.history[m.motor_id]) S.history[m.motor_id] = [];
+      if (!S.targetHistory[m.motor_id]) S.targetHistory[m.motor_id] = [];
       const h = S.history[m.motor_id];
       h.push(m.rpm);
       if (h.length > S.historyLen) h.shift();
+      const targetRpm = ((m.pid || {}).target_rpm ?? m.target_rpm ?? 0);
+      const th = S.targetHistory[m.motor_id];
+      th.push(targetRpm);
+      if (th.length > S.historyLen) th.shift();
+      if (S.autotune.collecting && S.autotune.motorId === m.motor_id) {
+        S.autotune.samples.push({
+          ts: Date.now(),
+          rpm: m.rpm || 0,
+          target: targetRpm,
+          error: ((m.pid || {}).error_rpm ?? (targetRpm - (m.rpm || 0))),
+          output: ((m.pid || {}).last_output ?? 0),
+        });
+        if (S.autotune.samples.length > 1000) S.autotune.samples.shift();
+      }
     });
     renderMotors();
     renderCanTelemetry();
     updateFleet(d.motors);
+    renderPidPanel();
   } catch(e) {
     document.getElementById('connPill').className = 'pill';
     document.getElementById('connPill').innerHTML = '<span class="dot"></span> Disconnected';
@@ -1931,8 +3047,12 @@ updateManualButton();
 setInterval(pollStatus, 200);
 setInterval(pollHealth, 2000);
 setInterval(() => { driveSendTick(); }, 60);
+setInterval(() => { tuningTick(); }, 100);
+setInterval(() => { curveTick(); }, 100);
 pollStatus();
 pollHealth();
+drawCurveEditor();
+renderPidPanel();
 </script>
 </body>
 </html>

@@ -125,6 +125,8 @@ class WebServer:
                 response = await self.handle_status(request)
             elif request.path == '/api/motor/cmd' and request.method == 'POST':
                 response = await self.handle_motor_command(request)
+            elif request.path == '/api/motor/pid' and request.method == 'POST':
+                response = await self.handle_motor_pid(request)
             elif request.path == '/api/motors' and request.method == 'GET':
                 response = await self.handle_motors_list(request)
             elif request.path == '/api/health':
@@ -237,6 +239,10 @@ class WebServer:
                 'motor_count': len(states),
                 'runtime_mode': self.runtime_mode,
                 'can_bus': can_stats,
+                'controller': {
+                    'supports_velocity_pid': hasattr(self.motor_controller, 'set_motor_velocity_pid'),
+                    'supports_pid_config': hasattr(self.motor_controller, 'configure_pid'),
+                },
             }
             return HTTPResponse(200).set_json(response_data)
         except Exception as e:
@@ -308,9 +314,55 @@ class WebServer:
                     self._last_nonzero_cmd_ms[motor_id] = now_ms
                     self._last_nonzero_cmd_value[motor_id] = value
                 log(f"[WebServer] Motor {motor_id} set to {value * 100:.0f}%")
+            elif cmd == 'set_rpm':
+                raw_value = value
+                value = float(value)
+                if not hasattr(self.motor_controller, 'set_motor_velocity_pid'):
+                    return HTTPResponse(400).set_json({'error': 'Velocity PID is not supported by this controller'})
+
+                self.motor_controller.set_motor_velocity_pid(motor_id, value)
+                log(
+                    f"[WebServer] Motor cmd raw motor={motor_id} cmd={cmd} "
+                    f"raw={raw_value!r} target_rpm={value:+.1f}"
+                )
+            elif cmd == 'stop_pid':
+                if not hasattr(self.motor_controller, 'stop_pid'):
+                    return HTTPResponse(400).set_json({'error': 'PID stop is not supported by this controller'})
+                self.motor_controller.stop_pid(motor_id)
+                self.motor_controller.set_motor_output(motor_id, 0.0)
+                value = 0.0
+                log(f"[WebServer] Motor {motor_id} PID stopped")
+            else:
+                return HTTPResponse(400).set_json({'error': f'Unsupported command: {cmd}'})
 
             return HTTPResponse(200).set_json({'success': True, 'motor_id': motor_id, 'value': value})
 
+        except Exception as e:
+            return HTTPResponse(500).set_json({'error': str(e)})
+
+    async def handle_motor_pid(self, request: HTTPRequest) -> HTTPResponse:
+        """Configure software PID settings for one motor."""
+        try:
+            if not request.body:
+                return HTTPResponse(400).set_json({'error': 'No request body'})
+
+            command = json.loads(request.body)
+            motor_id = int(command.get('id', 1))
+            if not hasattr(self.motor_controller, 'configure_pid'):
+                return HTTPResponse(400).set_json({'error': 'PID configuration is not supported by this controller'})
+
+            pid_state = self.motor_controller.configure_pid(
+                motor_id,
+                kp=command.get('kp'),
+                ki=command.get('ki'),
+                kd=command.get('kd'),
+                kf=command.get('kf'),
+                integral_limit=command.get('integral_limit'),
+                output_limit=command.get('output_limit'),
+                telemetry_timeout_ms=command.get('telemetry_timeout_ms'),
+            )
+            log(f"[WebServer] PID config updated for motor {motor_id}")
+            return HTTPResponse(200).set_json({'success': True, 'motor_id': motor_id, 'pid': pid_state})
         except Exception as e:
             return HTTPResponse(500).set_json({'error': str(e)})
 

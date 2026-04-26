@@ -111,7 +111,7 @@ class WaveCan:
         Background task: Update motor physics at ~100Hz
         Runs periodically to advance motor state
         """
-        update_interval_ms = 10  # 10ms = ~100Hz
+        update_interval_ms = 5  # 5ms keeps SPARK MAX 24.x command refresh continuous
         last_telemetry_ms = 0
         telemetry_interval_ms = 100  # Broadcast telemetry every 100ms
 
