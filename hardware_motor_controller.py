@@ -251,6 +251,26 @@ class HardwareMotorController:
         motor.last_tx_arb_id = f"0x{msg.arbitration_id:08X}"
         motor.last_tx_data_hex = _format_can_bytes(bytes(msg.data))
 
+        # Periodically surface exact on-wire control values for hardware debugging.
+        if (now_ms - self._last_tx_debug_ms) >= 500:
+            self._last_tx_debug_ms = now_ms
+            setpoint = None
+            if len(msg.data) >= 4:
+                try:
+                    setpoint = struct.unpack("<f", bytes(msg.data[:4]))[0]
+                except Exception:
+                    setpoint = None
+            if setpoint is None:
+                log(
+                    "[HardwareMotorController] TX control "
+                    f"motor={motor_id} arb=0x{msg.arbitration_id:08X} data={motor.last_tx_data_hex}",
+                )
+            else:
+                log(
+                    "[HardwareMotorController] TX control "
+                    f"motor={motor_id} arb=0x{msg.arbitration_id:08X} setpoint={setpoint:+.3f} data={motor.last_tx_data_hex}",
+                )
+
     def _decode_status_message(self, message) -> None:
         fields = extract_frc_can_fields(message.arbitration_id)
         if fields["device_type"] != 2 or fields["manufacturer"] != 5:
