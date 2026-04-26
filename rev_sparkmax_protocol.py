@@ -132,6 +132,31 @@ def make_trusted_duty_cycle_setpoint_frame(device_id: int, output_percent: float
     return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
 
 
+def make_voltage_setpoint_frame(
+    device_id: int,
+    voltage: float,
+    no_ack: bool = True,
+    trusted: bool = False,
+) -> CANMessage:
+    """
+    Build a voltage-control setpoint frame.
+
+    The payload is the commanded voltage in volts, not a normalized duty cycle.
+    """
+    if trusted:
+        api_index = API_INDEX_TRUSTED_SET_SETPOINT_NO_ACK
+    else:
+        api_index = API_INDEX_SET_SETPOINT_NO_ACK if no_ack else API_INDEX_SET_SETPOINT
+    arbitration_id = build_arbitration_id(
+        device_id=device_id,
+        api_class=API_CLASS_VOLTAGE_CONTROL,
+        api_index=api_index,
+    )
+    setpoint = max(-12.0, min(12.0, float(voltage)))
+    data = struct.pack("<fBBBB", setpoint, 0x01, 0x00, 0x00, 0x00)
+    return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
+
+
 def make_set_control_type_frame(device_id: int, control_type: int) -> CANMessage:
     """
     Build a set control type frame.

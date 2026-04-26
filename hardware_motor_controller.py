@@ -21,6 +21,7 @@ from rev_sparkmax_protocol import (
     make_enable_frame,
     make_disable_frame,
     make_trusted_duty_cycle_setpoint_frame,
+    make_voltage_setpoint_frame,
     make_universal_heartbeat_frame,
     make_set_control_type_frame,
 )
@@ -189,9 +190,10 @@ class HardwareMotorController:
         Send a compatibility set of open-loop output commands so different
         SPARK MAX firmware paths still receive a valid setpoint.
         """
-        trusted_no_ack_msg = make_trusted_duty_cycle_setpoint_frame(motor_id, value)
-        no_ack_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=True)
-        ack_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=False)
+        voltage = value * 12.0
+        trusted_no_ack_msg = make_voltage_setpoint_frame(motor_id, voltage, trusted=True)
+        no_ack_msg = make_voltage_setpoint_frame(motor_id, voltage, no_ack=True)
+        ack_msg = make_voltage_setpoint_frame(motor_id, voltage, no_ack=False)
 
         self._send_heartbeat_if_due(now_ms)
 
@@ -205,7 +207,7 @@ class HardwareMotorController:
         if not (trusted_ok and no_ack_ok and ack_ok):
             log(
                 "[HardwareMotorController] TX partial "
-                f"motor={motor_id} cmd={value:+.2f} "
+                f"motor={motor_id} cmd={value:+.2f} voltage={voltage:+.2f} "
                 f"trusted={trusted_ok} v_na={no_ack_ok} v_ack={ack_ok}",
                 "WARN",
             )

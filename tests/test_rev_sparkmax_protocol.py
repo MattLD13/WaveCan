@@ -9,6 +9,7 @@ from rev_sparkmax_protocol import (
     build_arbitration_id,
     make_disable_frame,
     make_duty_cycle_setpoint_frame,
+    make_voltage_setpoint_frame,
     make_status_0_frame,
     make_status_1_frame,
 )
@@ -40,15 +41,24 @@ def test_make_duty_cycle_setpoint_frame_extended_rev_id():
 
     assert msg.is_extended_id is True
     assert msg.arbitration_id == expected_arb
-    assert msg.data == struct.pack("<f", 0.5)
+    assert struct.unpack("<f", msg.data[:4])[0] == pytest.approx(0.5)
+    assert msg.data[4:] == b"\x01\x00\x00\x00"
 
 
 def test_duty_cycle_is_clamped():
     high = make_duty_cycle_setpoint_frame(device_id=1, output_percent=2.0, no_ack=True)
     low = make_duty_cycle_setpoint_frame(device_id=1, output_percent=-3.0, no_ack=True)
 
-    assert struct.unpack("<f", high.data)[0] == pytest.approx(1.0)
-    assert struct.unpack("<f", low.data)[0] == pytest.approx(-1.0)
+    assert struct.unpack("<f", high.data[:4])[0] == pytest.approx(1.0)
+    assert struct.unpack("<f", low.data[:4])[0] == pytest.approx(-1.0)
+
+
+def test_voltage_setpoint_frame_uses_volts():
+    msg = make_voltage_setpoint_frame(device_id=1, voltage=2.4, no_ack=True)
+
+    assert msg.is_extended_id is True
+    assert struct.unpack("<f", msg.data[:4])[0] == pytest.approx(2.4)
+    assert msg.data[4:] == b"\x01\x00\x00\x00"
 
 
 def test_make_disable_frame_extended_and_empty_payload():
