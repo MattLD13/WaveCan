@@ -39,7 +39,7 @@ MOTORS = {
 }
 
 # CAN Configuration
-CAN_BUS_SPEED = 500000  # 500 kbps, matches the currently working bus
+CAN_BUS_SPEED = 1000000  # 1 Mbps, matches the currently working bus
 CAN_TIMEOUT = 1000  # milliseconds
 CAN_INTERFACE = os.getenv("WAVECAN_CAN_INTERFACE", "can1")
 CAN_BITRATE = int(os.getenv("WAVECAN_CAN_BITRATE", str(CAN_BUS_SPEED)))
