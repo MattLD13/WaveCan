@@ -16,7 +16,7 @@ from rev_sparkmax_protocol import (
 )
 
 
-def test_set_motor_output_emits_only_voltage_control_frames():
+def test_set_motor_output_emits_voltage_and_speed_control_frames():
     bus = MockCANBus(speed_kbps=500, name="HardwareControllerTestBus")
     controller = HardwareMotorController(bus, [1])
 
@@ -30,9 +30,10 @@ def test_set_motor_output_emits_only_voltage_control_frames():
         motor_frames.append((fields["api_id"] >> 4, fields["api_id"] & 0x0F))
 
     assert motor_frames, "Expected the hardware controller to emit motor-control frames"
-    assert all(api_class != API_CLASS_SPEED_CONTROL for api_class, _ in motor_frames)
     assert any(api_class == API_CLASS_VOLTAGE_CONTROL and api_index == API_INDEX_SET_SETPOINT for api_class, api_index in motor_frames)
     assert any(api_class == API_CLASS_VOLTAGE_CONTROL and api_index == API_INDEX_SET_SETPOINT_NO_ACK for api_class, api_index in motor_frames)
+    assert any(api_class == API_CLASS_SPEED_CONTROL and api_index == API_INDEX_SET_SETPOINT for api_class, api_index in motor_frames)
+    assert any(api_class == API_CLASS_SPEED_CONTROL and api_index == API_INDEX_SET_SETPOINT_NO_ACK for api_class, api_index in motor_frames)
 
 
 def test_status_0_frame_does_not_invent_faults():

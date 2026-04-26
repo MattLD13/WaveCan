@@ -219,6 +219,22 @@ def make_speed_setpoint_frame(device_id: int, normalized_speed: float, no_ack: b
     return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
 
 
+def make_trusted_speed_setpoint_frame(device_id: int, normalized_speed: float) -> CANMessage:
+    """
+    Build a trusted no-ack speed-control setpoint frame.
+
+    Some SPARK MAX firmware revisions only honor trusted control updates
+    on one of the available control classes.
+    """
+    arbitration_id = build_arbitration_id(
+        device_id=device_id,
+        api_class=API_CLASS_SPEED_CONTROL,
+        api_index=API_INDEX_TRUSTED_SET_SETPOINT_NO_ACK,
+    )
+    data = struct.pack("<fBBBB", clamp_unit(normalized_speed), 0x01, 0x00, 0x00, 0x00)
+    return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
+
+
 def make_disable_frame(device_id: int) -> CANMessage:
     """Build a motor disable command frame."""
     arbitration_id = build_arbitration_id(

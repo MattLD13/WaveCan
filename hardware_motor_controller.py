@@ -22,6 +22,8 @@ from rev_sparkmax_protocol import (
     make_disable_frame,
     make_trusted_duty_cycle_setpoint_frame,
     make_voltage_setpoint_frame,
+    make_speed_setpoint_frame,
+    make_trusted_speed_setpoint_frame,
     make_universal_heartbeat_frame,
     make_set_control_type_frame,
 )
@@ -194,6 +196,9 @@ class HardwareMotorController:
         trusted_no_ack_msg = make_voltage_setpoint_frame(motor_id, voltage, trusted=True)
         no_ack_msg = make_voltage_setpoint_frame(motor_id, voltage, no_ack=True)
         ack_msg = make_voltage_setpoint_frame(motor_id, voltage, no_ack=False)
+        speed_trusted_msg = make_trusted_speed_setpoint_frame(motor_id, value)
+        speed_no_ack_msg = make_speed_setpoint_frame(motor_id, value, no_ack=True)
+        speed_ack_msg = make_speed_setpoint_frame(motor_id, value, no_ack=False)
 
         self._send_heartbeat_if_due(now_ms)
 
@@ -203,6 +208,9 @@ class HardwareMotorController:
         trusted_ok = self.can_bus.send(trusted_no_ack_msg)
         no_ack_ok = self.can_bus.send(no_ack_msg)
         ack_ok = self.can_bus.send(ack_msg)
+        speed_trusted_ok = self.can_bus.send(speed_trusted_msg)
+        speed_no_ack_ok = self.can_bus.send(speed_no_ack_msg)
+        speed_ack_ok = self.can_bus.send(speed_ack_msg)
 
         if abs(value) >= 0.01 and (now_ms - self._last_tx_debug_ms) >= 500:
             self._last_tx_debug_ms = now_ms
@@ -211,14 +219,18 @@ class HardwareMotorController:
                 f"motor={motor_id} pct={value:+.2f} voltage={voltage:+.2f} "
                 f"trusted(id=0x{trusted_no_ack_msg.arbitration_id:08X})={trusted_ok} "
                 f"no_ack(id=0x{no_ack_msg.arbitration_id:08X})={no_ack_ok} "
-                f"ack(id=0x{ack_msg.arbitration_id:08X})={ack_ok}",
+                f"ack(id=0x{ack_msg.arbitration_id:08X})={ack_ok} "
+                f"spd_trusted(id=0x{speed_trusted_msg.arbitration_id:08X})={speed_trusted_ok} "
+                f"spd_no_ack(id=0x{speed_no_ack_msg.arbitration_id:08X})={speed_no_ack_ok} "
+                f"spd_ack(id=0x{speed_ack_msg.arbitration_id:08X})={speed_ack_ok}",
             )
 
-        if not (trusted_ok and no_ack_ok and ack_ok):
+        if not (trusted_ok and no_ack_ok and ack_ok and speed_trusted_ok and speed_no_ack_ok and speed_ack_ok):
             log(
                 "[HardwareMotorController] TX partial "
                 f"motor={motor_id} cmd={value:+.2f} voltage={voltage:+.2f} "
-                f"trusted={trusted_ok} v_na={no_ack_ok} v_ack={ack_ok}",
+                f"trusted={trusted_ok} v_na={no_ack_ok} v_ack={ack_ok} "
+                f"s_trusted={speed_trusted_ok} s_na={speed_no_ack_ok} s_ack={speed_ack_ok}",
                 "WARN",
             )
 

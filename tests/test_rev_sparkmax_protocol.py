@@ -3,12 +3,15 @@ import struct
 import pytest
 
 from rev_sparkmax_protocol import (
+    API_CLASS_SPEED_CONTROL,
+    API_INDEX_TRUSTED_SET_SETPOINT_NO_ACK,
     API_CLASS_VOLTAGE_CONTROL,
     API_INDEX_SET_SETPOINT_NO_ACK,
     build_api_id,
     build_arbitration_id,
     make_disable_frame,
     make_duty_cycle_setpoint_frame,
+    make_trusted_speed_setpoint_frame,
     make_voltage_setpoint_frame,
     make_status_0_frame,
     make_status_1_frame,
@@ -58,6 +61,18 @@ def test_voltage_setpoint_frame_uses_volts():
 
     assert msg.is_extended_id is True
     assert struct.unpack("<f", msg.data[:4])[0] == pytest.approx(2.4)
+    assert msg.data[4:] == b"\x01\x00\x00\x00"
+
+
+def test_trusted_speed_setpoint_uses_speed_control_class():
+    msg = make_trusted_speed_setpoint_frame(device_id=1, normalized_speed=0.2)
+
+    expected_api_id = build_api_id(API_CLASS_SPEED_CONTROL, API_INDEX_TRUSTED_SET_SETPOINT_NO_ACK)
+    expected_arb = ((2 & 0x1F) << 24) | ((5 & 0xFF) << 16) | ((expected_api_id & 0x3FF) << 6) | 1
+
+    assert msg.is_extended_id is True
+    assert msg.arbitration_id == expected_arb
+    assert struct.unpack("<f", msg.data[:4])[0] == pytest.approx(0.2)
     assert msg.data[4:] == b"\x01\x00\x00\x00"
 
 
