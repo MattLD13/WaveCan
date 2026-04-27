@@ -12,10 +12,26 @@ from wavecan_platform import log, get_ticks_ms
 # Load dashboard HTML from file
 _here = os.path.dirname(os.path.abspath(__file__))
 _dashboard_path = os.path.join(_here, 'dashboard.html')
+_dashboard_mtime = None
+
+
+def _load_dashboard_html(force: bool = False):
+    global DASHBOARD_HTML, _dashboard_mtime
+    try:
+        mtime = os.path.getmtime(_dashboard_path)
+        if force or DASHBOARD_HTML is None or _dashboard_mtime != mtime:
+            with open(_dashboard_path, 'r', encoding='utf-8') as _f:
+                DASHBOARD_HTML = _f.read()
+            _dashboard_mtime = mtime
+            log(f"[WebServer] Loaded dashboard.html ({len(DASHBOARD_HTML)} bytes)")
+    except Exception as _e:
+        DASHBOARD_HTML = None
+        _dashboard_mtime = None
+        log(f"[WebServer] Could not load dashboard.html: {_e}", "WARN")
+
+
 try:
-    with open(_dashboard_path, 'r', encoding='utf-8') as _f:
-        DASHBOARD_HTML = _f.read()
-    log(f"[WebServer] Loaded dashboard.html ({len(DASHBOARD_HTML)} bytes)")
+    _load_dashboard_html(force=True)
 except Exception as _e:
     DASHBOARD_HTML = None
     log(f"[WebServer] Could not load dashboard.html: {_e}", "WARN")
@@ -156,6 +172,7 @@ class WebServer:
 
     async def handle_dashboard(self, request: HTTPRequest) -> HTTPResponse:
         """Serve dashboard HTML"""
+        _load_dashboard_html()
         if DASHBOARD_HTML:
             return HTTPResponse(200).set_html(DASHBOARD_HTML)
         else:
@@ -360,6 +377,7 @@ class WebServer:
                 integral_limit=command.get('integral_limit'),
                 output_limit=command.get('output_limit'),
                 telemetry_timeout_ms=command.get('telemetry_timeout_ms'),
+                allowed=command.get('allowed'),
             )
             log(f"[WebServer] PID config updated for motor {motor_id}")
             return HTTPResponse(200).set_json({'success': True, 'motor_id': motor_id, 'pid': pid_state})

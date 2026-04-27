@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WaveCan — Motor Control</title>
+<title>WaveCan - Motor Control</title>
 <style>
 :root {
   --bg:       #0d1117; --surface: #161b22; --surface2: #21262d;
@@ -25,7 +25,7 @@ canvas#roverCanvas {
   z-index: 120;
 }
 
-/* ── Top Bar ── */
+/*  Top Bar  */
 .topbar {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 18px; background: var(--surface); border-bottom: 1px solid var(--border);
@@ -45,10 +45,10 @@ canvas#roverCanvas {
 .pill.gp-connected { border-color: var(--accent); color: var(--accent); }
 .pill.gp-connected .dot { background: var(--accent); }
 
-/* ── Layout ── */
+/*  Layout  */
 .layout { display: flex; height: calc(100vh - 50px); overflow: hidden; }
 
-/* ── Panels ── */
+/*  Panels  */
 .panel {
   display: flex; flex-direction: column; overflow: hidden;
   background: var(--surface); border-right: 1px solid var(--border);
@@ -99,7 +99,7 @@ canvas#roverCanvas {
   color: var(--accent);
 }
 
-/* ── Motor Cards ── */
+/*  Motor Cards  */
 .motor-list { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
 .mcard {
   background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
@@ -112,20 +112,126 @@ canvas#roverCanvas {
   position: absolute; top: 9px; right: 10px; width: 16px; height: 16px;
   border-radius: 4px; border: 2px solid var(--border); display: flex; align-items: center;
   justify-content: center; font-size: 10px; transition: all .15s;
+  pointer-events: none;
 }
 .mcard.sel .chk { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 900; }
 
-.mcard-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; padding-right: 22px; }
+.mcard-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; padding-right: 22px; position: relative; z-index: 1; }
 .mcard-name { font-weight: 600; font-size: 0.88rem; }
-.role-badge {
-  font-size: 0.62rem; padding: 1px 6px; border-radius: 99px;
-  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
-  font-weight: 700; cursor: pointer; margin-left: auto; margin-right: 22px;
+.role-menu {
+  position: relative;
+  width: 100%;
+}
+.role-menu-btn {
+  font-size: 0.7rem;
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+  width: 100%;
+  text-align: center;
+  appearance: none;
+}
+.role-menu-btn.open {
+  box-shadow: 0 0 0 1px rgba(88,166,255,0.3);
+}
+.role-menu-btn.L  { border-color: var(--accent); color: var(--accent); background: #131c2e; }
+.role-menu-btn.R  { border-color: var(--red); color: var(--red); background: #1e1013; }
+.role-menu-btn.AUX{ border-color: var(--yellow); color: var(--yellow); background: #1e1a0e; }
+.role-menu-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+  z-index: 30;
+}
+.role-menu.open .role-menu-list {
+  display: flex;
+}
+.role-menu-option {
+  min-height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
   transition: all .15s;
 }
-.role-badge.L  { border-color: var(--accent);  color: var(--accent);  background: #131c2e; }
-.role-badge.R  { border-color: var(--red);     color: var(--red);     background: #1e1013; }
-.role-badge.AUX{ border-color: var(--yellow);  color: var(--yellow);  background: #1e1a0e; }
+.role-menu-option:hover,
+.role-menu-option.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #131c2e;
+}
+.mcard-pid-off {
+  font-size: 0.7rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--red);
+  background: transparent;
+  color: var(--red);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+}
+.mcard-pid-off:hover {
+  background: var(--red);
+  color: #fff;
+}
+.mcard-pid-toggle {
+  font-size: 0.7rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+}
+.mcard-pid-toggle.on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #131c2e;
+}
+.mcard-pid-toggle.off {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  background: #1e1a0e;
+}
+.mcard-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.mcard-actions .role-menu,
+.mcard-actions .role-menu-btn,
+.mcard-actions .mcard-pid-toggle,
+.mcard-actions .mcard-pid-off {
+  width: 100%;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
 
 .mcard-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 0.78rem; }
 .stat-lbl { font-size: 0.6rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
@@ -145,7 +251,7 @@ canvas#roverCanvas {
 }
 .btn-xs:hover { border-color: var(--accent); }
 
-/* ── Center layout ── */
+/*  Center layout  */
 .center-grid { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -154,6 +260,35 @@ canvas#roverCanvas {
   padding: 10px 14px; border-bottom: 1px solid var(--border);
   font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
   color: var(--muted); display: flex; align-items: center; gap: 8px;
+}
+.card-title {
+  min-width: 0;
+}
+.card-tools {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-move-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all .15s;
+}
+.card-move-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.card-move-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 .card-body { padding: 14px; }
 
@@ -164,7 +299,7 @@ canvas#roverCanvas {
 }
 .card.collapsible .card-head::after,
 .info-section.collapsible .info-title::after {
-  content: '▾';
+  content: '';
   margin-left: auto;
   color: var(--muted);
   font-size: 0.82rem;
@@ -210,7 +345,7 @@ input[type=range]::-webkit-slider-thumb {
 .sel-note { font-size: 0.73rem; color: var(--muted); padding-top: 6px; }
 .sel-note span { color: var(--accent); font-weight: 600; }
 
-/* ── Joystick Pad ── */
+/*  Joystick Pad  */
 .js-row { display: flex; gap: 20px; align-items: flex-start; }
 .js-zone { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .js-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
@@ -231,14 +366,20 @@ input[type=range]::-webkit-slider-thumb {
 }
 .mode-btn.active { border-color: var(--accent); color: var(--accent); background: #131c2e; }
 
-/* ── Drivetrain Viz ── */
-.dt-canvas-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0 6px; }
-canvas#dtCanvas { border-radius: 8px; }
+/*  Drivetrain Viz  */
+.dt-canvas-wrap { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px 12px; }
+canvas#dtCanvas {
+  display: block;
+  width: 100%;
+  height: clamp(240px, 34vh, 300px);
+  border-radius: 8px;
+  background: #0f141b;
+}
 .dt-footer { display: flex; gap: 8px; align-items: center; font-size: .72rem; color: var(--muted); }
 .dt-footer button { padding: 3px 10px; font-size: .7rem; border-radius: 5px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; }
 .dt-footer button:hover { border-color: var(--accent); color: var(--accent); }
 
-/* ── Deadzone Popover ── */
+/*  Deadzone Popover  */
 .dz-wrap { position: relative; }
 .dz-btn { background: none; border: 1px solid var(--border); border-radius: 5px; padding: 3px 8px; font-size: .72rem; color: var(--muted); cursor: pointer; transition: all .15s; }
 .dz-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -277,7 +418,7 @@ canvas#dtCanvas { border-radius: 8px; }
   margin: 10px 0 6px;
 }
 
-/* ── RPM Chart ── */
+/*  RPM Chart  */
 .chart-wrap { height: 130px; position: relative; }
 canvas#rpmChart { display: block; }
 .chart-legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 14px;
@@ -285,7 +426,7 @@ canvas#rpmChart { display: block; }
 .leg-item { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; }
 .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
 
-/* ── CAN Telemetry Blocks ── */
+/*  CAN Telemetry Blocks  */
 .can-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -316,7 +457,7 @@ canvas#rpmChart { display: block; }
   font-weight: 700;
 }
 
-/* ── Right Panel ── */
+/*  Right Panel  */
 .info-section { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); }
 .info-section:last-child { border-bottom: none; }
 .info-title {
@@ -346,9 +487,19 @@ canvas#rpmChart { display: block; }
   font-size: 0.6rem; padding: 1px 5px; border-radius: 4px; font-weight: 700;
   display: inline-block; white-space: nowrap;
 }
-.fault-badge.active { background: #3d1a18; color: var(--red);    border: 1px solid #7a2a26; }
-.fault-badge.sticky { background: #2a2010; color: var(--yellow); border: 1px solid #5a4010; }
+.fault-badge.active { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+.fault-badge.sticky { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
 .fault-badge.none   { background: #112a18; color: var(--green);  border: 1px solid #1a5a28; }
+.fault-badge.suppressed { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+.fault-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  max-height: 54px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.estop-active { box-shadow: 0 0 0 1px rgba(248,81,73,0.45), 0 0 18px rgba(248,81,73,0.22); }
 
 /* Speed preset buttons */
 .preset-row { display: flex; gap: 4px; margin-top: 8px; }
@@ -459,44 +610,85 @@ canvas#rpmChart { display: block; }
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+.pid-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pid-section {
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.pid-section-title {
+  padding: 9px 12px;
+  font-size: 0.67rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pid-section-title::after {
+  content: '';
+  margin-left: auto;
+  transition: transform .15s ease;
+}
+.pid-section-body {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+.pid-section.collapsible .pid-section-title {
+  cursor: pointer;
+  user-select: none;
+}
+.pid-section.collapsed .pid-section-title::after {
+  transform: rotate(-90deg);
+}
+.pid-section.collapsed > :not(.pid-section-title) {
+  display: none;
+}
 </style>
 </head>
 <body>
 
 <!-- Top Bar -->
 <div class="topbar">
-  <div class="logo">⚡ Wave<span>Can</span></div>
+  <div class="logo">Wave<span>Can</span></div>
   <div class="topbar-spacer"></div>
   <div class="pill" id="gpPill"><span class="dot"></span> No Gamepad</div>
-  <div class="pill" id="connPill"><span class="dot"></span> Connecting…</div>
+  <div class="pill" id="connPill"><span class="dot"></span> Connecting...</div>
 </div>
 
 <canvas id="roverCanvas"></canvas>
 
 <div class="layout">
 
-<!-- ── Left: Motor List ── -->
+<!--  Left: Motor List  -->
 <div class="panel panel-motors">
   <div class="panel-heading">
-    <span class="heading-label">⚙ Motors</span>
+    <span class="heading-label">Motors</span>
     <span class="heading-meta" id="mCount" style="margin-left:auto;color:var(--accent);font-size:.8rem;text-transform:none;letter-spacing:0;font-weight:600"></span>
     <button class="panel-toggle" id="leftPanelToggle" onclick="toggleSidePanel('left')" title="Collapse left panel" aria-label="Toggle left panel">&lt;</button>
   </div>
   <div class="motor-list" id="motorList"></div>
   <div class="select-bar">
-    <button class="btn-xs" onclick="selectAll()">✔ All</button>
-    <button class="btn-xs" onclick="selectNone()">✖ None</button>
-    <button class="btn-xs" onclick="selectInvert()">⇄ Inv</button>
+    <button class="btn-xs" onclick="selectAll()"> All</button>
+    <button class="btn-xs" onclick="selectNone()"> None</button>
+    <button class="btn-xs" onclick="selectInvert()"> Inv</button>
   </div>
 </div>
 
-<!-- ── Center ── -->
+<!--  Center  -->
 <div class="panel-center">
   <div class="center-grid">
 
-    <!-- Test / Manual Command -->
+    <!-- Motor Run Control -->
     <div class="card drive-card" data-collapse-id="manual-command">
-      <div class="card-head">🧪 CAN Test Command
+      <div class="card-head"><span class="card-title">Motor Run Control</span>
         <span style="margin-left:auto"></span>
         <div class="dz-wrap">
           <button class="dz-btn" id="dzBtn" onclick="toggleDeadzonePopover(event)">Drive Settings</button>
@@ -554,20 +746,30 @@ canvas#rpmChart { display: block; }
         </div>
       </div>
       <div class="card-body">
+        <div class="btn-row" style="margin-bottom:10px">
+          <button class="btn btn-primary" id="manualModeDutyBtn" onclick="setManualMode('duty')">Duty %</button>
+          <button class="btn btn-ghost" id="manualModeRpmBtn" onclick="setManualMode('rpm')">Set RPM</button>
+        </div>
         <div class="spd-row">
           <div class="spd-num zero" id="spdDisplay">0%</div>
           <input type="range" id="spdSlider" min="-100" max="100" value="0" step="1" oninput="onSlider(this.value)">
         </div>
+        <div class="pid-grid" id="manualRpmRow" style="margin-top:10px;display:none">
+          <div class="field">
+            <label for="manualRpmInput">Run RPM</label>
+            <input id="manualRpmInput" type="number" value="1000" step="50" oninput="onManualRpmInput(this.value)">
+          </div>
+        </div>
         <div class="sel-note">Targeting: <span id="selLabel">none selected</span></div>
         <div class="btn-row">
-          <button class="btn btn-primary" id="manualToggleBtn" onclick="toggleManualLatch()">▶ Send</button>
-          <button class="btn btn-danger"  onclick="emergencyStop()">⏹ E-Stop</button>
-          <button class="btn btn-ghost"   onclick="resetSlider()">↺ Reset</button>
+          <button class="btn btn-primary" id="manualToggleBtn" onclick="toggleManualLatch()">Run</button>
+          <button class="btn btn-danger" id="eStopBtn" onclick="toggleEmergencyStop()">E-Stop</button>
+          <button class="btn btn-ghost"   onclick="resetManualRunInputs()">Reset</button>
         </div>
-        <div class="preset-row">
-          <button class="btn-preset neg"      onclick="applyPreset(-30)">−30%</button>
-          <button class="btn-preset neg"      onclick="applyPreset(-20)">−20%</button>
-          <button class="btn-preset neg"      onclick="applyPreset(-10)">−10%</button>
+        <div class="preset-row" id="manualPresetRow">
+          <button class="btn-preset neg"      onclick="applyPreset(-30)">30%</button>
+          <button class="btn-preset neg"      onclick="applyPreset(-20)">20%</button>
+          <button class="btn-preset neg"      onclick="applyPreset(-10)">10%</button>
           <button class="btn-preset zero-btn" onclick="applyPreset(0)">0%</button>
           <button class="btn-preset"          onclick="applyPreset(10)">+10%</button>
           <button class="btn-preset"          onclick="applyPreset(20)">+20%</button>
@@ -576,9 +778,9 @@ canvas#rpmChart { display: block; }
       </div>
     </div>
 
-    <!-- Joystick / Drive (restored) -->
+    <!-- Joystick / Drive -->
     <div class="card" data-collapse-id="drive-control">
-      <div class="card-head">🕹 Drive Control</div>
+      <div class="card-head"><span class="card-title">Drive Control</span></div>
       <div class="card-body">
         <div class="drive-mode-row">
           <div class="mode-btn" id="modeArcade" onclick="setMode('arcade')">Arcade Drive</div>
@@ -587,159 +789,190 @@ canvas#rpmChart { display: block; }
         </div>
         <div class="js-row" id="jsRow"></div>
         <div class="js-legend" style="margin-top:10px">
-          <div><kbd>↑↓</kbd> Throttle &nbsp;<kbd>←→</kbd> Turn</div>
-          <div><kbd>Space</kbd> Emergency stop &nbsp;<kbd>1</kbd>–<kbd>8</kbd> Toggle motor</div>
+          <div><kbd>W/S</kbd> Throttle &nbsp;<kbd>A/D</kbd> Turn</div>
+          <div><kbd>Space</kbd> E-Stop &nbsp;<kbd>1</kbd>-<kbd>8</kbd> Toggle motor</div>
         </div>
       </div>
     </div>
 
     <div class="card" data-collapse-id="can-telemetry">
-      <div class="card-head">📡 CAN Telemetry</div>
+      <div class="card-head"><span class="card-title">CAN Telemetry</span></div>
       <div class="card-body">
         <div class="can-grid" id="canTelemetryGrid"></div>
       </div>
     </div>
 
     <div class="card" data-collapse-id="pid-control">
-      <div class="card-head">PID / Velocity Control</div>
+      <div class="card-head"><span class="card-title">PID / Velocity Control</span></div>
       <div class="card-body">
-        <div class="pid-grid">
-          <div class="field">
-            <label for="pidTargetRpm">Target RPM</label>
-            <input id="pidTargetRpm" type="number" value="1000" step="50">
+        <div class="pid-sections">
+          <div class="pid-section" data-collapse-id="pid-gains">
+            <div class="pid-section-title">Gains & Hold</div>
+            <div class="pid-section-body">
+              <div class="pid-grid">
+                <div class="field">
+                  <label for="pidTargetRpm">Target RPM</label>
+                  <input id="pidTargetRpm" type="number" value="1000" step="50">
+                </div>
+                <div class="field">
+                  <label for="pidKp">Kp</label>
+                  <input id="pidKp" type="number" value="0.00018" step="0.00001">
+                </div>
+                <div class="field">
+                  <label for="pidKi">Ki</label>
+                  <input id="pidKi" type="number" value="0.00005" step="0.00001">
+                </div>
+                <div class="field">
+                  <label for="pidKd">Kd</label>
+                  <input id="pidKd" type="number" value="0" step="0.00001">
+                </div>
+                <div class="field">
+                  <label for="pidKf">Kf</label>
+                  <input id="pidKf" type="number" value="0.000175" step="0.000001">
+                </div>
+                <div class="field">
+                  <label for="pidIntegralLimit">I Clamp</label>
+                  <input id="pidIntegralLimit" type="number" value="0.35" step="0.01">
+                </div>
+                <div class="field">
+                  <label for="pidOutputLimit">Output Limit</label>
+                  <input id="pidOutputLimit" type="number" value="1" min="0.05" max="1" step="0.05">
+                </div>
+                <div class="field">
+                  <label for="pidTelemetryTimeout">Telemetry Timeout ms</label>
+                  <input id="pidTelemetryTimeout" type="number" value="750" min="100" step="25">
+                </div>
+              </div>
+              <div class="btn-row">
+                <button class="btn btn-primary" onclick="applyPidSettings()">Save Gains</button>
+                <button class="btn btn-primary" onclick="sendPidTarget()">Hold RPM</button>
+                <button class="btn btn-danger" onclick="stopPidMode()">Stop PID</button>
+              </div>
+            </div>
           </div>
-          <div class="field">
-            <label for="pidKp">Kp</label>
-            <input id="pidKp" type="number" value="0.00018" step="0.00001">
+
+          <div class="pid-section default-collapsed" data-collapse-id="pid-step-test">
+            <div class="pid-section-title">Step Test</div>
+            <div class="pid-section-body">
+              <div class="pid-grid">
+                <div class="field">
+                  <label for="pidLowRpm">Low RPM</label>
+                  <input id="pidLowRpm" type="number" value="500" step="50">
+                </div>
+                <div class="field">
+                  <label for="pidHighRpm">High RPM</label>
+                  <input id="pidHighRpm" type="number" value="1500" step="50">
+                </div>
+                <div class="field">
+                  <label for="pidDwellMs">Dwell ms</label>
+                  <input id="pidDwellMs" type="number" value="2000" min="200" step="100">
+                </div>
+                <div class="field">
+                  <label for="pidCycles">Cycles</label>
+                  <input id="pidCycles" type="number" value="6" min="1" step="1">
+                </div>
+              </div>
+              <div class="btn-row">
+                <button class="btn btn-primary" onclick="startPidTuning()">Start Step Test</button>
+                <button class="btn btn-ghost" onclick="primePidLow()">Go Low</button>
+                <button class="btn btn-ghost" onclick="primePidHigh()">Go High</button>
+                <button class="btn btn-danger" onclick="stopPidTuning()">Stop Test</button>
+              </div>
+            </div>
           </div>
-          <div class="field">
-            <label for="pidKi">Ki</label>
-            <input id="pidKi" type="number" value="0.00005" step="0.00001">
+
+          <div class="pid-section default-collapsed" data-collapse-id="pid-autotune">
+            <div class="pid-section-title">Auto Tune</div>
+            <div class="pid-section-body">
+              <div class="btn-row" style="margin-top:0">
+                <button class="btn btn-primary" onclick="startAutoTune()">Start Auto Tune</button>
+                <button class="btn btn-danger" onclick="stopAutoTune()">Stop Auto Tune</button>
+              </div>
+            </div>
           </div>
-          <div class="field">
-            <label for="pidKd">Kd</label>
-            <input id="pidKd" type="number" value="0" step="0.00001">
+
+          <div class="pid-section default-collapsed" data-collapse-id="pid-curve">
+            <div class="pid-section-title">Curve Profile</div>
+            <div class="pid-section-body">
+              <div class="curve-toolbar" style="margin-top:0">
+                <div class="field">
+                  <label for="curvePreset">Curve Preset</label>
+                  <select id="curvePreset" onchange="loadCurvePreset(this.value)">
+                    <option value="step">Step</option>
+                    <option value="sCurve">S-Curve</option>
+                    <option value="triangle">Triangle</option>
+                    <option value="wave">Wave</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="curveDurationMs">Duration ms</label>
+                  <input id="curveDurationMs" type="number" value="4000" min="250" step="100">
+                </div>
+                <div class="field">
+                  <label for="curveMinRpm">Min RPM</label>
+                  <input id="curveMinRpm" type="number" value="500" step="50">
+                </div>
+                <div class="field">
+                  <label for="curveMaxRpm">Max RPM</label>
+                  <input id="curveMaxRpm" type="number" value="1500" step="50">
+                </div>
+              </div>
+              <div class="curve-wrap">
+                <canvas id="curveEditor" class="curve-canvas" width="720" height="220"></canvas>
+                <div class="curve-point-readout" id="curvePointReadout">Curve point: none selected</div>
+                <div class="curve-help">Drag the spline points to shape the RPM profile. Endpoints stay pinned to the start and end of the run.</div>
+                <div class="curve-presets">
+                  <button class="btn btn-ghost" onclick="resetCurvePoints()">Reset Points</button>
+                  <button class="btn btn-primary" onclick="runCurveProfile()">Run Curve</button>
+                  <button class="btn btn-danger" onclick="stopCurveProfile()">Stop Curve</button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="field">
-            <label for="pidKf">Kf</label>
-            <input id="pidKf" type="number" value="0.000175" step="0.000001">
-          </div>
-          <div class="field">
-            <label for="pidIntegralLimit">I Clamp</label>
-            <input id="pidIntegralLimit" type="number" value="0.35" step="0.01">
-          </div>
-          <div class="field">
-            <label for="pidOutputLimit">Output Limit</label>
-            <input id="pidOutputLimit" type="number" value="1" min="0.05" max="1" step="0.05">
-          </div>
-          <div class="field">
-            <label for="pidTelemetryTimeout">Telemetry Timeout ms</label>
-            <input id="pidTelemetryTimeout" type="number" value="750" min="100" step="25">
+
+          <div class="pid-section" data-collapse-id="pid-summary">
+            <div class="pid-section-title">Live Summary</div>
+            <div class="pid-section-body">
+              <div class="pid-summary" style="margin-top:0">
+                <div class="mini-stat"><div class="k">Selected Motor</div><div class="v" id="pidSelectedMotor">-</div></div>
+                <div class="mini-stat"><div class="k">Control Mode</div><div class="v" id="pidMode">-</div></div>
+                <div class="mini-stat"><div class="k">Measured RPM</div><div class="v" id="pidMeasured">-</div></div>
+                <div class="mini-stat"><div class="k">Error RPM</div><div class="v" id="pidError">-</div></div>
+                <div class="mini-stat"><div class="k">PID Output</div><div class="v" id="pidOutput">-</div></div>
+                <div class="mini-stat"><div class="k">Test State</div><div class="v" id="pidTuneState">Idle</div></div>
+                <div class="mini-stat"><div class="k">Test Phase</div><div class="v" id="pidTunePhase">-</div></div>
+                <div class="mini-stat"><div class="k">Cycle</div><div class="v" id="pidTuneCycle">-</div></div>
+                <div class="mini-stat"><div class="k">Curve State</div><div class="v" id="pidCurveState">Idle</div></div>
+                <div class="mini-stat"><div class="k">Autotune</div><div class="v" id="pidAutoState">Idle</div></div>
+                <div class="mini-stat"><div class="k">Auto Score</div><div class="v" id="pidAutoScore">-</div></div>
+                <div class="mini-stat"><div class="k">Auto Pass</div><div class="v" id="pidAutoPass">-</div></div>
+              </div>
+              <div class="pid-note" id="pidNote">Select a motor to tune and hold speed with software PID.</div>
+            </div>
           </div>
         </div>
-        <div class="btn-row">
-          <button class="btn btn-primary" onclick="applyPidSettings()">Save Gains</button>
-          <button class="btn btn-primary" onclick="sendPidTarget()">Hold RPM</button>
-          <button class="btn btn-danger" onclick="stopPidMode()">Stop PID</button>
-        </div>
-        <div class="pid-grid" style="margin-top:10px">
-          <div class="field">
-            <label for="pidLowRpm">Low RPM</label>
-            <input id="pidLowRpm" type="number" value="500" step="50">
-          </div>
-          <div class="field">
-            <label for="pidHighRpm">High RPM</label>
-            <input id="pidHighRpm" type="number" value="1500" step="50">
-          </div>
-          <div class="field">
-            <label for="pidDwellMs">Dwell ms</label>
-            <input id="pidDwellMs" type="number" value="2000" min="200" step="100">
-          </div>
-          <div class="field">
-            <label for="pidCycles">Cycles</label>
-            <input id="pidCycles" type="number" value="6" min="1" step="1">
-          </div>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-primary" onclick="startPidTuning()">Start Step Test</button>
-          <button class="btn btn-ghost" onclick="primePidLow()">Go Low</button>
-          <button class="btn btn-ghost" onclick="primePidHigh()">Go High</button>
-          <button class="btn btn-danger" onclick="stopPidTuning()">Stop Test</button>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-primary" onclick="startAutoTune()">Start Auto Tune</button>
-          <button class="btn btn-danger" onclick="stopAutoTune()">Stop Auto Tune</button>
-        </div>
-        <div class="curve-toolbar">
-          <div class="field">
-            <label for="curvePreset">Curve Preset</label>
-            <select id="curvePreset" onchange="loadCurvePreset(this.value)">
-              <option value="step">Step</option>
-              <option value="sCurve">S-Curve</option>
-              <option value="triangle">Triangle</option>
-              <option value="wave">Wave</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="curveDurationMs">Duration ms</label>
-            <input id="curveDurationMs" type="number" value="4000" min="250" step="100">
-          </div>
-          <div class="field">
-            <label for="curveMinRpm">Min RPM</label>
-            <input id="curveMinRpm" type="number" value="500" step="50">
-          </div>
-          <div class="field">
-            <label for="curveMaxRpm">Max RPM</label>
-            <input id="curveMaxRpm" type="number" value="1500" step="50">
-          </div>
-        </div>
-        <div class="curve-wrap">
-          <canvas id="curveEditor" class="curve-canvas" width="720" height="220"></canvas>
-          <div class="curve-point-readout" id="curvePointReadout">Curve point: none selected</div>
-          <div class="curve-help">Drag the spline points to shape the RPM profile. Endpoints stay pinned to the start and end of the run.</div>
-          <div class="curve-presets">
-            <button class="btn btn-ghost" onclick="resetCurvePoints()">Reset Points</button>
-            <button class="btn btn-primary" onclick="runCurveProfile()">Run Curve</button>
-            <button class="btn btn-danger" onclick="stopCurveProfile()">Stop Curve</button>
-          </div>
-        </div>
-        <div class="pid-summary">
-          <div class="mini-stat"><div class="k">Selected Motor</div><div class="v" id="pidSelectedMotor">-</div></div>
-          <div class="mini-stat"><div class="k">Control Mode</div><div class="v" id="pidMode">-</div></div>
-          <div class="mini-stat"><div class="k">Measured RPM</div><div class="v" id="pidMeasured">-</div></div>
-          <div class="mini-stat"><div class="k">Error RPM</div><div class="v" id="pidError">-</div></div>
-          <div class="mini-stat"><div class="k">PID Output</div><div class="v" id="pidOutput">-</div></div>
-          <div class="mini-stat"><div class="k">Test State</div><div class="v" id="pidTuneState">Idle</div></div>
-          <div class="mini-stat"><div class="k">Test Phase</div><div class="v" id="pidTunePhase">-</div></div>
-          <div class="mini-stat"><div class="k">Cycle</div><div class="v" id="pidTuneCycle">-</div></div>
-          <div class="mini-stat"><div class="k">Curve State</div><div class="v" id="pidCurveState">Idle</div></div>
-          <div class="mini-stat"><div class="k">Autotune</div><div class="v" id="pidAutoState">Idle</div></div>
-          <div class="mini-stat"><div class="k">Auto Score</div><div class="v" id="pidAutoScore">-</div></div>
-          <div class="mini-stat"><div class="k">Auto Pass</div><div class="v" id="pidAutoPass">-</div></div>
-        </div>
-        <div class="pid-note" id="pidNote">Select a motor to tune and hold speed with software PID.</div>
       </div>
     </div>
 
     <!-- Drivetrain Visualization -->
     <div class="card" data-collapse-id="drivetrain-view">
-      <div class="card-head">🚗 Drivetrain View
+      <div class="card-head"><span class="card-title"> Drivetrain View</span>
         <span id="dtInfo" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.72rem;color:var(--muted);margin-left:6px"></span>
       </div>
       <div class="dt-canvas-wrap">
-        <canvas id="dtCanvas" width="280" height="280"></canvas>
+        <canvas id="dtCanvas" width="720" height="280"></canvas>
         <div class="dt-footer">
-          <span id="dtHeading">↑ 0°</span>
+          <span id="dtHeading"> 0</span>
           <span id="dtRadius" style="margin-left:4px"></span>
           <span style="flex:1"></span>
-          <button onclick="resetRobot()">↺ Reset</button>
+          <button onclick="resetRobot()">Reset</button>
         </div>
       </div>
     </div>
 
     <!-- RPM Chart -->
     <div class="card" data-collapse-id="rpm-history">
-      <div class="card-head">📈 RPM History</div>
+      <div class="card-head"><span class="card-title"> RPM History</span></div>
       <div class="card-body" style="padding:10px 10px 0">
         <div class="chart-wrap"><canvas id="rpmChart"></canvas></div>
       </div>
@@ -749,32 +982,32 @@ canvas#rpmChart { display: block; }
   </div>
 </div>
 
-<!-- ── Right Panel ── -->
+<!--  Right Panel  -->
 <div class="panel panel-right">
   <div class="panel-heading">
-    <span class="heading-label">ℹ Info</span>
+    <span class="heading-label">i Info</span>
     <button class="panel-toggle" id="rightPanelToggle" onclick="toggleSidePanel('right')" title="Collapse right panel" aria-label="Toggle right panel">&gt;</button>
   </div>
 
   <div class="info-section" data-collapse-id="sys-info">
-    <div class="info-title">🖥 System</div>
-    <div class="info-row"><span class="info-key">Platform</span><span class="info-val ok" id="iPlatform">—</span></div>
-    <div class="info-row"><span class="info-key">CAN Status</span><span class="info-val" id="iCAN">—</span></div>
-    <div class="info-row"><span class="info-key">Uptime</span><span class="info-val" id="iUptime">—</span></div>
-    <div class="info-row"><span class="info-key">Req/s</span><span class="info-val" id="iRPS">—</span></div>
+    <div class="info-title"> System</div>
+    <div class="info-row"><span class="info-key">Platform</span><span class="info-val ok" id="iPlatform"></span></div>
+    <div class="info-row"><span class="info-key">CAN Status</span><span class="info-val" id="iCAN"></span></div>
+    <div class="info-row"><span class="info-key">Uptime</span><span class="info-val" id="iUptime"></span></div>
+    <div class="info-row"><span class="info-key">Req/s</span><span class="info-val" id="iRPS"></span></div>
   </div>
 
   <div class="info-section" data-collapse-id="fleet-info">
-    <div class="info-title">📊 Fleet</div>
-    <div class="info-row"><span class="info-key">Motors</span><span class="info-val" id="iMotors">—</span></div>
-    <div class="info-row"><span class="info-key">Avg RPM</span><span class="info-val" id="iAvgRPM">—</span></div>
-    <div class="info-row"><span class="info-key">Total Amps</span><span class="info-val" id="iTotalA">—</span></div>
-    <div class="info-row"><span class="info-key">Max Temp</span><span class="info-val" id="iMaxTemp">—</span></div>
+    <div class="info-title"> Fleet</div>
+    <div class="info-row"><span class="info-key">Motors</span><span class="info-val" id="iMotors"></span></div>
+    <div class="info-row"><span class="info-key">Avg RPM</span><span class="info-val" id="iAvgRPM"></span></div>
+    <div class="info-row"><span class="info-key">Total Amps</span><span class="info-val" id="iTotalA"></span></div>
+    <div class="info-row"><span class="info-key">Max Temp</span><span class="info-val" id="iMaxTemp"></span></div>
   </div>
 
   <div class="info-section" data-collapse-id="shortcut-info">
-    <div class="info-title">📡 Telemetry</div>
-    <div class="shortcut"><kbd>1</kbd>–<kbd>8</kbd><span class="kd">Toggle motor selection</span></div>
+    <div class="info-title"> Telemetry</div>
+    <div class="shortcut"><kbd>1</kbd><kbd>8</kbd><span class="kd">Toggle motor selection</span></div>
     <div class="shortcut"><kbd>A</kbd><span class="kd">Select all motors</span></div>
     <div class="shortcut"><kbd>N</kbd><span class="kd">Select none</span></div>
     <div class="shortcut"><kbd>Esc</kbd><span class="kd">Close overlays</span></div>
@@ -784,17 +1017,29 @@ canvas#rpmChart { display: block; }
 </div>
 
 <script>
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 //  State
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 const S = {
-  motors: {},        // id → motor state object
+  motors: {},        // id  motor state object
   selected: new Set(),
-  history: {},       // id → [rpm, ...]
+  history: {},       // id  [rpm, ...]
   targetHistory: {}, // id -> [target rpm, ...]
-  historyLen: 80,
+  historyLen: 120,
   statusTimeMs: 0,
-  roles: {},         // id → 'L' | 'R' | 'AUX' | null
+  display: {
+    motors: {},      // id -> { rpm, rpmTarget, seen }
+    pollInFlight: false,
+    pollMs: 100,
+    chartDirty: true,
+    lastAnimTs: 0,
+    lastChartDrawMs: 0,
+    chartMinFrameMs: 33,
+    motorRenderMs: 600,
+    lastMotorRenderMs: 0,
+    pauseMotorRenderUntil: 0,
+  },
+  roles: {},         // id  'L' | 'R' | 'AUX' | null
   driveMode: 'off',
   deadzones: {
     move: 0.08,
@@ -833,6 +1078,7 @@ const S = {
   leftRaw: 0, rightRaw: 0,
   // manual slider
   manualPct: 0,
+  manualRpm: 1000,
   leftCmd: 0, rightCmd: 0,  // last commanded wheel speeds (-1..1)
   driveNet: {
     inFlight: false,
@@ -841,7 +1087,10 @@ const S = {
   manual: {
     latched: false,
     latchedMotorIds: [],
+    mode: 'duty',
   },
+  roleMenuOpen: {},
+  manualSendTimer: null,
   controller: {
     supportsVelocityPid: false,
     supportsPidConfig: false,
@@ -863,14 +1112,18 @@ const S = {
     collecting: false,
     motorId: null,
     pass: 0,
-    maxPasses: 4,
+    maxPasses: 3,
     evaluation: 0,
     bestScore: null,
     lastScore: null,
     bestGains: null,
     candidateGains: null,
     steps: null,
-    paramOrder: ['kf', 'kp', 'ki'],
+    bestMetrics: null,
+    lastMetrics: null,
+    profile: null,
+    minSteps: { kf: 0.000002, kp: 0.00001, kd: 0.000005, ki: 0.000002 },
+    paramOrder: ['kf', 'kp', 'kd', 'ki'],
     paramIndex: 0,
     directionIndex: -1,
     directions: [1, -1],
@@ -888,6 +1141,11 @@ const S = {
     maxRpm: 1500,
     lastSentAt: 0,
   },
+  eStop: {
+    active: false,
+    stopping: false,
+    trippedAt: 0,
+  },
   autoSelectedOnce: false,
   gpIdx: null,
   lastReqTs: 0,
@@ -898,7 +1156,7 @@ const S = {
     x: 140, y: 140,   // canvas pixels (starts at center)
     anchorX: 140, anchorY: 140,
     prevAnchorX: null, prevAnchorY: null,
-    heading: -Math.PI/2,  // radians, -π/2 = facing up
+    heading: -Math.PI/2,  // radians, -/2 = facing up
     path: [],         // [{x,y}] history
     maxPath: 120,
     trackWidth: 40,   // pixels between left/right wheels
@@ -910,13 +1168,14 @@ const S = {
 const COLORS = ['#58a6ff','#3fb950','#f0883e','#bc8cff','#ff7b72','#79c0ff','#ffa198','#56d364'];
 const ROLES  = [null, 'L', 'R', 'AUX'];
 const COLLAPSE_KEY = 'wavecan.dashboard.collapse.v1';
+const CENTER_ORDER_KEY = 'wavecan.dashboard.centerOrder.v1';
 
 function loadCollapseState() {
   try {
     const raw = localStorage.getItem(COLLAPSE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : {};
+    return parsed && typeof parsed === 'object'  ? parsed : {};
   } catch (_) {
     return {};
   }
@@ -930,6 +1189,101 @@ function saveCollapseState(state) {
 
 function isInteractiveElement(target) {
   return !!target.closest('button, input, select, textarea, a, [role="button"], .role-badge');
+}
+
+function loadCenterCardOrder() {
+  try {
+    const raw = localStorage.getItem(CENTER_ORDER_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveCenterCardOrder(order) {
+  try {
+    localStorage.setItem(CENTER_ORDER_KEY, JSON.stringify(order));
+  } catch (_) {}
+}
+
+function currentCenterCardOrder() {
+  return [...document.querySelectorAll('.center-grid > .card[data-collapse-id]')]
+    .map(card => card.getAttribute('data-collapse-id'))
+    .filter(Boolean);
+}
+
+function refreshCardMoveButtons() {
+  const order = currentCenterCardOrder();
+  order.forEach((id, index) => {
+    const card = document.querySelector(`.center-grid > .card[data-collapse-id="${id}"]`);
+    if (!card) return;
+    const upBtn = card.querySelector('.card-move-btn[data-move="-1"]');
+    const downBtn = card.querySelector('.card-move-btn[data-move="1"]');
+    if (upBtn) upBtn.disabled = index === 0;
+    if (downBtn) downBtn.disabled = index === order.length - 1;
+  });
+}
+
+function moveCenterCard(id, direction) {
+  const grid = document.querySelector('.center-grid');
+  if (!grid) return;
+  const cards = [...grid.querySelectorAll('.card[data-collapse-id]')];
+  const index = cards.findIndex(card => card.getAttribute('data-collapse-id') === id);
+  if (index < 0) return;
+  const nextIndex = index + direction;
+  if (nextIndex < 0 || nextIndex >= cards.length) return;
+  const card = cards[index];
+  const swap = cards[nextIndex];
+  if (direction < 0) {
+    grid.insertBefore(card, swap);
+  } else {
+    grid.insertBefore(swap, card);
+  }
+  saveCenterCardOrder(currentCenterCardOrder());
+  refreshCardMoveButtons();
+}
+
+function initCenterCardOrder() {
+  const grid = document.querySelector('.center-grid');
+  if (!grid) return;
+  const cards = [...grid.querySelectorAll('.card[data-collapse-id]')];
+  cards.forEach(card => {
+    const head = card.querySelector('.card-head');
+    const id = card.getAttribute('data-collapse-id');
+    if (!head || !id) return;
+    if (!head.querySelector('.card-tools')) {
+      const tools = document.createElement('div');
+      tools.className = 'card-tools';
+      tools.innerHTML = `
+        <button type="button" class="card-move-btn" data-move="-1" title="Move up" aria-label="Move ${id} up">^</button>
+        <button type="button" class="card-move-btn" data-move="1" title="Move down" aria-label="Move ${id} down">v</button>
+      `;
+      tools.addEventListener('click', ev => {
+        const btn = ev.target.closest('.card-move-btn');
+        if (!btn) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        moveCenterCard(id, Number(btn.dataset.move || 0));
+      });
+      head.appendChild(tools);
+    }
+  });
+
+  const saved = loadCenterCardOrder();
+  const byId = new Map(cards.map(card => [card.getAttribute('data-collapse-id'), card]));
+  if (saved.length) {
+    saved.forEach(id => {
+      const card = byId.get(id);
+      if (card) grid.appendChild(card);
+    });
+    cards.forEach(card => {
+      if (!saved.includes(card.getAttribute('data-collapse-id'))) grid.appendChild(card);
+    });
+  }
+  saveCenterCardOrder(currentCenterCardOrder());
+  refreshCardMoveButtons();
 }
 
 function initCollapsiblePieces() {
@@ -966,12 +1320,30 @@ function initCollapsiblePieces() {
       saveCollapseState(state);
     });
   });
+
+  document.querySelectorAll('.pid-section[data-collapse-id]').forEach(section => {
+    const title = section.querySelector('.pid-section-title');
+    const id = section.getAttribute('data-collapse-id');
+    if (!title || !id) return;
+
+    section.classList.add('collapsible');
+    if (state[id] || (!Object.prototype.hasOwnProperty.call(state, id) && section.classList.contains('default-collapsed'))) {
+      section.classList.add('collapsed');
+    }
+
+    title.addEventListener('click', ev => {
+      if (isInteractiveElement(ev.target)) return;
+      section.classList.toggle('collapsed');
+      state[id] = section.classList.contains('collapsed');
+      saveCollapseState(state);
+    });
+  });
 }
 
 function setSidePanelState(side, collapsed, state = null) {
   const leftPanel = document.querySelector('.panel-motors');
   const rightPanel = document.querySelector('.panel-right');
-  const panel = side === 'left' ? leftPanel : rightPanel;
+  const panel = side === 'left'  ? leftPanel : rightPanel;
   if (!panel) return;
 
   panel.classList.toggle('is-collapsed', !!collapsed);
@@ -979,14 +1351,14 @@ function setSidePanelState(side, collapsed, state = null) {
   const leftBtn = document.getElementById('leftPanelToggle');
   const rightBtn = document.getElementById('rightPanelToggle');
   if (leftBtn) {
-    const leftCollapsed = leftPanel ? leftPanel.classList.contains('is-collapsed') : false;
-    leftBtn.innerHTML = leftCollapsed ? '&gt;' : '&lt;';
-    leftBtn.title = leftCollapsed ? 'Expand left panel' : 'Collapse left panel';
+    const leftCollapsed = leftPanel  ? leftPanel.classList.contains('is-collapsed') : false;
+    leftBtn.innerHTML = leftCollapsed  ? '&gt;' : '&lt;';
+    leftBtn.title = leftCollapsed  ? 'Expand left panel' : 'Collapse left panel';
   }
   if (rightBtn) {
-    const rightCollapsed = rightPanel ? rightPanel.classList.contains('is-collapsed') : false;
-    rightBtn.innerHTML = rightCollapsed ? '&lt;' : '&gt;';
-    rightBtn.title = rightCollapsed ? 'Expand right panel' : 'Collapse right panel';
+    const rightCollapsed = rightPanel  ? rightPanel.classList.contains('is-collapsed') : false;
+    rightBtn.innerHTML = rightCollapsed  ? '&lt;' : '&gt;';
+    rightBtn.title = rightCollapsed  ? 'Expand right panel' : 'Collapse right panel';
   }
 
   if (state) {
@@ -996,7 +1368,7 @@ function setSidePanelState(side, collapsed, state = null) {
 }
 
 function toggleSidePanel(side) {
-  const panel = document.querySelector(side === 'left' ? '.panel-motors' : '.panel-right');
+  const panel = document.querySelector(side === 'left'  ? '.panel-motors' : '.panel-right');
   if (!panel) return;
   const state = loadCollapseState();
   setSidePanelState(side, !panel.classList.contains('is-collapsed'), state);
@@ -1008,16 +1380,94 @@ function initSidePanelCollapse() {
   setSidePanelState('right', !!state.panel_right);
 }
 
-// ══════════════════════════════════════════════════════════
-//  Motor Cards
-// ══════════════════════════════════════════════════════════
+function summarizeFaults(names, maxItems = 4) {
+  const list = Array.isArray(names)  ? names : [];
+  if (list.length <= maxItems) return list;
+  return [...list.slice(0, maxItems), `+${list.length - maxItems} more`];
+}
+
+function suppressedFaultSummary(activeNames, stickyNames) {
+  const activeCount = Array.isArray(activeNames)  ? activeNames.length : 0;
+  const stickyCount = Array.isArray(stickyNames)  ? stickyNames.length : 0;
+  const total = activeCount + stickyCount;
+  if (!total) return '<span class="fault-badge none">no reported faults</span>';
+  return '<span class="fault-badge suppressed">fault flags ignored for this firmware</span>';
+}
+
+function updateEmergencyStopUi() {
+  const btn = document.getElementById('eStopBtn');
+  if (!btn) return;
+  btn.classList.toggle('estop-active', !!S.eStop.active);
+  btn.disabled = !!S.eStop.stopping;
+  btn.setAttribute('aria-pressed', S.eStop.active ? 'true' : 'false');
+  btn.textContent = S.eStop.stopping ? 'Stopping...' : (S.eStop.active ? 'Reset E-Stop' : 'E-Stop');
+}
+
+function canSendCommands(actionLabel = 'send commands') {
+  if (!S.eStop.active) return true;
+  flash(`Reset E-Stop before you ${actionLabel}`);
+  return false;
+}
+
+function resetDashboardControlState() {
+  S.driveMode = 'off';
+  S.tuning.running = false;
+  S.tuning.runner = 'manual';
+  S.tuning.phase = 'idle';
+  S.tuning.phaseStartedAt = 0;
+  S.tuning.currentCycle = 0;
+  S.tuning.motorId = null;
+  S.autotune.running = false;
+  S.autotune.collecting = false;
+  S.autotune.samples = [];
+  S.autotune.motorId = null;
+  S.curve.running = false;
+  S.curve.motorId = null;
+  S.curve.startTs = 0;
+  S.curve.lastSentAt = 0;
+  S.throttle = 0;
+  S.turn = 0;
+  S.leftRaw = 0;
+  S.rightRaw = 0;
+  S.leftCmd = 0;
+  S.rightCmd = 0;
+  S.manual.latched = false;
+  S.manual.latchedMotorIds = [];
+  S.manual.mode = 'duty';
+  S.manualRpm = 1000;
+  S.driveNet.inFlight = false;
+  S.driveNet.lastById = {};
+  clearTargets();
+  resetManualRunInputs();
+  updateManualButton();
+  updateManualModeUi();
+  buildJoystickUI();
+  drawArcadeStick();
+  renderPidPanel();
+  updateEmergencyStopUi();
+}
+
+async function toggleEmergencyStop() {
+  if (S.eStop.stopping) return;
+  if (S.eStop.active) {
+    S.eStop.active = false;
+    S.eStop.stopping = false;
+    S.eStop.trippedAt = 0;
+    updateEmergencyStopUi();
+    flash('E-Stop reset - controls remain idle until you command them again');
+    return;
+  }
+  await emergencyStop();
+}
+
+// Motor Cards
 function renderMotors() {
   const list = document.getElementById('motorList');
   const ids  = sortedIds();
-  document.getElementById('mCount').textContent = ids.length + (ids.length !== 1 ? ' motors' : ' motor');
+  document.getElementById('mCount').textContent = ids.length + (ids.length !== 1  ? ' motors' : ' motor');
 
-  // Convenience for single-motor deployments: pre-select once so manual Send works immediately.
-  if (!S.autoSelectedOnce && !S.selected.size && ids.length === 1) {
+  // Pick a default motor once on first load so the RPM/PID panel is populated immediately.
+  if (!S.autoSelectedOnce && !S.selected.size && ids.length >= 1) {
     S.selected.add(ids[0]);
     S.autoSelectedOnce = true;
   }
@@ -1034,56 +1484,76 @@ function renderMotors() {
     const role = S.roles[id] || null;
     const pct  = Math.min(100, Math.abs(m.output_percent || 0));
     const rev  = (m.rpm || 0) < -20;
-    const tCls = m.temperature_c > 60 ? 'var(--red)' : m.temperature_c > 45 ? 'var(--yellow)' : 'var(--text)';
-    const controlMode = m.control_mode === 'velocity_pid' ? 'PID RPM' : 'Duty';
+    const tCls = m.temperature_c > 60  ? 'var(--red)' : m.temperature_c > 45  ? 'var(--yellow)' : 'var(--text)';
+    const controlMode = m.control_mode === 'velocity_pid'  ? 'PID RPM' : 'Duty';
     const pid = m.pid || {};
-    const targetRpm = pid.target_rpm ?? m.target_rpm ?? 0;
-    const errorRpm = pid.error_rpm ?? 0;
+    const pidAllowed = pid.allowed !== false;
+    const pidActive = m.control_mode === 'velocity_pid' || !!pid.enabled;
+    const targetRpm = pid.target_rpm  ?? m.target_rpm  ?? 0;
+    const errorRpm = pid.error_rpm  ?? 0;
     const cmdAge = (S.statusTimeMs && m.last_command_ms)
-      ? Math.max(0, S.statusTimeMs - m.last_command_ms)
+       ? Math.max(0, S.statusTimeMs - m.last_command_ms)
       : null;
     const statusAge = (S.statusTimeMs && m.last_status_ms)
-      ? Math.max(0, S.statusTimeMs - m.last_status_ms)
+       ? Math.max(0, S.statusTimeMs - m.last_status_ms)
       : null;
-    const cmdText = cmdAge === null ? 'No' : (cmdAge < 1000 ? 'Yes' : `${(cmdAge / 1000).toFixed(1)}s`);
-    const statusText = statusAge === null ? 'No' : (statusAge < 1000 ? 'Yes' : `${(statusAge / 1000).toFixed(1)}s`);
-    const cmdCls = cmdAge === null ? 'var(--red)' : (cmdAge < 1000 ? 'var(--green)' : 'var(--yellow)');
-    const statusCls = statusAge === null ? 'var(--red)' : (statusAge < 1000 ? 'var(--green)' : 'var(--yellow)');
+    const cmdText = cmdAge === null  ? 'No' : (cmdAge < 1000  ? 'Yes' : `${(cmdAge / 1000).toFixed(1)}s`);
+    const statusText = statusAge === null  ? 'No' : (statusAge < 1000  ? 'Yes' : `${(statusAge / 1000).toFixed(1)}s`);
+    const cmdCls = cmdAge === null  ? 'var(--red)' : (cmdAge < 1000  ? 'var(--green)' : 'var(--yellow)');
+    const statusCls = statusAge === null  ? 'var(--red)' : (statusAge < 1000  ? 'var(--green)' : 'var(--yellow)');
 
     const faults = m.faults || {};
     const activeNames = faults.active || [];
     const stickyNames = faults.sticky || [];
+    const faultsTrusted = faults.trusted !== false;
     const hasFault = activeNames.length || stickyNames.length;
-    const faultHtml = hasFault
-      ? `<div style="grid-column:1/-1;margin-top:5px;display:flex;flex-wrap:wrap;gap:3px">
-           ${activeNames.map(f => `<span class="fault-badge active">⚡ ${f}</span>`).join('')}
-           ${stickyNames.map(f => `<span class="fault-badge sticky">⚠ ${f}</span>`).join('')}
-         </div>`
-      : `<div style="grid-column:1/-1;margin-top:5px"><span class="fault-badge none">✓ no faults</span></div>`;
+    let faultHtml;
+    if (!faultsTrusted) {
+      faultHtml = `<div style="grid-column:1/-1;margin-top:5px">${suppressedFaultSummary(activeNames, stickyNames)}</div>`;
+    } else if (hasFault) {
+      faultHtml = `<div class="fault-list" style="grid-column:1/-1;margin-top:5px">
+           ${activeNames.length ? `<span class="fault-badge active">${activeNames.length} active</span>` : ''}
+           ${stickyNames.length ? `<span class="fault-badge sticky">${stickyNames.length} sticky</span>` : ''}
+         </div>`;
+    } else {
+      faultHtml = `<div style="grid-column:1/-1;margin-top:5px"><span class="fault-badge none">no faults</span></div>`;
+    }
 
-    card.className = 'mcard' + (sel ? ' sel' : '');
+    card.className = 'mcard' + (sel  ? ' sel' : '');
+    card.dataset.motorId = String(id);
     card.innerHTML = `
-      <div class="chk">${sel ? '✓' : ''}</div>
+      <div class="chk">${sel ? 'x' : ''}</div>
       <div class="mcard-head">
-        <span>⚙</span>
+        <span></span>
         <span class="mcard-name">Motor ${id}</span>
-        <span class="role-badge${role ? ' ' + role : ''}"
-              onclick="event.stopPropagation();cycleRole(${id})">${role || '—'}</span>
       </div>
       <div class="mcard-stats">
-        <div><div class="stat-lbl">RPM</div><div class="stat-val">${(m.rpm||0).toFixed(0)}</div></div>
+        <div><div class="stat-lbl">Measured</div><div class="stat-val" data-rpm-id="${id}">${getDisplayedRpm(id).toFixed(0)} rpm</div></div>
         <div><div class="stat-lbl">Output</div><div class="stat-val">${(m.output_percent||0).toFixed(1)}%</div></div>
         <div><div class="stat-lbl">Mode</div><div class="stat-val">${controlMode}</div></div>
+        <div><div class="stat-lbl">PID</div><div class="stat-val">${pidAllowed ? 'Enabled' : 'Locked Off'}</div></div>
         <div><div class="stat-lbl">Target</div><div class="stat-val">${targetRpm.toFixed(0)} rpm</div></div>
         <div><div class="stat-lbl">Amps</div><div class="stat-val">${(m.current_amps||0).toFixed(1)} A</div></div>
-        <div><div class="stat-lbl">Temp</div><div class="stat-val" style="color:${tCls}">${(m.temperature_c||0).toFixed(1)}°C</div></div>
-        <div><div class="stat-lbl">Err</div><div class="stat-val">${errorRpm.toFixed(0)} rpm</div></div>
+        <div><div class="stat-lbl">Temp</div><div class="stat-val" style="color:${tCls}">${(m.temperature_c||0).toFixed(1)}C</div></div>
+        <div><div class="stat-lbl">PID Err</div><div class="stat-val">${errorRpm.toFixed(0)} rpm</div></div>
         <div><div class="stat-lbl">CAN Cmd</div><div class="stat-val" style="color:${cmdCls}">${cmdText}</div></div>
         <div><div class="stat-lbl">CAN Stat</div><div class="stat-val" style="color:${statusCls}">${statusText}</div></div>
-        <div class="rbar-wrap"><div class="rbar-track"><div class="rbar-fill ${rev?'rev':''}" style="width:${pct}%"></div></div></div>
+        <div class="rbar-wrap"><div class="rbar-track"><div class="rbar-fill ${rev ? 'rev':''}" style="width:${pct}%"></div></div></div>
+        <div class="mcard-actions">
+          <button type="button" class="mcard-pid-toggle ${pidAllowed ? 'on' : 'off'}" data-motor-action="toggle-pid" data-motor-id="${id}">${pidAllowed ? 'PID On' : 'Duty Only'}</button>
+          ${pidActive ? `<button type="button" class="mcard-pid-off" data-motor-action="stop-pid" data-motor-id="${id}">PID Off</button>` : '<div></div>'}
+          <div class="role-menu${S.roleMenuOpen[id] ? ' open' : ''}">
+            <button type="button" class="role-menu-btn${role ? ' ' + role : ''}${S.roleMenuOpen[id] ? ' open' : ''}" data-motor-action="toggle-role-menu" data-motor-id="${id}">${role || 'None'}</button>
+            <div class="role-menu-list">
+              <button type="button" class="role-menu-option${role === null ? ' active' : ''}" data-motor-action="set-role" data-motor-id="${id}" data-role-value="">None</button>
+              <button type="button" class="role-menu-option${role === 'L' ? ' active' : ''}" data-motor-action="set-role" data-motor-id="${id}" data-role-value="L">L</button>
+              <button type="button" class="role-menu-option${role === 'R' ? ' active' : ''}" data-motor-action="set-role" data-motor-id="${id}" data-role-value="R">R</button>
+              <button type="button" class="role-menu-option${role === 'AUX' ? ' active' : ''}" data-motor-action="set-role" data-motor-id="${id}" data-role-value="AUX">AUX</button>
+            </div>
+          </div>
+        </div>
         ${faultHtml}
       </div>`;
-    card.onclick = () => toggleMotor(id);
   });
 
   // Remove stale cards
@@ -1095,6 +1565,21 @@ function renderMotors() {
   updateSelLabel();
   updateChartLegend();
   renderPidPanel();
+}
+
+function pauseMotorCardRenders(ms = 900) {
+  const until = performance.now() + ms;
+  S.display.pauseMotorRenderUntil = Math.max(S.display.pauseMotorRenderUntil || 0, until);
+}
+
+function maybeRenderMotors(force = false) {
+  const now = performance.now();
+  if (!force) {
+    if (now < (S.display.pauseMotorRenderUntil || 0)) return;
+    if ((now - (S.display.lastMotorRenderMs || 0)) < (S.display.motorRenderMs || 300)) return;
+  }
+  S.display.lastMotorRenderMs = now;
+  renderMotors();
 }
 
 const curveCanvas = document.getElementById('curveEditor');
@@ -1158,7 +1643,7 @@ function loadCurvePreset(name) {
 
 function resetCurvePoints() {
   const presetEl = document.getElementById('curvePreset');
-  loadCurvePreset(presetEl ? presetEl.value : 'step');
+  loadCurvePreset(presetEl  ? presetEl.value : 'step');
 }
 
 function curveCanvasMetrics() {
@@ -1274,11 +1759,11 @@ function drawCurveEditor() {
 
   S.curve.points.forEach((pt, idx) => {
     const p = curvePointToCanvas(pt);
-    curveCtx.fillStyle = idx === S.curve.selectedIndex ? '#d29922' : '#58a6ff';
+    curveCtx.fillStyle = idx === S.curve.selectedIndex  ? '#d29922' : '#58a6ff';
     curveCtx.strokeStyle = '#0d1117';
     curveCtx.lineWidth = 2;
     curveCtx.beginPath();
-    curveCtx.arc(p.x, p.y, idx === S.curve.selectedIndex ? 7 : 6, 0, Math.PI * 2);
+    curveCtx.arc(p.x, p.y, idx === S.curve.selectedIndex  ? 7 : 6, 0, Math.PI * 2);
     curveCtx.fill();
     curveCtx.stroke();
   });
@@ -1328,9 +1813,9 @@ function updateCurvePointFromPointer(x, y) {
   const idx = S.curve.selectedIndex;
   const next = curveCanvasToPoint(x, y);
   const pts = S.curve.points;
-  const prevX = idx === 0 ? 0 : pts[idx - 1].x + 0.03;
-  const nextX = idx === pts.length - 1 ? 1 : pts[idx + 1].x - 0.03;
-  pts[idx].x = idx === 0 ? 0 : idx === pts.length - 1 ? 1 : Math.min(nextX, Math.max(prevX, next.x));
+  const prevX = idx === 0  ? 0 : pts[idx - 1].x + 0.03;
+  const nextX = idx === pts.length - 1  ? 1 : pts[idx + 1].x - 0.03;
+  pts[idx].x = idx === 0  ? 0 : idx === pts.length - 1  ? 1 : Math.min(nextX, Math.max(prevX, next.x));
   pts[idx].y = Math.min(1, Math.max(0, next.y));
   drawCurveEditor();
 }
@@ -1362,6 +1847,7 @@ curveCanvas.addEventListener('pointerleave', () => {
 });
 
 async function runCurveProfile() {
+  if (!canSendCommands('run a curve profile')) return;
   const id = selectedMotorId();
   if (!id) {
     flash('Select one motor first');
@@ -1401,6 +1887,7 @@ async function stopCurveProfile(stopMotor = true) {
 }
 
 async function curveTick() {
+  if (S.eStop.active) return;
   if (!S.curve.running || !S.curve.motorId) return;
   const id = S.curve.motorId;
   if (selectedMotorId() !== id) {
@@ -1424,21 +1911,57 @@ async function curveTick() {
   renderPidPanel();
 }
 
-function cycleRole(id) {
-  const cur = S.roles[id] || null;
-  const idx = ROLES.indexOf(cur);
-  S.roles[id] = ROLES[(idx + 1) % ROLES.length];
+function setRole(id, role) {
+  S.roles[id] = role || null;
+  S.roleMenuOpen[id] = false;
   renderMotors();
   drawDrivetrain();
+}
+
+function toggleRoleMenu(id) {
+  S.roleMenuOpen[id] = !S.roleMenuOpen[id];
+  renderMotors();
 }
 
 function toggleMotor(id) {
   if (S.selected.has(id)) S.selected.delete(id); else S.selected.add(id);
   renderMotors();
 }
+
+const motorListEl = document.getElementById('motorList');
+motorListEl.addEventListener('pointerdown', ev => {
+  if (ev.target.closest('[data-motor-action], .mcard')) {
+    pauseMotorCardRenders();
+  }
+});
+motorListEl.addEventListener('click', ev => {
+  const actionEl = ev.target.closest('[data-motor-action]');
+  if (actionEl) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const id = Number(actionEl.dataset.motorId);
+    if (!Number.isFinite(id)) return;
+    const action = actionEl.dataset.motorAction;
+    if (action === 'toggle-pid') {
+      togglePidAllowed(id);
+    } else if (action === 'stop-pid') {
+      stopPidForMotor(id);
+    } else if (action === 'toggle-role-menu') {
+      toggleRoleMenu(id);
+    } else if (action === 'set-role') {
+      setRole(id, actionEl.dataset.roleValue || null);
+    }
+    return;
+  }
+
+  const card = ev.target.closest('.mcard');
+  if (!card || !motorListEl.contains(card)) return;
+  const id = Number(card.dataset.motorId);
+  if (Number.isFinite(id)) toggleMotor(id);
+});
 function selectAll()    { sortedIds().forEach(id => S.selected.add(id)); renderMotors(); }
 function selectNone()   { S.selected.clear(); renderMotors(); }
-function selectInvert() { sortedIds().forEach(id => S.selected.has(id) ? S.selected.delete(id) : S.selected.add(id)); renderMotors(); }
+function selectInvert() { sortedIds().forEach(id => S.selected.has(id)  ? S.selected.delete(id) : S.selected.add(id)); renderMotors(); }
 
 function updateSelLabel() {
   const el = document.getElementById('selLabel');
@@ -1451,14 +1974,68 @@ function sortedIds() { return Object.keys(S.motors).map(Number).sort((a,b)=>a-b)
 
 function selectedMotorId() {
   const ids = [...S.selected].sort((a, b) => a - b);
-  return ids.length ? ids[0] : null;
+  return ids.length  ? ids[0] : null;
+}
+
+function ensureDisplayMotor(id) {
+  if (!S.display.motors[id]) {
+    S.display.motors[id] = { rpm: 0, rpmTarget: 0, seen: false };
+  }
+  return S.display.motors[id];
+}
+
+function updateDisplayTarget(motor) {
+  const id = motor.motor_id;
+  const disp = ensureDisplayMotor(id);
+  const nextRpm = Number.isFinite(Number(motor.rpm)) ? Number(motor.rpm) : 0;
+  if (!disp.seen) {
+    disp.rpm = nextRpm;
+    disp.rpmTarget = nextRpm;
+    disp.seen = true;
+    return;
+  }
+  disp.rpmTarget = nextRpm;
+  if (Math.abs(disp.rpmTarget - disp.rpm) > 2000) disp.rpm = disp.rpmTarget;
+}
+
+function getDisplayedRpm(id) {
+  const disp = ensureDisplayMotor(id);
+  return Number.isFinite(disp.rpm) ? disp.rpm : 0;
+}
+
+function stepDisplayedTelemetry(dtMs) {
+  let changed = false;
+  Object.values(S.display.motors).forEach(disp => {
+    if (!disp.seen) return;
+    if (disp.rpm !== disp.rpmTarget) {
+      disp.rpm = disp.rpmTarget;
+      changed = true;
+    }
+  });
+  return changed;
+}
+
+function refreshLiveRpmText() {
+  document.querySelectorAll('[data-rpm-id]').forEach(el => {
+    const id = Number(el.dataset.rpmId);
+    if (Number.isFinite(id)) el.textContent = `${getDisplayedRpm(id).toFixed(0)} rpm`;
+  });
+  document.querySelectorAll('[data-rpm-legend-id]').forEach(el => {
+    const id = Number(el.dataset.rpmLegendId);
+    if (Number.isFinite(id)) el.textContent = `${getDisplayedRpm(id).toFixed(0)} rpm`;
+  });
+  const selectedId = selectedMotorId();
+  const measuredEl = document.getElementById('pidMeasured');
+  if (measuredEl && selectedId && S.motors[selectedId]) {
+    measuredEl.textContent = `${getDisplayedRpm(selectedId).toFixed(0)} rpm`;
+  }
 }
 
 function readNum(id, fallback = 0) {
   const el = document.getElementById(id);
   if (!el) return fallback;
   const value = Number(el.value);
-  return Number.isFinite(value) ? value : fallback;
+  return Number.isFinite(value)  ? value : fallback;
 }
 
 function readPidGainInputs() {
@@ -1517,59 +2094,65 @@ function renderPidPanel() {
 
   if (!selectedId || !S.motors[selectedId]) {
     selectedEl.textContent = '-';
-    modeEl.textContent = S.controller.supportsVelocityPid ? 'Ready' : 'Unavailable';
+    modeEl.textContent = S.controller.supportsVelocityPid  ? 'Ready' : 'Unavailable';
     measuredEl.textContent = '-';
     errorEl.textContent = '-';
     outputEl.textContent = '-';
-    tuneStateEl.textContent = S.tuning.running ? 'Running' : 'Idle';
-    tunePhaseEl.textContent = S.tuning.phase === 'idle' ? '-' : S.tuning.phase;
-    tuneCycleEl.textContent = S.tuning.currentCycle ? `${S.tuning.currentCycle}/${S.tuning.cycles}` : '-';
-    curveStateEl.textContent = S.curve.running ? 'Running' : 'Idle';
-    autoStateEl.textContent = S.autotune.running ? 'Running' : 'Idle';
-    autoScoreEl.textContent = S.autotune.bestScore === null ? '-' : S.autotune.bestScore.toFixed(1);
-    autoPassEl.textContent = S.autotune.pass ? `${S.autotune.pass}/${S.autotune.maxPasses}` : '-';
+    tuneStateEl.textContent = S.tuning.running  ? 'Running' : 'Idle';
+    tunePhaseEl.textContent = S.tuning.phase === 'idle'  ? '-' : S.tuning.phase;
+    tuneCycleEl.textContent = S.tuning.currentCycle  ? `${S.tuning.currentCycle}/${activeTuneCycles()}` : '-';
+    curveStateEl.textContent = S.curve.running  ? 'Running' : 'Idle';
+    autoStateEl.textContent = S.autotune.running  ? 'Running' : 'Idle';
+    autoScoreEl.textContent = S.autotune.bestScore === null  ? '-' : S.autotune.bestScore.toFixed(1);
+    autoPassEl.textContent = S.autotune.pass  ? `${S.autotune.pass}/${S.autotune.maxPasses}` : '-';
     noteEl.textContent = S.controller.supportsVelocityPid
-      ? 'Select a motor to tune and hold speed with software PID.'
+       ? 'Select a motor to tune and hold speed with software PID.'
       : 'This controller is not advertising software PID support.';
     return;
   }
 
   const motor = S.motors[selectedId];
   const pid = motor.pid || {};
+  const pidAllowed = pid.allowed !== false;
   const cfg = pid.config || {};
+  const activeFaults = ((motor.faults || {}).active || []);
   selectedEl.textContent = `Motor ${selectedId}`;
-  modeEl.textContent = motor.control_mode === 'velocity_pid' ? 'PID RPM' : 'Duty';
-  measuredEl.textContent = `${(motor.rpm || 0).toFixed(0)} rpm`;
+  modeEl.textContent = motor.control_mode === 'velocity_pid'  ? 'PID RPM' : 'Duty';
+  measuredEl.textContent = `${getDisplayedRpm(selectedId).toFixed(0)} rpm`;
   errorEl.textContent = `${(pid.error_rpm || 0).toFixed(0)} rpm`;
-  outputEl.textContent = `${(((pid.last_output ?? 0) * 100)).toFixed(1)}%`;
-  tuneStateEl.textContent = S.tuning.running ? 'Running' : 'Idle';
-  tunePhaseEl.textContent = S.tuning.phase === 'idle' ? '-' : S.tuning.phase;
-  tuneCycleEl.textContent = S.tuning.currentCycle ? `${S.tuning.currentCycle}/${S.tuning.cycles}` : '-';
-  curveStateEl.textContent = S.curve.running ? `Running M${S.curve.motorId}` : 'Idle';
-  autoStateEl.textContent = S.autotune.running ? 'Running' : 'Idle';
-  autoScoreEl.textContent = S.autotune.bestScore === null ? '-' : S.autotune.bestScore.toFixed(1);
-  autoPassEl.textContent = S.autotune.pass ? `${S.autotune.pass}/${S.autotune.maxPasses}` : '-';
-  noteEl.textContent = S.autotune.running
-    ? `Autotune is scoring the ${S.tuning.lowRpm.toFixed(0)} to ${S.tuning.highRpm.toFixed(0)} rpm profile and iterating gains.`
+  outputEl.textContent = `${(((pid.last_output  ?? 0) * 100)).toFixed(1)}%`;
+  tuneStateEl.textContent = S.tuning.running  ? 'Running' : 'Idle';
+  tunePhaseEl.textContent = S.tuning.phase === 'idle'  ? '-' : S.tuning.phase;
+  tuneCycleEl.textContent = S.tuning.currentCycle  ? `${S.tuning.currentCycle}/${activeTuneCycles()}` : '-';
+  curveStateEl.textContent = S.curve.running  ? `Running M${S.curve.motorId}` : 'Idle';
+  autoStateEl.textContent = S.autotune.running  ? 'Running' : 'Idle';
+  autoScoreEl.textContent = S.autotune.bestScore === null  ? '-' : S.autotune.bestScore.toFixed(1);
+  autoPassEl.textContent = S.autotune.pass  ? `${S.autotune.pass}/${S.autotune.maxPasses}` : '-';
+  noteEl.textContent = S.eStop.active
+     ? 'Dashboard E-Stop is latched. Reset it before sending any manual, drive, PID, autotune, or curve commands.'
+    : !pidAllowed
+     ? `PID is disabled for Motor ${motor.motor_id}. Manual duty control is still available.`
+    : S.autotune.running
+     ? `Autotune is characterizing feedforward first, then refining gains on the ${S.tuning.lowRpm.toFixed(0)} to ${S.tuning.highRpm.toFixed(0)} rpm profile.`
     : (S.curve.running
-    ? `Curve profile is driving Motor ${S.curve.motorId} over ${(S.curve.durationMs / 1000).toFixed(1)} seconds.`
+     ? `Curve profile is driving Motor ${S.curve.motorId} over ${(S.curve.durationMs / 1000).toFixed(1)} seconds.`
     : (S.tuning.running
-    ? `Step test running on Motor ${S.tuning.motorId}: ${S.tuning.lowRpm.toFixed(0)} to ${S.tuning.highRpm.toFixed(0)} rpm.`
+     ? `Step test running on Motor ${S.tuning.motorId}: ${S.tuning.lowRpm.toFixed(0)} to ${S.tuning.highRpm.toFixed(0)} rpm.`
     : (motor.control_mode === 'velocity_pid'
-      ? `Holding ${(pid.target_rpm || 0).toFixed(0)} rpm with software PID.`
+       ? `Holding ${(pid.target_rpm || 0).toFixed(0)} rpm with software PID.`
       : 'Save gains, then switch the selected motor into Hold RPM mode.')));
 
   const active = document.activeElement;
   const activeId = active && active.id;
   const fieldMap = {
-    pidTargetRpm: pid.target_rpm ?? motor.target_rpm ?? 0,
-    pidKp: cfg.kp ?? 0.00018,
-    pidKi: cfg.ki ?? 0.00005,
-    pidKd: cfg.kd ?? 0,
-    pidKf: cfg.kf ?? (1 / Math.max(1, motor.max_rpm || 5700)),
-    pidIntegralLimit: cfg.integral_limit ?? 0.35,
-    pidOutputLimit: cfg.output_limit ?? 1,
-    pidTelemetryTimeout: pid.telemetry_timeout_ms ?? 750,
+    pidTargetRpm: pid.target_rpm  ?? motor.target_rpm  ?? 0,
+    pidKp: cfg.kp  ?? 0.00018,
+    pidKi: cfg.ki  ?? 0.00005,
+    pidKd: cfg.kd  ?? 0,
+    pidKf: cfg.kf  ?? (1 / Math.max(1, motor.max_rpm || 5700)),
+    pidIntegralLimit: cfg.integral_limit  ?? 0.35,
+    pidOutputLimit: cfg.output_limit  ?? 1,
+    pidTelemetryTimeout: pid.telemetry_timeout_ms  ?? 750,
     pidLowRpm: S.tuning.lowRpm,
     pidHighRpm: S.tuning.highRpm,
     pidDwellMs: S.tuning.dwellMs,
@@ -1587,9 +2170,15 @@ function renderPidPanel() {
 }
 
 async function applyPidSettings() {
+  if (!canSendCommands('apply PID settings')) return;
   const id = selectedMotorId();
   if (!id) {
     flash('Select one motor first');
+    return;
+  }
+  const motor = S.motors[id];
+  if (motor && motor.pid && motor.pid.allowed === false) {
+    flash(`PID is disabled for Motor ${id}`);
     return;
   }
   try {
@@ -1604,9 +2193,15 @@ async function applyPidSettings() {
 }
 
 async function setPidTargetValue(targetRpm, announceText = null) {
+  if (!canSendCommands('send a PID target')) return;
   const id = selectedMotorId();
   if (!id) {
     flash('Select one motor first');
+    return;
+  }
+  const motor = S.motors[id];
+  if (motor && motor.pid && motor.pid.allowed === false) {
+    flash(`PID is disabled for Motor ${id}`);
     return;
   }
   try {
@@ -1630,18 +2225,85 @@ async function stopPidMode() {
     flash('Select one motor first');
     return;
   }
+  await stopPidForMotor(id);
+}
+
+async function stopPidForMotor(id, options = {}) {
+  const opts = options || {};
+  const announce = opts.announce !== false;
+  const motor = S.motors[id];
   S.tuning.running = false;
   S.tuning.phase = 'idle';
   S.tuning.phaseStartedAt = 0;
   S.tuning.currentCycle = 0;
-  S.tuning.motorId = null;
+  if (!S.tuning.motorId || S.tuning.motorId === id) {
+    S.tuning.motorId = null;
+  }
+  if (motor) {
+    motor.control_mode = 'duty';
+    motor.target_rpm = 0;
+    if (!motor.pid) motor.pid = {};
+    motor.pid.enabled = false;
+    motor.pid.target_rpm = 0;
+    motor.pid.error_rpm = 0;
+    maybeRenderMotors(true);
+    renderPidPanel();
+  }
   try {
     await postJson('/api/motor/cmd', { id, cmd: 'stop_pid', value: 0 });
-    flash(`Stopped PID for Motor ${id}`);
+    if (announce) flash(`Stopped PID for Motor ${id}`);
   } catch(e) {
-    flash('PID stop failed');
+    flash(`PID stop failed for Motor ${id}`);
   }
+  renderMotors();
   renderPidPanel();
+}
+
+async function setPidAllowed(id, allowed) {
+  const motor = S.motors[id];
+  let previous = null;
+  if (motor) {
+    previous = JSON.parse(JSON.stringify({ pid: motor.pid || {}, control_mode: motor.control_mode, target_rpm: motor.target_rpm }));
+    if (!motor.pid) motor.pid = {};
+    motor.pid.allowed = allowed;
+    if (!allowed) {
+      motor.pid.enabled = false;
+      motor.pid.target_rpm = 0;
+      motor.pid.error_rpm = 0;
+      motor.control_mode = 'duty';
+      motor.target_rpm = 0;
+    }
+    maybeRenderMotors(true);
+    renderPidPanel();
+  }
+  try {
+    const res = await postJson('/api/motor/pid', { id, allowed });
+    if (motor && res && res.pid) {
+      motor.pid = { ...(motor.pid || {}), ...(res.pid || {}) };
+    }
+    maybeRenderMotors(true);
+    renderPidPanel();
+    if (!allowed) {
+      flash(`Motor ${id} set to normal control only`);
+    } else {
+      flash(`PID re-enabled for Motor ${id}`);
+    }
+  } catch (e) {
+    if (motor && previous) {
+      motor.pid = { ...(previous.pid || {}) };
+      motor.control_mode = previous.control_mode;
+      motor.target_rpm = previous.target_rpm;
+      maybeRenderMotors(true);
+      renderPidPanel();
+    }
+    flash(`PID mode update failed for Motor ${id}`);
+  }
+}
+
+async function togglePidAllowed(id) {
+  const motor = S.motors[id];
+  const allowed = !(motor && motor.pid && motor.pid.allowed === false);
+  await setPidAllowed(id, !allowed);
 }
 
 function syncTuningFields() {
@@ -1651,19 +2313,254 @@ function syncTuningFields() {
   S.tuning.cycles = Math.max(1, Math.round(readNum('pidCycles', 6)));
 }
 
+function buildAutoTuneProfile() {
+  const low = Math.abs(S.tuning.lowRpm || 0);
+  const high = Math.abs(S.tuning.highRpm || 0);
+  const span = Math.max(250, Math.abs((S.tuning.highRpm || 0) - (S.tuning.lowRpm || 0)));
+  return {
+    cycles: 2,
+    toleranceRpm: Math.max(35, Math.round(high * 0.03), Math.round(span * 0.06)),
+    jitterRpm: Math.max(18, Math.round(span * 0.025)),
+    settleHoldMs: 360,
+    minPhaseMs: Math.max(350, Math.min(900, Math.round(240 + span * 0.12))),
+    dwellMs: Math.max(900, Math.min(2600, Math.round(650 + span * 0.45))),
+  };
+}
+
+function activeTuneCycles() {
+  return (S.tuning.runner === 'autotune' && S.autotune.profile)
+     ? S.autotune.profile.cycles
+    : S.tuning.cycles;
+}
+
+function activeTuneDwellMs() {
+  return (S.tuning.runner === 'autotune' && S.autotune.profile)
+     ? S.autotune.profile.dwellMs
+    : S.tuning.dwellMs;
+}
+
+function average(values) {
+  if (!values || !values.length) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function autoTuneToleranceRpm(targetRpm = 0, profile = S.autotune.profile) {
+  const base = profile && profile.toleranceRpm ? profile.toleranceRpm : 40;
+  return Math.max(base, Math.abs(targetRpm) * 0.03);
+}
+
+function splitAutoTuneSegments(samples) {
+  if (!samples || samples.length < 4) return [];
+  const segments = [];
+  let start = 0;
+  for (let i = 1; i < samples.length; i++) {
+    if (Math.abs(samples[i].target - samples[i - 1].target) > 1) {
+      if ((i - start) >= 4) segments.push(samples.slice(start, i));
+      start = i;
+    }
+  }
+  if ((samples.length - start) >= 4) segments.push(samples.slice(start));
+  return segments;
+}
+
+function analyzeAutoTuneSegment(segment, profile = S.autotune.profile) {
+  if (!segment || segment.length < 4) return null;
+  const target = average(segment.map(sample => sample.target || 0));
+  const startRpm = Number(segment[0].rpm || 0);
+  const band = autoTuneToleranceRpm(target, profile);
+  const responseMagnitude = Math.abs(target - startRpm);
+  if (Math.abs(target) < 25 && responseMagnitude < band) return null;
+  if (responseMagnitude < Math.max(20, band * 0.5)) return null;
+
+  const direction = target >= startRpm ? 'up' : 'down';
+  const startedAt = segment[0].ts;
+  const totalDurationS = Math.max(0.02, (segment[segment.length - 1].ts - startedAt) / 1000);
+  let iae = 0;
+  let overshoot = 0;
+  let lagArea = 0;
+  let settleTimeS = totalDurationS;
+  let settled = false;
+  let oscillations = 0;
+  let previousSign = 0;
+
+  for (let i = 1; i < segment.length; i++) {
+    const prev = segment[i - 1];
+    const cur = segment[i];
+    const dt = Math.max(0.02, (cur.ts - prev.ts) / 1000);
+    const error = Number(cur.error || 0);
+    iae += Math.abs(error) * dt;
+
+    if (direction === 'up') {
+      overshoot = Math.max(overshoot, Math.max(0, Number(cur.rpm || 0) - target));
+      lagArea += Math.max(0, target - Number(cur.rpm || 0)) * dt;
+    } else {
+      overshoot = Math.max(overshoot, Math.max(0, target - Number(cur.rpm || 0)));
+      lagArea += Math.max(0, Number(cur.rpm || 0) - target) * dt;
+    }
+
+    const sign = Math.sign(error);
+    if (Math.abs(error) > band) {
+      if (previousSign && sign && sign !== previousSign) oscillations += 1;
+      previousSign = sign || previousSign;
+    }
+  }
+
+  for (let i = 0; i <= segment.length - 3; i++) {
+    const window = segment.slice(i, i + 3);
+    if (window.every(sample => Math.abs(Number(sample.error || 0)) <= band)) {
+      settleTimeS = Math.max(0.02, (window[0].ts - startedAt) / 1000);
+      settled = true;
+      break;
+    }
+  }
+
+  const tailCount = Math.max(3, Math.floor(segment.length * 0.25));
+  const tail = segment.slice(-tailCount);
+  const tailErrors = tail.map(sample => Math.abs(Number(sample.error || 0)));
+  const tailRpms = tail.map(sample => Number(sample.rpm || 0));
+  const tailOutputs = tail.map(sample => Math.abs(Number(sample.output || 0)));
+  const tailError = average(tailErrors);
+  const tailJitter = tail.length > 1 ? (Math.max(...tailRpms) - Math.min(...tailRpms)) : 0;
+  const steadyRpm = average(tailRpms.map(value => Math.abs(value)));
+  const steadyOutput = average(tailOutputs);
+
+  return {
+    direction,
+    target,
+    startRpm,
+    band,
+    responseMagnitude,
+    totalDurationS,
+    settleTimeS,
+    settled,
+    iae,
+    overshoot,
+    lagArea,
+    oscillations,
+    tailError,
+    tailJitter,
+    steadyRpm,
+    steadyOutput,
+  };
+}
+
+function summarizeAutoTuneDirection(segments) {
+  if (!segments.length) {
+    return {
+      count: 0,
+      settleTimeS: 99,
+      iae: 999999,
+      overshoot: 999999,
+      lagArea: 999999,
+      tailError: 999999,
+      tailJitter: 999999,
+    };
+  }
+  return {
+    count: segments.length,
+    settleTimeS: average(segments.map(segment => segment.settleTimeS)),
+    iae: average(segments.map(segment => segment.iae)),
+    overshoot: average(segments.map(segment => segment.overshoot)),
+    lagArea: average(segments.map(segment => segment.lagArea)),
+    tailError: average(segments.map(segment => segment.tailError)),
+    tailJitter: average(segments.map(segment => segment.tailJitter)),
+  };
+}
+
+function analyzeAutoTuneSamples(samples, profile = S.autotune.profile) {
+  const segments = splitAutoTuneSegments(samples)
+    .map(segment => analyzeAutoTuneSegment(segment, profile))
+    .filter(Boolean);
+  const up = summarizeAutoTuneDirection(segments.filter(segment => segment.direction === 'up'));
+  const down = summarizeAutoTuneDirection(segments.filter(segment => segment.direction === 'down'));
+  const steadyRatios = segments
+    .filter(segment => segment.steadyRpm > 75 && segment.steadyOutput > 0.01)
+    .map(segment => segment.steadyOutput / segment.steadyRpm);
+
+  return {
+    segments,
+    up,
+    down,
+    steadyKf: steadyRatios.length ? average(steadyRatios) : null,
+    hasBalancedSteps: up.count > 0 && down.count > 0,
+  };
+}
+
+function scoreAutoTuneSamples(samples, profile = S.autotune.profile) {
+  const analysis = analyzeAutoTuneSamples(samples, profile);
+  if (!analysis.segments.length || !analysis.hasBalancedSteps) {
+    return { score: Infinity, analysis };
+  }
+
+  const upScore =
+    (analysis.up.iae * 0.015) +
+    (analysis.up.settleTimeS * 55) +
+    (analysis.up.overshoot * 0.08) +
+    (analysis.up.tailError * 0.22) +
+    (analysis.up.tailJitter * 0.12);
+
+  const downScore =
+    (analysis.down.iae * 0.015) +
+    (analysis.down.settleTimeS * 68) +
+    (analysis.down.overshoot * 0.12) +
+    (analysis.down.lagArea * 0.06) +
+    (analysis.down.tailError * 0.28) +
+    (analysis.down.tailJitter * 0.16);
+
+  const asymmetryPenalty =
+    Math.max(0, analysis.down.settleTimeS - analysis.up.settleTimeS) * 22 +
+    Math.max(0, analysis.down.tailError - analysis.up.tailError) * 0.18 +
+    Math.max(0, analysis.down.tailJitter - analysis.up.tailJitter) * 0.12;
+
+  return {
+    score: (upScore * 0.42) + (downScore * 0.58) + asymmetryPenalty,
+    analysis,
+  };
+}
+
+function clampPidGains(gains) {
+  return {
+    ...gains,
+    kp: Math.max(0, Number(gains.kp || 0)),
+    ki: Math.max(0, Number(gains.ki || 0)),
+    kd: Math.max(0, Number(gains.kd || 0)),
+    kf: Math.max(0, Number(gains.kf || 0)),
+    integral_limit: Math.max(0, Number(gains.integral_limit ?? 0.35)),
+    output_limit: Math.max(0.05, Math.min(1, Number(gains.output_limit ?? 1))),
+    telemetry_timeout_ms: Math.max(100, Number(gains.telemetry_timeout_ms ?? 750)),
+  };
+}
+
+function characterizeAutoTuneGains(gains, analysis) {
+  const next = clampPidGains({ ...gains });
+  if (analysis && Number.isFinite(analysis.steadyKf) && analysis.steadyKf > 0) {
+    next.kf = (next.kf > 0)
+       ? ((next.kf * 0.35) + (analysis.steadyKf * 0.65))
+      : analysis.steadyKf;
+  }
+  next.ki = Math.min(next.ki, Math.max(0.000002, next.kp * 0.08));
+  if (analysis && analysis.down.count && analysis.up.count && analysis.down.settleTimeS > (analysis.up.settleTimeS * 1.2)) {
+    next.kd = Math.max(next.kd, next.kp * 0.12);
+  }
+  return clampPidGains(next);
+}
+
 async function primePidLow() {
+  if (!canSendCommands('prime low RPM')) return;
   syncTuningFields();
   await applyPidSettings();
   await setPidTargetValue(S.tuning.lowRpm, `Motor ${selectedMotorId()} to low RPM`);
 }
 
 async function primePidHigh() {
+  if (!canSendCommands('prime high RPM')) return;
   syncTuningFields();
   await applyPidSettings();
   await setPidTargetValue(S.tuning.highRpm, `Motor ${selectedMotorId()} to high RPM`);
 }
 
 async function startPidTuning() {
+  if (!canSendCommands('start a step test')) return;
   const id = selectedMotorId();
   if (!id) {
     flash('Select one motor first');
@@ -1687,6 +2584,7 @@ async function startPidTuning() {
 async function stopPidTuning(stopMotor = false) {
   const wasRunning = S.tuning.running;
   const motorId = S.tuning.motorId;
+  const previousRunner = S.tuning.runner;
   S.tuning.running = false;
   S.tuning.runner = 'manual';
   S.tuning.phase = 'idle';
@@ -1695,46 +2593,21 @@ async function stopPidTuning(stopMotor = false) {
   S.tuning.motorId = null;
   if (stopMotor && motorId && S.motors[motorId]) {
     await stopPidMode();
-  } else if (wasRunning) {
+  } else if (wasRunning && previousRunner !== 'autotune') {
     flash('Step test stopped');
   }
   renderPidPanel();
 }
 
 function createAutoTuneSteps(gains) {
+  const span = Math.max(250, Math.abs((S.tuning.highRpm || 0) - (S.tuning.lowRpm || 0)));
+  const rpmScale = Math.max(1, Math.max(Math.abs(S.tuning.highRpm || 0), Math.abs(S.tuning.lowRpm || 0)));
   return {
-    kf: Math.max(Math.abs(gains.kf || 0) * 0.25, 0.00001),
-    kp: Math.max(Math.abs(gains.kp || 0) * 0.40, 0.00002),
-    ki: Math.max(Math.abs(gains.ki || 0) * 0.50, 0.00001),
+    kf: Math.max(Math.abs(gains.kf || (1 / rpmScale)) * 0.18, S.autotune.minSteps.kf),
+    kp: Math.max(Math.abs(gains.kp || 0.00012) * 0.25, S.autotune.minSteps.kp, span / 100000000),
+    kd: Math.max(Math.abs(gains.kd || Math.max(0.00001, (gains.kp || 0) * 0.1)) * 0.35, S.autotune.minSteps.kd),
+    ki: Math.max(Math.abs(gains.ki || 0.00001) * 0.2, S.autotune.minSteps.ki),
   };
-}
-
-function scoreAutoTuneSamples(samples) {
-  if (!samples || samples.length < 2) return Infinity;
-  let iae = 0;
-  let overshoot = 0;
-  let settleError = 0;
-  const tailCount = Math.max(3, Math.floor(samples.length * 0.2));
-
-  for (let i = 1; i < samples.length; i++) {
-    const prev = samples[i - 1];
-    const cur = samples[i];
-    const dt = Math.max(0.02, (cur.ts - prev.ts) / 1000);
-    iae += Math.abs(cur.error) * dt;
-
-    const targetMag = Math.abs(cur.target);
-    if (targetMag > 1) {
-      const overshootNow = Math.max(0, Math.abs(cur.rpm) - targetMag);
-      overshoot = Math.max(overshoot, overshootNow);
-    }
-  }
-
-  const tail = samples.slice(-tailCount);
-  if (tail.length) {
-    settleError = tail.reduce((sum, sample) => sum + Math.abs(sample.error), 0) / tail.length;
-  }
-
-  return iae + overshoot * 0.35 + settleError * 1.5;
 }
 
 async function applyPidGainsObject(id, gains) {
@@ -1743,15 +2616,17 @@ async function applyPidGainsObject(id, gains) {
 }
 
 async function launchAutoTuneRun(gains, label) {
+  if (!canSendCommands('start autotune')) return;
   const id = S.autotune.motorId;
   if (!id) return;
-  await applyPidGainsObject(id, gains);
+  await applyPidGainsObject(id, clampPidGains(gains));
   setMode('off');
   S.manual.latched = false;
   S.manual.latchedMotorIds = [];
   S.tuning.runner = 'autotune';
   S.tuning.running = true;
   S.tuning.motorId = id;
+  S.autotune.profile = S.autotune.profile || buildAutoTuneProfile();
   S.tuning.currentCycle = 1;
   S.tuning.phase = 'low';
   S.tuning.phaseStartedAt = Date.now();
@@ -1766,10 +2641,30 @@ function queueNextAutoTuneCandidate() {
   if (!at.running) return null;
   if (at.pass >= at.maxPasses) return null;
 
+  let guard = 0;
+  while (guard < at.paramOrder.length) {
+    const param = at.paramOrder[at.paramIndex];
+    if (param !== 'ki') {
+      break;
+    }
+    const tailError = at.bestMetrics ? Math.max(at.bestMetrics.up.tailError, at.bestMetrics.down.tailError) : Infinity;
+    if (tailError > (at.profile ? at.profile.toleranceRpm * 0.55 : 35)) {
+      break;
+    }
+    at.paramIndex += 1;
+    at.directionIndex = 0;
+    if (at.paramIndex >= at.paramOrder.length) {
+      at.paramIndex = 0;
+      at.pass += 1;
+      if (at.pass >= at.maxPasses) return null;
+    }
+    guard += 1;
+  }
+
   const param = at.paramOrder[at.paramIndex];
   const direction = at.directions[at.directionIndex];
-  const step = at.steps[param];
-  const candidate = { ...at.bestGains };
+  const step = Math.max(at.steps[param], at.minSteps[param] || 0);
+  const candidate = clampPidGains({ ...at.bestGains });
   candidate[param] = Math.max(0, candidate[param] + direction * step);
   at.candidateGains = candidate;
   return { param, direction, step, candidate };
@@ -1790,28 +2685,33 @@ async function advanceAutoTune() {
     flash('Autotune complete');
     return;
   }
-  await launchAutoTuneRun(next.candidate, `Autotune ${next.param} ${next.direction > 0 ? '+' : '-'}`);
+  await launchAutoTuneRun(next.candidate, `Autotune ${next.param} ${next.direction > 0  ? '+' : '-'}`);
 }
 
 async function finishAutoTuneRun() {
   const at = S.autotune;
   if (!at.running) return;
   at.collecting = false;
-  const score = scoreAutoTuneSamples(at.samples);
+  const { score, analysis } = scoreAutoTuneSamples(at.samples, at.profile);
   at.lastScore = score;
+  at.lastMetrics = analysis;
   at.evaluation += 1;
 
   if (at.bestScore === null) {
     at.bestScore = score;
-    at.bestGains = { ...(at.candidateGains || at.bestGains) };
+    at.bestMetrics = analysis;
+    at.bestGains = characterizeAutoTuneGains((at.candidateGains || at.bestGains), analysis);
+    at.steps = createAutoTuneSteps(at.bestGains);
+    writePidGainInputs(at.bestGains);
     at.paramIndex = 0;
     at.directionIndex = 0;
   } else if (score < at.bestScore) {
     at.bestScore = score;
-    at.bestGains = { ...(at.candidateGains || at.bestGains) };
+    at.bestMetrics = analysis;
+    at.bestGains = clampPidGains({ ...(at.candidateGains || at.bestGains) });
     if (at.directionIndex >= 0) {
       const improvedParam = at.paramOrder[at.paramIndex];
-      at.steps[improvedParam] *= 1.15;
+      at.steps[improvedParam] *= improvedParam === 'ki' ? 1.05 : 1.12;
     }
     writePidGainInputs(at.bestGains);
     at.paramIndex += 1;
@@ -1824,7 +2724,10 @@ async function finishAutoTuneRun() {
     at.directionIndex = 1;
   } else {
     const failedParam = at.paramOrder[at.paramIndex];
-    at.steps[failedParam] *= 0.6;
+    at.steps[failedParam] = Math.max(
+      at.minSteps[failedParam] || 0,
+      at.steps[failedParam] * (failedParam === 'ki' ? 0.45 : 0.6),
+    );
     at.paramIndex += 1;
     at.directionIndex = 0;
     if (at.paramIndex >= at.paramOrder.length) {
@@ -1843,6 +2746,7 @@ async function finishAutoTuneRun() {
 }
 
 async function startAutoTune() {
+  if (!canSendCommands('start autotune')) return;
   const id = selectedMotorId();
   if (!id) {
     flash('Select one motor first');
@@ -1857,18 +2761,21 @@ async function startAutoTune() {
   S.autotune.evaluation = 0;
   S.autotune.bestScore = null;
   S.autotune.lastScore = null;
-  S.autotune.bestGains = { ...gains };
-  S.autotune.candidateGains = { ...gains };
-  S.autotune.steps = createAutoTuneSteps(gains);
+  S.autotune.bestMetrics = null;
+  S.autotune.lastMetrics = null;
+  S.autotune.profile = buildAutoTuneProfile();
+  S.autotune.bestGains = clampPidGains({ ...gains, ki: Math.min(gains.ki || 0, Math.max(0.000002, (gains.kp || 0) * 0.08)) });
+  S.autotune.candidateGains = { ...S.autotune.bestGains };
+  S.autotune.steps = createAutoTuneSteps(S.autotune.bestGains);
   S.autotune.paramIndex = 0;
   S.autotune.directionIndex = -1;
   S.autotune.samples = [];
-  await launchAutoTuneRun(gains, `Autotune baseline Motor ${id}`);
+  await launchAutoTuneRun(S.autotune.bestGains, `Autotune baseline Motor ${id}`);
 }
 
 async function stopAutoTune(keepBest = true) {
   const at = S.autotune;
-  const best = at.bestGains ? { ...at.bestGains } : null;
+  const best = at.bestGains  ? { ...at.bestGains } : null;
   S.tuning.running = false;
   S.tuning.runner = 'manual';
   S.tuning.phase = 'idle';
@@ -1880,6 +2787,7 @@ async function stopAutoTune(keepBest = true) {
   at.samples = [];
   at.motorId = null;
   at.directionIndex = -1;
+  at.profile = null;
   if (keepBest && best && selectedMotorId()) {
     try {
       await applyPidGainsObject(selectedMotorId(), best);
@@ -1889,15 +2797,33 @@ async function stopAutoTune(keepBest = true) {
 }
 
 async function tuningTick() {
+  if (S.eStop.active) return;
   if (!S.tuning.running) return;
   const activeId = selectedMotorId();
   if (!activeId || activeId !== S.tuning.motorId) {
     await stopPidTuning(false);
-    flash(S.autotune.running ? 'Autotune stopped: selected motor changed' : 'Step test stopped: selected motor changed');
+    flash(S.autotune.running  ? 'Autotune stopped: selected motor changed' : 'Step test stopped: selected motor changed');
     return;
   }
   const now = Date.now();
-  if ((now - S.tuning.phaseStartedAt) < S.tuning.dwellMs) return;
+  const isAutotune = S.tuning.runner === 'autotune';
+  const phaseAgeMs = now - S.tuning.phaseStartedAt;
+  const autoProfile = S.autotune.profile;
+  const autoSettled = isAutotune && autoProfile
+     ? (() => {
+         if (phaseAgeMs < autoProfile.minPhaseMs) return false;
+         const target = S.tuning.phase === 'low' ? S.tuning.lowRpm : S.tuning.highRpm;
+         const recent = S.autotune.samples.filter(sample =>
+           sample.ts >= (now - autoProfile.settleHoldMs) &&
+           Math.abs((sample.target || 0) - target) <= 1
+         );
+         if (recent.length < 3) return false;
+         const maxError = Math.max(...recent.map(sample => Math.abs(sample.error || 0)));
+         const rpmSpan = Math.max(...recent.map(sample => sample.rpm || 0)) - Math.min(...recent.map(sample => sample.rpm || 0));
+         return maxError <= autoTuneToleranceRpm(target, autoProfile) && rpmSpan <= autoProfile.jitterRpm;
+       })()
+    : false;
+  if (!autoSettled && phaseAgeMs < activeTuneDwellMs()) return;
 
   if (S.tuning.phase === 'low') {
     S.tuning.phase = 'high';
@@ -1907,7 +2833,7 @@ async function tuningTick() {
     return;
   }
 
-  if (S.tuning.currentCycle >= S.tuning.cycles) {
+  if (S.tuning.currentCycle >= activeTuneCycles()) {
     const runner = S.tuning.runner;
     await stopPidTuning(false);
     if (runner === 'autotune') {
@@ -1925,10 +2851,15 @@ async function tuningTick() {
   renderPidPanel();
 }
 
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 //  Drive Modes
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 function setMode(mode) {
+  if (S.eStop.active && mode !== 'off') {
+    flash('Reset E-Stop before enabling drive control');
+    updateEmergencyStopUi();
+    return;
+  }
   S.driveMode = mode;
   const modeMap = {
     arcade: document.getElementById('modeArcade'),
@@ -1945,7 +2876,7 @@ function setMode(mode) {
 function buildJoystickUI() {
   const row = document.getElementById('jsRow');
   if (S.driveMode === 'off') {
-    row.innerHTML = '<span style="font-size:.8rem;color:var(--muted)">Drive control disabled — use manual slider above.</span>';
+    row.innerHTML = '<span style="font-size:.8rem;color:var(--muted)">Drive control disabled  use manual slider above.</span>';
     return;
   }
   if (S.driveMode === 'arcade') {
@@ -1956,13 +2887,13 @@ function buildJoystickUI() {
         <div class="js-vals">Fwd <span id="jsF">0%</span> &nbsp; Turn <span id="jsT">0%</span></div>
       </div>
       <div class="js-legend" style="flex:1">
-        <div><kbd>↑↓</kbd> Throttle (forward/back)</div>
+        <div><kbd></kbd> Throttle (forward/back)</div>
         <div><kbd>Twist</kbd> Turn (Z axis)</div>
         <div style="margin-top:8px">Gamepad axis mapping is configurable<br>from the Deadzones menu.</div>
         <div style="margin-top:8px">
           <b>Arcade mixing:</b><br>
           Left = fwd + turn<br>
-          Right = fwd − turn
+          Right = fwd  turn
         </div>
       </div>`;
     initJoystickCanvas();
@@ -1979,8 +2910,8 @@ function buildJoystickUI() {
         <div class="js-vals">R <span id="jsTRV">0%</span></div>
       </div>
       <div class="js-legend" style="flex:1;margin-left:8px">
-        <div><kbd>↑↓</kbd> Left side</div>
-        <div><kbd>←→</kbd> Right side</div>
+        <div>Left side</div>
+        <div>Right side</div>
         <div style="margin-top:8px">Gamepad left stick = left,<br>right stick = right.</div>
       </div>`;
     initTankCanvases();
@@ -2088,7 +3019,7 @@ function setDriveSettingsFromUI(fromInit = false) {
 }
 
 function withInvert(value, invertEnabled) {
-  return invertEnabled ? -value : value;
+  return invertEnabled  ? -value : value;
 }
 
 function stampNow() {
@@ -2135,6 +3066,14 @@ function chooseTarget() {
 }
 
 function driveControlTick() {
+  if (S.eStop.active) {
+    S.throttle = 0;
+    S.turn = 0;
+    S.leftRaw = 0;
+    S.rightRaw = 0;
+    drawArcadeStick();
+    return;
+  }
   if (S.driveMode === 'off') {
     S.throttle = 0;
     S.turn = 0;
@@ -2148,16 +3087,16 @@ function driveControlTick() {
   const alpha = 0.35;
 
   if (S.driveMode === 'arcade') {
-    const tt = target ? target.throttle : 0;
-    const tr = target ? target.turn : 0;
+    const tt = target  ? target.throttle : 0;
+    const tr = target  ? target.turn : 0;
     S.throttle += (tt - S.throttle) * alpha;
     S.turn += (tr - S.turn) * alpha;
     if (Math.abs(S.throttle) < 0.002) S.throttle = 0;
     if (Math.abs(S.turn) < 0.002) S.turn = 0;
     drawArcadeStick();
   } else {
-    const tl = target ? target.left : 0;
-    const tr = target ? target.right : 0;
+    const tl = target  ? target.left : 0;
+    const tr = target  ? target.right : 0;
     S.leftRaw += (tl - S.leftRaw) * alpha;
     S.rightRaw += (tr - S.rightRaw) * alpha;
     if (Math.abs(S.leftRaw) < 0.002) S.leftRaw = 0;
@@ -2191,7 +3130,7 @@ document.addEventListener('click', () => {
   if (pop) pop.classList.remove('open');
 });
 
-// ── Arcade joystick canvas ──
+//  Arcade joystick canvas 
 let jsCtx = null;
 function initJoystickCanvas() {
   const c = document.getElementById('jsCanvas');
@@ -2203,7 +3142,7 @@ function initJoystickCanvas() {
   let dragging = false;
   const getXY = e => {
     const r = c.getBoundingClientRect();
-    const pt = e.touches ? e.touches[0] : e;
+    const pt = e.touches  ? e.touches[0] : e;
     return [pt.clientX - r.left, pt.clientY - r.top];
   };
   const apply = (x, y) => {
@@ -2253,7 +3192,7 @@ function drawArcadeStick() {
   const sx = cx + S.turn * rad, sy = cy - S.throttle * rad;
   const spd = Math.sqrt(S.throttle**2 + S.turn**2);
   const col = spd > 0.05
-    ? (S.throttle < -0.05 ? '#f85149' : '#58a6ff')
+     ? (S.throttle < -0.05  ? '#f85149' : '#58a6ff')
     : '#8b949e';
 
   c.beginPath(); c.arc(sx, sy, 10, 0, Math.PI*2);
@@ -2263,23 +3202,23 @@ function drawArcadeStick() {
 
   // Update labels
   const fEl = document.getElementById('jsF'), tEl = document.getElementById('jsT');
-  if (fEl) fEl.textContent = (S.throttle >= 0 ? '+' : '') + Math.round(S.throttle * 100) + '%';
-  if (tEl) tEl.textContent = (S.turn >= 0 ? '+' : '') + Math.round(S.turn * 100) + '%';
+  if (fEl) fEl.textContent = (S.throttle >= 0  ? '+' : '') + Math.round(S.throttle * 100) + '%';
+  if (tEl) tEl.textContent = (S.turn >= 0  ? '+' : '') + Math.round(S.turn * 100) + '%';
 }
 
-// ── Tank canvases ──
+//  Tank canvases 
 function initTankCanvases() {
   ['L','R'].forEach(side => {
     const c = document.getElementById('jsTank' + side);
     if (!c) return;
     const ctx = c.getContext('2d');
-    drawTankBar(ctx, side, side === 'L' ? S.leftRaw : S.rightRaw);
+    drawTankBar(ctx, side, side === 'L'  ? S.leftRaw : S.rightRaw);
     let dragging = false;
     const applyY = y => {
       const val = Math.max(-1, Math.min(1, -(y / c.height * 2 - 1)));
       const filtered = applyDeadzone(val, S.deadzones.move);
-      const curL = (side === 'L') ? filtered : (S.inputTargets.ui.left || 0);
-      const curR = (side === 'R') ? filtered : (S.inputTargets.ui.right || 0);
+      const curL = (side === 'L')  ? filtered : (S.inputTargets.ui.left || 0);
+      const curR = (side === 'R')  ? filtered : (S.inputTargets.ui.right || 0);
       setTankTarget('ui', curL, curR);
       drawTankBar(ctx, side, filtered);
     };
@@ -2287,16 +3226,16 @@ function initTankCanvases() {
     c.addEventListener('mousemove',  e => { if(dragging) applyY(e.offsetY); });
     c.addEventListener('mouseup',    () => {
       dragging=false;
-      const curL = side === 'L' ? 0 : (S.inputTargets.ui.left || 0);
-      const curR = side === 'R' ? 0 : (S.inputTargets.ui.right || 0);
+      const curL = side === 'L'  ? 0 : (S.inputTargets.ui.left || 0);
+      const curR = side === 'R'  ? 0 : (S.inputTargets.ui.right || 0);
       setTankTarget('ui', curL, curR);
       drawTankBar(ctx,side,0);
     });
     c.addEventListener('mouseleave', () => {
       if (!dragging) return;
       dragging=false;
-      const curL = side === 'L' ? 0 : (S.inputTargets.ui.left || 0);
-      const curR = side === 'R' ? 0 : (S.inputTargets.ui.right || 0);
+      const curL = side === 'L'  ? 0 : (S.inputTargets.ui.left || 0);
+      const curR = side === 'R'  ? 0 : (S.inputTargets.ui.right || 0);
       setTankTarget('ui', curL, curR);
       drawTankBar(ctx,side,0);
     });
@@ -2312,7 +3251,7 @@ function drawTankBar(ctx, side, val) {
   ctx.beginPath(); ctx.roundRect(4,4,W-8,H-8,6); ctx.stroke();
   // bar
   const barH = Math.abs(val) * (H/2 - 10);
-  const col = val > 0.05 ? '#58a6ff' : val < -0.05 ? '#f85149' : '#30363d';
+  const col = val > 0.05  ? '#58a6ff' : val < -0.05  ? '#f85149' : '#30363d';
   ctx.fillStyle = col;
   if (val > 0)  ctx.fillRect(10, mid - barH, W-20, barH);
   else          ctx.fillRect(10, mid,         W-20, barH);
@@ -2321,14 +3260,19 @@ function drawTankBar(ctx, side, val) {
   ctx.beginPath(); ctx.moveTo(4,mid); ctx.lineTo(W-4,mid); ctx.stroke();
   ctx.setLineDash([]);
   // label
-  const vEl = document.getElementById('jsTank' + (side==='L'?'LV':'RV'));
-  if (vEl) vEl.textContent = (val>=0?'+':'') + Math.round(val*100) + '%';
+  const vEl = document.getElementById('jsTank' + (side==='L' ? 'LV':'RV'));
+  if (vEl) vEl.textContent = (val>=0 ? '+':'') + Math.round(val*100) + '%';
 }
 
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 //  Drive Command Dispatch
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 function dispatchDrive() {
+  if (S.eStop.active) {
+    S.leftCmd = 0;
+    S.rightCmd = 0;
+    return;
+  }
   if (S.driveMode === 'off') return;
   const ids = sortedIds();
   const leftIds  = ids.filter(id => S.roles[id] === 'L');
@@ -2355,20 +3299,74 @@ function dispatchDrive() {
   S.rightCmd = rightPct;
 }
 
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 //  Manual slider
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
+function updateManualModeUi() {
+  const dutyBtn = document.getElementById('manualModeDutyBtn');
+  const rpmBtn = document.getElementById('manualModeRpmBtn');
+  const rpmRow = document.getElementById('manualRpmRow');
+  const presetRow = document.getElementById('manualPresetRow');
+  const slider = document.getElementById('spdSlider');
+  const display = document.getElementById('spdDisplay');
+  const rpmInput = document.getElementById('manualRpmInput');
+  const isRpm = S.manual.mode === 'rpm';
+  if (dutyBtn) {
+    dutyBtn.classList.toggle('btn-primary', !isRpm);
+    dutyBtn.classList.toggle('btn-ghost', isRpm);
+  }
+  if (rpmBtn) {
+    rpmBtn.classList.toggle('btn-primary', isRpm);
+    rpmBtn.classList.toggle('btn-ghost', !isRpm);
+  }
+  if (rpmRow) rpmRow.style.display = isRpm ? '' : 'none';
+  if (presetRow) presetRow.style.display = isRpm ? 'none' : '';
+  if (slider) slider.disabled = isRpm;
+  if (rpmInput && document.activeElement !== rpmInput) rpmInput.value = String(Math.round(S.manualRpm || 0));
+  if (display) {
+    if (isRpm) {
+      display.textContent = `${Math.round(S.manualRpm || 0)} rpm`;
+      display.className = 'spd-num';
+    } else {
+      display.textContent = (S.manualPct > 0 ? '+' : '') + S.manualPct + '%';
+      display.className = 'spd-num' + (S.manualPct > 0 ? '' : S.manualPct < 0 ? ' neg' : ' zero');
+    }
+  }
+}
+
+function setManualMode(mode) {
+  if (mode !== 'duty' && mode !== 'rpm') return;
+  S.manual.mode = mode;
+  updateManualModeUi();
+  if (S.manual.latched) scheduleManualSpeedRefresh();
+}
+
 function onSlider(v) {
   const raw = Number(v);
   S.manualPct = withInvert(raw, S.invert.manual);
-  const el = document.getElementById('spdDisplay');
-  el.textContent = (S.manualPct > 0 ? '+' : '') + S.manualPct + '%';
-  el.className = 'spd-num' + (S.manualPct > 0 ? '' : S.manualPct < 0 ? ' neg' : ' zero');
+  updateManualModeUi();
+  if (S.manual.latched) scheduleManualSpeedRefresh();
 }
+
+function onManualRpmInput(v) {
+  const raw = Number(v);
+  S.manualRpm = Number.isFinite(raw) ? Math.round(raw) : 0;
+  updateManualModeUi();
+  if (S.manual.latched) scheduleManualSpeedRefresh();
+}
+
 function resetSlider() {
   S.manualPct = 0;
   document.getElementById('spdSlider').value = 0;
   onSlider(0);
+}
+
+function resetManualRunInputs() {
+  S.manualRpm = 1000;
+  const rpmInput = document.getElementById('manualRpmInput');
+  if (rpmInput) rpmInput.value = String(S.manualRpm);
+  resetSlider();
+  updateManualModeUi();
 }
 
 function applyPreset(pct) {
@@ -2377,7 +3375,16 @@ function applyPreset(pct) {
   onSlider(pct);
   sendManualSpeed();
 }
+function scheduleManualSpeedRefresh() {
+  if (!S.manual.latched) return;
+  if (S.manualSendTimer) clearTimeout(S.manualSendTimer);
+  S.manualSendTimer = setTimeout(() => {
+    S.manualSendTimer = null;
+    sendManualSpeed();
+  }, 60);
+}
 async function sendManualSpeed() {
+  if (!canSendCommands(S.manual.mode === 'rpm' ? 'set a run RPM' : 'send manual output')) return;
   if (!S.selected.size) {
     const ids = sortedIds();
     if (!ids.length) {
@@ -2393,21 +3400,38 @@ async function sendManualSpeed() {
   // Keep manual setpoint latched by ensuring drive loop is not actively sending 0.
   setMode('off');
   const ids = [...S.selected].sort((a,b)=>a-b);
-  for (const id of ids) await postCmd(id, 'set', S.manualPct / 100);
+  for (const id of ids) {
+    if (S.manual.mode === 'rpm') {
+      await postCmd(id, 'set_rpm', S.manualRpm);
+    } else {
+      await postCmd(id, 'set', S.manualPct / 100);
+    }
+  }
   S.manual.latched = true;
   S.manual.latchedMotorIds = ids;
   updateManualButton();
 }
 
 async function stopManualSpeed() {
-  const ids = S.manual.latchedMotorIds.length ? S.manual.latchedMotorIds : sortedIds();
-  for (const id of ids) await postCmd(id, 'set', 0);
+  if (S.manualSendTimer) {
+    clearTimeout(S.manualSendTimer);
+    S.manualSendTimer = null;
+  }
+  const ids = S.manual.latchedMotorIds.length  ? S.manual.latchedMotorIds : sortedIds();
+  for (const id of ids) {
+    if (S.manual.mode === 'rpm') {
+      await postCmd(id, 'set_rpm', 0);
+    } else {
+      await postCmd(id, 'set', 0);
+    }
+  }
   S.manual.latched = false;
   S.manual.latchedMotorIds = [];
   updateManualButton();
 }
 
 async function toggleManualLatch() {
+  if (!S.manual.latched && !canSendCommands('send manual output')) return;
   if (S.manual.latched) {
     await stopManualSpeed();
   } else {
@@ -2419,27 +3443,52 @@ function updateManualButton() {
   const btn = document.getElementById('manualToggleBtn');
   if (!btn) return;
   if (S.manual.latched) {
-    btn.textContent = '■ Stop';
+    btn.textContent = 'Stop';
     btn.classList.remove('btn-primary');
     btn.classList.add('btn-danger');
   } else {
-    btn.textContent = '▶ Send';
+    btn.textContent = 'Run';
     btn.classList.add('btn-primary');
     btn.classList.remove('btn-danger');
   }
 }
 async function emergencyStop() {
-  for (const id of sortedIds()) await postCmd(id, 'set', 0);
-  S.throttle = 0; S.turn = 0; S.leftRaw = 0; S.rightRaw = 0;
-  S.manual.latched = false;
-  S.manual.latchedMotorIds = [];
-  updateManualButton();
-  clearTargets();
-  resetSlider();
-  drawArcadeStick();
+  if (S.eStop.stopping) return;
+  S.eStop.active = true;
+  S.eStop.stopping = true;
+  S.eStop.trippedAt = Date.now();
+  resetDashboardControlState();
+  const failures = [];
+  updateEmergencyStopUi();
+  try {
+    for (const id of sortedIds()) {
+      try {
+        const pidStop = await postJson('/api/motor/cmd', { id, cmd: 'stop_pid', value: 0 });
+        if (!pidStop || pidStop.error || pidStop.success === false) failures.push(`M${id} pid`);
+      } catch (_) {
+        failures.push(`M${id} pid`);
+      }
+      try {
+        const forcedStop = await postCmd(id, 'set', 0, { force_stop: true });
+        if (!forcedStop || forcedStop.error || forcedStop.success === false) failures.push(`M${id} duty`);
+      } catch (_) {
+        failures.push(`M${id} duty`);
+      }
+    }
+  } finally {
+    S.eStop.stopping = false;
+    updateEmergencyStopUi();
+    renderPidPanel();
+  }
+  if (failures.length) {
+    flash(`E-Stop latched, but stop verification failed for ${failures.join(', ')}`);
+  } else {
+    flash('Emergency stop sent to all motors and dashboard control is latched off');
+  }
 }
 
 async function driveSendTick() {
+  if (S.eStop.active) return;
   driveControlTick();
   dispatchDrive();
 
@@ -2474,26 +3523,29 @@ async function driveSendTick() {
   }
 }
 
-async function postCmd(id, cmd, value) {
+async function postCmd(id, cmd, value, extra = {}) {
   try {
-    await fetch('/api/motor/cmd', {
+    const r = await fetch('/api/motor/cmd', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({id, cmd, value})
+      body: JSON.stringify({id, cmd, value, ...extra})
     });
-  } catch(e) {}
+    return await r.json();
+  } catch(e) {
+    return { success: false, error: String(e) };
+  }
 }
 
 function flash(msg) {
   const el = document.getElementById('selLabel');
   const orig = el.textContent;
   el.style.color = 'var(--yellow)';
-  el.textContent = '⚠ ' + msg;
+  el.textContent = ' ' + msg;
   setTimeout(() => { el.style.color=''; el.textContent=orig; }, 1500);
 }
 
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 //  Keyboard
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 const keys = {};
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
@@ -2529,9 +3581,9 @@ setInterval(() => {
   if (changed) setArcadeTarget('kb', kt, kr);
 }, 50);
 
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 //  Gamepad
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 window.addEventListener('gamepadconnected',    e => { S.gpIdx = e.gamepad.index; updateGpPill(true,  e.gamepad.id); });
 window.addEventListener('gamepaddisconnected', e => {
   S.gpIdx = null;
@@ -2542,8 +3594,8 @@ window.addEventListener('gamepaddisconnected', e => {
 
 function updateGpPill(on, label) {
   const el = document.getElementById('gpPill');
-  el.className = 'pill' + (on ? ' gp-connected' : '');
-  el.innerHTML = `<span class="dot"></span> ${on ? '🎮 ' + label.substring(0,18) : 'No Gamepad'}`;
+  el.className = 'pill' + (on  ? ' gp-connected' : '');
+  el.innerHTML = `<span class="dot"></span> ${on  ? ' ' + label.substring(0,18) : 'No Gamepad'}`;
 }
 
 let gpLastFwd=0, gpLastTurn=0;
@@ -2586,11 +3638,11 @@ function pollGamepad() {
 }
 pollGamepad();
 
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 //  Drivetrain Visualization
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 const dtAnchorCanvas = document.getElementById('dtCanvas');
-const dtCanvas = document.getElementById('roverCanvas') || dtAnchorCanvas;
+const dtCanvas = dtAnchorCanvas || document.getElementById('roverCanvas');
 const dtCtx    = dtCanvas.getContext('2d');
 let dtLastTs = Date.now();
 
@@ -2599,6 +3651,9 @@ function resizeRoverCanvas() {
   if (dtCanvas.id === 'roverCanvas') {
     dtCanvas.width = window.innerWidth;
     dtCanvas.height = Math.max(1, window.innerHeight - 50);
+  } else {
+    dtCanvas.width = dtCanvas.clientWidth || dtCanvas.width || 280;
+    dtCanvas.height = dtCanvas.clientHeight || dtCanvas.height || 280;
   }
 }
 window.addEventListener('resize', resizeRoverCanvas);
@@ -2638,7 +3693,7 @@ function avgSideNormalized(ids, fallbackCmd) {
     const m = S.motors[id] || {};
     const max = m.max_rpm || 5700;
     const rpm = m.rpm || 0;
-    return sum + (max > 0 ? rpm / max : 0);
+    return sum + (max > 0  ? rpm / max : 0);
   }, 0) / ids.length;
   return clamp(avg, -1, 1);
 }
@@ -2663,8 +3718,8 @@ function drawDrivetrain() {
   S.robot.prevAnchorX = liveAnchor.x;
   S.robot.prevAnchorY = liveAnchor.y;
   const anchor = {
-    x: S.robot.anchorX ?? (W / 2),
-    y: S.robot.anchorY ?? (H / 2),
+    x: S.robot.anchorX  ?? (W / 2),
+    y: S.robot.anchorY  ?? (H / 2),
   };
   const now = Date.now();
   const dt = Math.min(0.1, (now - dtLastTs) / 1000);
@@ -2710,8 +3765,6 @@ function drawDrivetrain() {
     S.robot.heading += angularV * dt;
   }
 
-  S.robot.x = clamp(S.robot.x, 24, W - 24);
-  // Allow roaming across the full map area while keeping robot body on-screen.
   S.robot.x = clamp(S.robot.x, 22, W - 22);
   S.robot.y = clamp(S.robot.y, 22, H - 22);
 
@@ -2737,7 +3790,7 @@ function drawDrivetrain() {
     ctx.strokeStyle = '#58a6ff66';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    p.forEach((pt, i) => i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
+    p.forEach((pt, i) => i === 0  ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
     ctx.stroke();
   }
 
@@ -2764,8 +3817,8 @@ function drawDrivetrain() {
   ctx.fill();
   ctx.stroke();
 
-  const lCol = leftPct > 0.05 ? '#58a6ff' : leftPct < -0.05 ? '#f85149' : '#30363d';
-  const rCol = rightPct > 0.05 ? '#58a6ff' : rightPct < -0.05 ? '#f85149' : '#30363d';
+  const lCol = leftPct > 0.05  ? '#58a6ff' : leftPct < -0.05  ? '#f85149' : '#30363d';
+  const rCol = rightPct > 0.05  ? '#58a6ff' : rightPct < -0.05  ? '#f85149' : '#30363d';
   ctx.fillStyle = lCol + '66';
   ctx.fillRect(-bodyW / 2 - 8, -bodyH / 2 + 4, 6, bodyH - 8);
   ctx.fillStyle = rCol + '66';
@@ -2794,15 +3847,15 @@ function drawDrivetrain() {
   // Status info
   const dtInfo = document.getElementById('dtInfo');
   if (dtInfo) {
-    const lRpm = leftIds.length  ? leftIds.reduce((s,id)=>s+(S.motors[id]?.rpm||0),0)/leftIds.length  : null;
-    const rRpm = rightIds.length ? rightIds.reduce((s,id)=>s+(S.motors[id]?.rpm||0),0)/rightIds.length : null;
-    dtInfo.textContent = (lRpm !== null ? `L: ${lRpm.toFixed(0)} ` : '') + (rRpm !== null ? `R: ${rRpm.toFixed(0)} rpm` : '');
+    const lRpm = leftIds.length   ? leftIds.reduce((s,id)=>s+(S.motors[id]?.rpm||0),0)/leftIds.length  : null;
+    const rRpm = rightIds.length  ? rightIds.reduce((s,id)=>s+(S.motors[id]?.rpm||0),0)/rightIds.length : null;
+    dtInfo.textContent = (lRpm !== null  ? `L: ${lRpm.toFixed(0)} ` : '') + (rRpm !== null  ? `R: ${rRpm.toFixed(0)} rpm` : '');
   }
 
   const headingEl = document.getElementById('dtHeading');
   if (headingEl) {
-    const deg = ((S.robot.heading * 180 / Math.PI) + 450) % 360;
-    headingEl.textContent = '↑ ' + deg.toFixed(0) + '°';
+    const headingDeg = ((S.robot.heading * 180 / Math.PI) + 450) % 360;
+    headingEl.textContent = headingDeg.toFixed(0);
   }
   const radiusEl = document.getElementById('dtRadius');
   if (radiusEl) {
@@ -2810,7 +3863,7 @@ function drawDrivetrain() {
     else if (Math.abs(angularV) >= 0.03 && Math.abs(linearV) <= 2) radiusEl.textContent = 'Turning in place';
     else if (Math.abs(angularV) >= 0.03) {
       const r = Math.abs(linearV / angularV);
-      radiusEl.textContent = 'R≈' + r.toFixed(0) + ' px';
+      radiusEl.textContent = 'R' + r.toFixed(0) + ' px';
     } else radiusEl.textContent = '';
   }
 }
@@ -2818,9 +3871,9 @@ function drawDrivetrain() {
 // Animate drivetrain at ~30fps
 setInterval(drawDrivetrain, 33);
 
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 //  RPM Chart
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 const rpmCanvas = document.getElementById('rpmChart');
 const rpmCtx    = rpmCanvas.getContext('2d');
 
@@ -2828,6 +3881,7 @@ function resizeChart() {
   const w = rpmCanvas.parentElement.clientWidth;
   rpmCanvas.width  = w;
   rpmCanvas.height = 130;
+  S.display.chartDirty = true;
 }
 window.addEventListener('resize', resizeChart);
 window.addEventListener('resize', drawCurveEditor);
@@ -2853,13 +3907,14 @@ function drawChart() {
     const dx = W / (S.historyLen - 1);
     rpmCtx.beginPath();
     h.forEach((rpm, i) => {
-      const x = i * dx, y = zeroY - rpm * scaleY;
-      i === 0 ? rpmCtx.moveTo(x, y) : rpmCtx.lineTo(x, y);
+      const displayRpm = i === h.length - 1 ? getDisplayedRpm(id) : rpm;
+      const x = i * dx, y = zeroY - displayRpm * scaleY;
+      i === 0  ? rpmCtx.moveTo(x, y) : rpmCtx.lineTo(x, y);
     });
     rpmCtx.stroke();
   });
   const selectedId = selectedMotorId();
-  const targetSeries = selectedId ? S.targetHistory[selectedId] : null;
+  const targetSeries = selectedId  ? S.targetHistory[selectedId] : null;
   if (targetSeries && targetSeries.length > 1) {
     rpmCtx.strokeStyle = 'rgba(210, 153, 34, 0.85)';
     rpmCtx.lineWidth = 1.5;
@@ -2869,7 +3924,7 @@ function drawChart() {
     targetSeries.forEach((rpm, i) => {
       const x = i * dx;
       const y = zeroY - rpm * scaleY;
-      i === 0 ? rpmCtx.moveTo(x, y) : rpmCtx.lineTo(x, y);
+      i === 0  ? rpmCtx.moveTo(x, y) : rpmCtx.lineTo(x, y);
     });
     rpmCtx.stroke();
     rpmCtx.setLineDash([]);
@@ -2878,21 +3933,20 @@ function drawChart() {
   rpmCtx.beginPath(); rpmCtx.moveTo(0, zeroY); rpmCtx.lineTo(W, zeroY); rpmCtx.stroke();
   rpmCtx.setLineDash([]);
 }
-setInterval(drawChart, 100);
 
 function updateChartLegend() {
   const el = document.getElementById('chartLegend');
   const selectedId = selectedMotorId();
   const targetLegend = selectedId && S.motors[selectedId]
-    ? `<div class="leg-item"><div class="leg-dot" style="background:#d29922"></div>Target M${selectedId} (${((((S.motors[selectedId]?.pid||{}).target_rpm ?? S.motors[selectedId]?.target_rpm ?? 0))).toFixed(0)} rpm)</div>`
+     ? `<div class="leg-item"><div class="leg-dot" style="background:#d29922"></div>Target M${selectedId} (${((((S.motors[selectedId]?.pid||{}).target_rpm  ?? S.motors[selectedId]?.target_rpm  ?? 0))).toFixed(0)} rpm)</div>`
     : '';
   el.innerHTML = sortedIds().map((id, ci) =>
-    `<div class="leg-item"><div class="leg-dot" style="background:${COLORS[ci%COLORS.length]}"></div>M${id} (${(S.motors[id]?.rpm||0).toFixed(0)} rpm)</div>`
+    `<div class="leg-item"><div class="leg-dot" style="background:${COLORS[ci%COLORS.length]}"></div>M${id} (<span data-rpm-legend-id="${id}">${getDisplayedRpm(id).toFixed(0)} rpm</span>)</div>`
   ).join('') + targetLegend;
 }
 
 function fmtAge(ms) {
-  if (ms === null || ms === undefined || Number.isNaN(ms)) return '—';
+  if (ms === null || ms === undefined || Number.isNaN(ms)) return '';
   if (ms < 1000) return `${Math.round(ms)} ms`;
   return `${(ms / 1000).toFixed(2)} s`;
 }
@@ -2910,31 +3964,27 @@ function renderCanTelemetry() {
     const m = S.motors[id] || {};
     const dbg = m.can_debug || {};
     const txAge = (S.statusTimeMs && m.last_command_ms)
-      ? Math.max(0, S.statusTimeMs - m.last_command_ms)
+       ? Math.max(0, S.statusTimeMs - m.last_command_ms)
       : null;
     const rxAge = (S.statusTimeMs && m.last_status_ms)
-      ? Math.max(0, S.statusTimeMs - m.last_status_ms)
+       ? Math.max(0, S.statusTimeMs - m.last_status_ms)
       : null;
-    const txId = dbg.tx_arb_id || '—';
-    const txBytes = dbg.tx_data_hex || '—';
-    const rx0Id = dbg.rx_status0_arb_id || '—';
-    const rx0Bytes = dbg.rx_status0_data_hex || '—';
-    const rx1Id = dbg.rx_status1_arb_id || '—';
-    const rx1Bytes = dbg.rx_status1_data_hex || '—';
+    const txId = dbg.tx_arb_id || '';
+    const txBytes = dbg.tx_data_hex || '';
+    const rx0Id = dbg.rx_status0_arb_id || '';
+    const rx0Bytes = dbg.rx_status0_data_hex || '';
+    const rx1Id = dbg.rx_status1_arb_id || '';
+    const rx1Bytes = dbg.rx_status1_data_hex || '';
     const faults = m.faults || {};
     const activeNames = faults.active || [];
     const stickyNames = faults.sticky || [];
-    const activeFaultHtml = activeNames.length
-      ? activeNames.map(f => `<span style="color:var(--red);font-weight:700">⚡${f}</span>`).join(' ')
-      : '<span style="color:var(--green)">none</span>';
-    const stickyFaultHtml = stickyNames.length
-      ? stickyNames.map(f => `<span style="color:var(--yellow);font-weight:700">⚠${f}</span>`).join(' ')
-      : '<span style="color:var(--green)">none</span>';
+    const rawFlagSummary = activeNames.length || stickyNames.length
+       ? '<span class="fault-badge suppressed">fault flags ignored for this firmware</span>'
+      : '<span class="fault-badge none">no reported faults</span>';
     return `
       <div class="can-block">
         <div class="can-title">Motor ${id}</div>
-        <div class="can-line"><span>Active Faults</span><b>${activeFaultHtml}</b></div>
-        <div class="can-line"><span>Sticky Faults</span><b>${stickyFaultHtml}</b></div>
+        <div class="can-line"><span>Raw Flags</span><b>${rawFlagSummary}</b></div>
         <div class="can-line"><span>TX ID</span><b>${txId}</b></div>
         <div class="can-line"><span>TX Bytes</span><b>${txBytes}</b></div>
         <div class="can-line"><span>TX Age</span><b>${fmtAge(txAge)}</b></div>
@@ -2947,12 +3997,16 @@ function renderCanTelemetry() {
   }).join('');
 }
 
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 //  Status Polling
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 let prevReq = 0, prevTs = Date.now();
+let statusPollTimer = null;
 
 async function pollStatus() {
+  if (S.display.pollInFlight) return;
+  S.display.pollInFlight = true;
+  const startedAt = performance.now();
   try {
     const r = await fetch('/api/status');
     const d = await r.json();
@@ -2963,12 +4017,13 @@ async function pollStatus() {
     document.getElementById('connPill').innerHTML = '<span class="dot"></span> Connected';
     d.motors.forEach(m => {
       S.motors[m.motor_id] = m;
+      updateDisplayTarget(m);
       if (!S.history[m.motor_id]) S.history[m.motor_id] = [];
       if (!S.targetHistory[m.motor_id]) S.targetHistory[m.motor_id] = [];
       const h = S.history[m.motor_id];
       h.push(m.rpm);
       if (h.length > S.historyLen) h.shift();
-      const targetRpm = ((m.pid || {}).target_rpm ?? m.target_rpm ?? 0);
+      const targetRpm = ((m.pid || {}).target_rpm  ?? m.target_rpm  ?? 0);
       const th = S.targetHistory[m.motor_id];
       th.push(targetRpm);
       if (th.length > S.historyLen) th.shift();
@@ -2977,19 +4032,27 @@ async function pollStatus() {
           ts: Date.now(),
           rpm: m.rpm || 0,
           target: targetRpm,
-          error: ((m.pid || {}).error_rpm ?? (targetRpm - (m.rpm || 0))),
-          output: ((m.pid || {}).last_output ?? 0),
+          error: ((m.pid || {}).error_rpm  ?? (targetRpm - (m.rpm || 0))),
+          output: ((m.pid || {}).last_output  ?? 0),
         });
         if (S.autotune.samples.length > 1000) S.autotune.samples.shift();
       }
     });
-    renderMotors();
+    maybeRenderMotors();
     renderCanTelemetry();
     updateFleet(d.motors);
     renderPidPanel();
+    refreshLiveRpmText();
+    S.display.chartDirty = true;
   } catch(e) {
     document.getElementById('connPill').className = 'pill';
     document.getElementById('connPill').innerHTML = '<span class="dot"></span> Disconnected';
+  } finally {
+    S.display.pollInFlight = false;
+    const elapsed = performance.now() - startedAt;
+    const delay = Math.max(60, S.display.pollMs - elapsed);
+    if (statusPollTimer) clearTimeout(statusPollTimer);
+    statusPollTimer = setTimeout(pollStatus, delay);
   }
 }
 
@@ -2998,19 +4061,19 @@ async function pollHealth() {
     const r = await fetch('/api/health');
     const d = await r.json();
     document.getElementById('iUptime').textContent  = fmtUptime(d.uptime_ms);
-    document.getElementById('iPlatform').textContent = d.runtime_mode === 'socketcan' ? 'Linux / SocketCAN' : 'Desktop / Mock';
+    document.getElementById('iPlatform').textContent = d.runtime_mode === 'socketcan'  ? 'Linux / SocketCAN' : 'Desktop / Mock';
 
     const can = d.can_bus || {};
     const canLabel = can.channel
-      ? `${d.runtime_mode === 'socketcan' ? 'SocketCAN' : 'MockCAN'} ${can.channel}${can.speed_kbps ? ` @ ${can.speed_kbps} kbps` : ''}`
-      : (d.runtime_mode === 'socketcan' ? 'SocketCAN' : 'MockCAN');
+       ? `${d.runtime_mode === 'socketcan'  ? 'SocketCAN' : 'MockCAN'} ${can.channel}${can.speed_kbps  ? ` @ ${can.speed_kbps} kbps` : ''}`
+      : (d.runtime_mode === 'socketcan'  ? 'SocketCAN' : 'MockCAN');
     const canCounters = [
-      can.total_messages !== undefined ? `tx ${can.total_messages}` : null,
-      can.tx_count !== undefined ? `txq ${can.tx_count}` : null,
-      can.rx_count !== undefined ? `rxq ${can.rx_count}` : null,
-      can.is_open !== undefined ? (can.is_open ? 'up' : 'down') : null,
-    ].filter(Boolean).join(' • ');
-    document.getElementById('iCAN').textContent = canCounters ? `${canLabel} • ${canCounters}` : canLabel;
+      can.total_messages !== undefined  ? `tx ${can.total_messages}` : null,
+      can.tx_count !== undefined  ? `txq ${can.tx_count}` : null,
+      can.rx_count !== undefined  ? `rxq ${can.rx_count}` : null,
+      can.is_open !== undefined  ? (can.is_open  ? 'up' : 'down') : null,
+    ].filter(Boolean).join('  ');
+    document.getElementById('iCAN').textContent = canCounters  ? `${canLabel}  ${canCounters}` : canLabel;
     const now = Date.now();
     const rps = ((d.requests - prevReq) / ((now - prevTs) / 1000)).toFixed(1);
     document.getElementById('iRPS').textContent = rps;
@@ -3020,31 +4083,49 @@ async function pollHealth() {
 
 function updateFleet(motors) {
   document.getElementById('iMotors').textContent  = motors.length;
-  const avgRpm   = motors.length ? motors.reduce((s,m)=>s+m.rpm,0)/motors.length : 0;
+  const avgRpm   = motors.length  ? motors.reduce((s,m)=>s+m.rpm,0)/motors.length : 0;
   const totalA   = motors.reduce((s,m)=>s+(m.current_amps||0),0);
   const maxTemp  = motors.reduce((max,m)=>Math.max(max,m.temperature_c||0),0);
   document.getElementById('iAvgRPM').textContent  = avgRpm.toFixed(0) + ' rpm';
   document.getElementById('iTotalA').textContent  = totalA.toFixed(1) + ' A';
   const tEl = document.getElementById('iMaxTemp');
-  tEl.textContent = maxTemp.toFixed(1) + '°C';
-  tEl.className   = 'info-val' + (maxTemp > 60 ? ' err' : maxTemp > 45 ? ' warn' : ' ok');
+  tEl.textContent = maxTemp.toFixed(1) + 'C';
+  tEl.className   = 'info-val' + (maxTemp > 60  ? ' err' : maxTemp > 45  ? ' warn' : ' ok');
+}
+
+function telemetryUiTick(ts) {
+  if (!S.display.lastAnimTs) S.display.lastAnimTs = ts;
+  const dtMs = ts - S.display.lastAnimTs;
+  S.display.lastAnimTs = ts;
+  if (stepDisplayedTelemetry(dtMs)) {
+    refreshLiveRpmText();
+    S.display.chartDirty = true;
+  }
+  if (S.display.chartDirty && (ts - S.display.lastChartDrawMs) >= S.display.chartMinFrameMs) {
+    drawChart();
+    S.display.lastChartDrawMs = ts;
+    S.display.chartDirty = false;
+  }
+  requestAnimationFrame(telemetryUiTick);
 }
 
 function fmtUptime(ms) {
   const s=Math.floor(ms/1000), m=Math.floor(s/60), h=Math.floor(m/60);
-  return h>0 ? `${h}h ${m%60}m` : m>0 ? `${m}m ${s%60}s` : `${s}s`;
+  return h>0  ? `${h}h ${m%60}m` : m>0  ? `${m}m ${s%60}s` : `${s}s`;
 }
 
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 //  Init
-// ══════════════════════════════════════════════════════════
+//  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 resetRobot();
 initSidePanelCollapse();
+initCenterCardOrder();
 initCollapsiblePieces();
 initDeadzoneUI();
 buildJoystickUI();
+updateEmergencyStopUi();
 updateManualButton();
-setInterval(pollStatus, 200);
+updateManualModeUi();
 setInterval(pollHealth, 2000);
 setInterval(() => { driveSendTick(); }, 60);
 setInterval(() => { tuningTick(); }, 100);
@@ -3053,6 +4134,7 @@ pollStatus();
 pollHealth();
 drawCurveEditor();
 renderPidPanel();
+requestAnimationFrame(telemetryUiTick);
 </script>
 </body>
 </html>

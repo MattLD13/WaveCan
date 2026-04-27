@@ -1,0 +1,922 @@
+[Platform] Python version: 3.13.5 (main, Jun 25 2025, 18:55:22) [GCC 14.2.0]
+[Platform] MicroPython: False, RP2350: False
+[20:54:39.889] [INFO] [WebServer] Loaded dashboard.html (114923 bytes)
+[Platform] Using SocketCAN bus (linux hardware mode)
+[20:54:39.890] [INFO] ============================================================
+[20:54:39.890] [INFO] WaveCan Motor Control Platform
+[20:54:39.890] [INFO] ============================================================
+[Platform] Using hardware SPARK MAX motor controller (socketcan)
+[20:54:39.891] [INFO] [WaveCan] Operating System: Linux
+[20:54:39.891] [INFO] [WaveCan] Starting on SocketCANBus platform
+[20:54:39.891] [INFO] [WaveCan] Runtime mode: socketcan
+[20:54:39.891] [INFO] [WaveCan] ✓ Using REAL HARDWARE (SocketCAN)
+[20:54:40.073] [INFO] [WaveCanBus] Initialized channel=can1 speed=1000kbps
+[20:54:40.405] [INFO] [WaveCan] Active sweep discovered SPARK MAX IDs: [1, 52]
+[20:54:40.405] [INFO] [WaveCan] Using discovered motor IDs: [1, 52]
+[20:54:40.406] [INFO] [HardwareMotorController] Initialized with motors=[1, 52]
+[20:54:40.406] [INFO] [HardwareMotorController] TX template IDs motor=1 V_NA=0x02050081 V_AK=0x02050081 EN=0x02050001 TEN=0x020501C1
+[20:54:40.406] [INFO] [WebServer] Initialized at 0.0.0.0:8080
+[20:54:40.406] [INFO] [WaveCan] Initialization complete
+[20:54:40.406] [INFO]   Platform: {'is_micropython': False, 'is_rp2350': False, 'python_version': '3.13.5 (main, Jun 25 2025, 18:55:22) [GCC 14.2.0]', 'can_bus_class': 'SocketCANBus', 'motor_class': 'HardwareMotorController'}
+[20:54:40.406] [INFO]   HTTP: 0.0.0.0:8080
+[20:54:40.406] [INFO]   Motors: 2
+[20:54:40.406] [INFO]   Effective runtime mode: socketcan
+[20:54:40.406] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:40.407] [INFO] [WebServer] Listening on 0.0.0.0:8080
+[20:54:40.910] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:41.413] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:41.916] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:42.418] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:42.920] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:43.423] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:43.925] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:44.426] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:44.930] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:45.435] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:45.936] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:46.441] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:46.945] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:47.449] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:47.950] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:48.455] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:48.959] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:49.458] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:49.959] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:50.458] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:50.963] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:51.464] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:51.969] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:52.472] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:52.973] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:53.477] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:53.982] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:54.486] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:54.986] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:55.487] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:55.989] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:56.490] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:56.991] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:57.490] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:57.995] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:58.501] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:59.001] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:54:59.501] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:00.005] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:00.504] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:01.005] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:01.506] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:02.010] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:02.509] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:03.010] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:03.513] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:04.015] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:04.519] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:05.024] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:05.524] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:06.027] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:06.527] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:07.029] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:07.529] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:08.030] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:08.531] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:09.035] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:09.535] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:10.036] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:10.538] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:11.043] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:11.543] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:12.044] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:12.549] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:13.050] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:13.552] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:14.053] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:14.557] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:15.057] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:15.559] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:16.059] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:16.562] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:17.062] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:17.566] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:18.071] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:18.575] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:19.076] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:19.576] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:20.077] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:20.576] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:21.076] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:21.576] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:22.078] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:22.582] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:23.083] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:23.584] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:24.085] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:24.587] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:25.093] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:25.593] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:26.093] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:26.593] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:27.095] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:27.599] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:28.100] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:28.602] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:29.102] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:29.602] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:30.102] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:30.602] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:31.104] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:31.606] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:32.107] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:32.610] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:33.113] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:33.613] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:34.114] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:34.615] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:35.116] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:35.618] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:36.119] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:36.620] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:37.126] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:37.626] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:38.126] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:38.627] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:39.130] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:39.631] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:40.132] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:40.638] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:41.142] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:41.647] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:42.147] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:42.648] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:43.153] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:43.653] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:44.158] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:44.658] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:45.160] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:45.661] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:46.163] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:46.668] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:47.168] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:47.671] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:48.173] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:48.673] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:49.176] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:49.676] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:50.179] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:50.681] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:51.183] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:51.683] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:52.184] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:52.687] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:53.188] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:53.691] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:54.191] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:54.696] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:55.198] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:55.699] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:56.202] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:56.703] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:57.205] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:57.704] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:58.206] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:58.707] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:59.208] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:55:59.708] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:00.210] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:00.716] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:01.216] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:01.717] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:02.219] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:02.723] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:03.225] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:03.725] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:04.227] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:04.732] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:05.233] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:05.734] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:06.235] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:06.736] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:07.239] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:07.739] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:08.241] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:08.744] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:09.244] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:09.747] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:10.251] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:10.753] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:11.258] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:11.760] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:12.262] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:12.764] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:13.265] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:13.766] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:14.270] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:14.772] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:15.273] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:15.774] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:16.275] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:16.775] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:17.277] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:17.778] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:18.282] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:18.782] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:19.283] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:19.786] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:20.288] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:20.790] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:21.292] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:21.795] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:22.296] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:22.800] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:23.299] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:23.801] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:24.303] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:24.804] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:25.306] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:25.809] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:26.308] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:26.811] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:27.313] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:27.815] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:28.317] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:28.819] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:29.320] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:29.825] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:30.328] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:30.830] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:31.333] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:31.832] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:32.333] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:32.834] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:33.339] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:33.841] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:34.342] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:34.844] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:35.345] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:35.846] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:36.347] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:36.848] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:37.350] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:37.853] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:38.353] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:38.853] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:39.354] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:39.855] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:40.357] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:40.859] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:41.359] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:41.859] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:42.361] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:42.863] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:43.364] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:43.866] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:44.367] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:44.867] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:45.368] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:45.870] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:46.371] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:46.873] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:47.373] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:47.875] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:48.376] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:48.879] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:49.383] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:49.882] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:50.386] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:50.886] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:51.390] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:51.893] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:52.395] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:52.898] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:53.401] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:53.904] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:54.406] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:54.910] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:55.411] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:55.911] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:56.414] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:56.918] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:56:57.282] [INFO] [WebServer] GET /api/health (1)
+[20:56:57.285] [INFO] [WebServer] GET /api/status (2)
+[20:56:57.288] [INFO] [WebServer] POST /api/motor/cmd (3)
+[20:56:57.288] [INFO] [WebServer] Motor cmd raw motor=1 cmd=set_rpm raw=250.0 target_rpm=+250.0
+[20:56:57.419] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.09 id=0x02050081 ok=True data=39 05 B6 3D 00 00 00 00
+[20:56:57.640] [INFO] [WebServer] GET /api/status (4)
+[20:56:57.920] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.09 id=0x02050081 ok=True data=39 05 B6 3D 00 00 00 00
+[20:56:57.993] [INFO] [WebServer] GET /api/status (5)
+[20:56:58.346] [INFO] [WebServer] GET /api/status (6)
+[20:56:58.422] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.09 id=0x02050081 ok=True data=39 05 B6 3D 00 00 00 00
+[20:56:58.461] [INFO] [WebServer] GET / (7)
+[20:56:58.585] [INFO] [WebServer] GET /api/status (8)
+[20:56:58.589] [INFO] [WebServer] GET /api/health (9)
+[20:56:58.699] [INFO] [WebServer] GET /api/status (10)
+[20:56:58.785] [INFO] [WebServer] GET /api/status (11)
+[20:56:58.926] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.09 id=0x02050081 ok=True data=39 05 B6 3D 00 00 00 00
+[20:56:58.985] [INFO] [WebServer] GET /api/status (12)
+[20:56:59.051] [INFO] [WebServer] GET /api/status (13)
+[20:56:59.183] [INFO] [WebServer] GET /api/status (14)
+[20:56:59.390] [INFO] [WebServer] GET /api/status (15)
+[20:56:59.404] [INFO] [WebServer] GET /api/status (16)
+[20:56:59.430] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.09 id=0x02050081 ok=True data=39 05 B6 3D 00 00 00 00
+[20:56:59.585] [INFO] [WebServer] GET /api/status (17)
+[20:56:59.756] [INFO] [WebServer] GET /api/status (18)
+[20:56:59.784] [INFO] [WebServer] GET /api/status (19)
+[20:56:59.931] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.09 id=0x02050081 ok=True data=39 05 B6 3D 00 00 00 00
+[20:56:59.991] [INFO] [WebServer] GET /api/status (20)
+[20:57:00.108] [INFO] [WebServer] GET /api/status (21)
+[20:57:00.111] [INFO] [WebServer] POST /api/motor/cmd (22)
+[20:57:00.111] [INFO] [WebServer] Motor cmd raw motor=1 cmd=set_rpm raw=350.0 target_rpm=+350.0
+[20:57:00.189] [INFO] [WebServer] GET /api/status (23)
+[20:57:00.389] [INFO] [WebServer] GET /api/status (24)
+[20:57:00.436] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.12 id=0x02050081 ok=True data=71 D0 FE 3D 00 00 00 00
+[20:57:00.463] [INFO] [WebServer] GET /api/status (25)
+[20:57:00.587] [INFO] [WebServer] GET /api/status (26)
+[20:57:00.588] [INFO] [WebServer] GET /api/health (27)
+[20:57:00.784] [INFO] [WebServer] GET /api/status (28)
+[20:57:00.815] [INFO] [WebServer] GET /api/status (29)
+[20:57:00.940] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.12 id=0x02050081 ok=True data=71 D0 FE 3D 00 00 00 00
+[20:57:00.989] [INFO] [WebServer] GET /api/status (30)
+[20:57:01.168] [INFO] [WebServer] GET /api/status (31)
+[20:57:01.203] [INFO] [WebServer] GET /api/status (32)
+[20:57:01.388] [INFO] [WebServer] GET /api/status (33)
+[20:57:01.443] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.12 id=0x02050081 ok=True data=71 D0 FE 3D 00 00 00 00
+[20:57:01.520] [INFO] [WebServer] GET /api/status (34)
+[20:57:01.583] [INFO] [WebServer] GET /api/status (35)
+[20:57:01.783] [INFO] [WebServer] GET /api/status (36)
+[20:57:01.873] [INFO] [WebServer] GET /api/status (37)
+[20:57:01.947] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.12 id=0x02050081 ok=True data=71 D0 FE 3D 00 00 00 00
+[20:57:01.986] [INFO] [WebServer] GET /api/status (38)
+[20:57:02.190] [INFO] [WebServer] GET /api/status (39)
+[20:57:02.227] [INFO] [WebServer] GET /api/status (40)
+[20:57:02.390] [INFO] [WebServer] GET /api/status (41)
+[20:57:02.448] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.12 id=0x02050081 ok=True data=71 D0 FE 3D 00 00 00 00
+[20:57:02.580] [INFO] [WebServer] GET /api/status (42)
+[20:57:02.587] [INFO] [WebServer] GET /api/status (43)
+[20:57:02.587] [INFO] [WebServer] GET /api/health (44)
+[20:57:02.796] [INFO] [WebServer] GET /api/status (45)
+[20:57:02.935] [INFO] [WebServer] GET /api/status (46)
+[20:57:02.938] [INFO] [WebServer] POST /api/motor/cmd (47)
+[20:57:02.938] [INFO] [WebServer] Motor cmd raw motor=1 cmd=set_rpm raw=450.0 target_rpm=+450.0
+[20:57:02.951] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.16 id=0x02050081 ok=True data=D5 CD 23 3E 00 00 00 00
+[20:57:02.987] [INFO] [WebServer] GET /api/status (48)
+[20:57:03.184] [INFO] [WebServer] GET /api/status (49)
+[20:57:03.292] [INFO] [WebServer] GET /api/status (50)
+[20:57:03.386] [INFO] [WebServer] GET /api/status (51)
+[20:57:03.453] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.16 id=0x02050081 ok=True data=D5 CD 23 3E 00 00 00 00
+[20:57:03.585] [INFO] [WebServer] GET /api/status (52)
+[20:57:03.646] [INFO] [WebServer] GET /api/status (53)
+[20:57:03.789] [INFO] [WebServer] GET /api/status (54)
+[20:57:03.953] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.16 id=0x02050081 ok=True data=D5 CD 23 3E 00 00 00 00
+[20:57:03.992] [INFO] [WebServer] GET /api/status (55)
+[20:57:04.002] [INFO] [WebServer] GET /api/status (56)
+[20:57:04.186] [INFO] [WebServer] GET /api/status (57)
+[20:57:04.356] [INFO] [WebServer] GET /api/status (58)
+[20:57:04.382] [INFO] [WebServer] GET /api/status (59)
+[20:57:04.453] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.16 id=0x02050081 ok=True data=D5 CD 23 3E 00 00 00 00
+[20:57:04.586] [INFO] [WebServer] GET /api/status (60)
+[20:57:04.587] [INFO] [WebServer] GET /api/health (61)
+[20:57:04.711] [INFO] [WebServer] GET /api/status (62)
+[20:57:04.784] [INFO] [WebServer] GET /api/status (63)
+[20:57:04.958] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.16 id=0x02050081 ok=True data=D5 CD 23 3E 00 00 00 00
+[20:57:04.991] [INFO] [WebServer] GET /api/status (64)
+[20:57:05.065] [INFO] [WebServer] GET /api/status (65)
+[20:57:05.188] [INFO] [WebServer] GET /api/status (66)
+[20:57:05.385] [INFO] [WebServer] GET /api/status (67)
+[20:57:05.419] [INFO] [WebServer] GET /api/status (68)
+[20:57:05.463] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.16 id=0x02050081 ok=True data=D5 CD 23 3E 00 00 00 00
+[20:57:05.586] [INFO] [WebServer] GET /api/status (69)
+[20:57:05.774] [INFO] [WebServer] GET /api/status (70)
+[20:57:05.779] [INFO] [WebServer] POST /api/motor/cmd (71)
+[20:57:05.779] [INFO] [WebServer] Motor cmd raw motor=1 cmd=set_rpm raw=300.0 target_rpm=+300.0
+[20:57:05.783] [INFO] [WebServer] GET /api/status (72)
+[20:57:05.965] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.11 id=0x02050081 ok=True data=D5 6A DA 3D 00 00 00 00
+[20:57:05.986] [INFO] [WebServer] GET /api/status (73)
+[20:57:06.132] [INFO] [WebServer] GET /api/status (74)
+[20:57:06.186] [INFO] [WebServer] GET /api/status (75)
+[20:57:06.387] [INFO] [WebServer] GET /api/status (76)
+[20:57:06.467] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.11 id=0x02050081 ok=True data=D5 6A DA 3D 00 00 00 00
+[20:57:06.486] [INFO] [WebServer] GET /api/status (77)
+[20:57:06.584] [INFO] [WebServer] GET /api/status (78)
+[20:57:06.586] [INFO] [WebServer] GET /api/health (79)
+[20:57:06.787] [INFO] [WebServer] GET /api/status (80)
+[20:57:06.840] [INFO] [WebServer] GET /api/status (81)
+[20:57:06.970] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.11 id=0x02050081 ok=True data=D5 6A DA 3D 00 00 00 00
+[20:57:06.985] [INFO] [WebServer] GET /api/status (82)
+[20:57:07.187] [INFO] [WebServer] GET /api/status (83)
+[20:57:07.195] [INFO] [WebServer] GET /api/status (84)
+[20:57:07.385] [INFO] [WebServer] GET /api/status (85)
+[20:57:07.473] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.11 id=0x02050081 ok=True data=D5 6A DA 3D 00 00 00 00
+[20:57:07.549] [INFO] [WebServer] GET /api/status (86)
+[20:57:07.586] [INFO] [WebServer] GET /api/status (87)
+[20:57:07.783] [INFO] [WebServer] GET /api/status (88)
+[20:57:07.903] [INFO] [WebServer] GET /api/status (89)
+[20:57:07.974] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.11 id=0x02050081 ok=True data=D5 6A DA 3D 00 00 00 00
+[20:57:07.986] [INFO] [WebServer] GET /api/status (90)
+[20:57:08.184] [INFO] [WebServer] GET /api/status (91)
+[20:57:08.257] [INFO] [WebServer] GET /api/status (92)
+[20:57:08.386] [INFO] [WebServer] GET /api/status (93)
+[20:57:08.479] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.11 id=0x02050081 ok=True data=D5 6A DA 3D 00 00 00 00
+[20:57:08.587] [INFO] [WebServer] GET /api/status (94)
+[20:57:08.588] [INFO] [WebServer] GET /api/health (95)
+[20:57:08.611] [INFO] [WebServer] GET /api/status (96)
+[20:57:08.616] [INFO] [WebServer] GET /api/status (97)
+[20:57:08.620] [INFO] [WebServer] GET /api/status (98)
+[20:57:08.624] [INFO] [WebServer] POST /api/motor/cmd (99)
+[20:57:08.624] [INFO] [WebServer] Motor 1 PID stopped
+[20:57:08.629] [INFO] [WebServer] POST /api/motor/cmd (100)
+[20:57:08.629] [INFO] [WebServer] Motor cmd raw motor=1 cmd=set raw=0 normalized=+0.000 force_stop=True
+[20:57:08.630] [INFO] [WebServer] Motor 1 set to 0%
+[20:57:08.633] [INFO] [WebServer] POST /api/motor/cmd (101)
+[20:57:08.634] [INFO] [WebServer] Motor 52 PID stopped
+[20:57:08.637] [INFO] [WebServer] POST /api/motor/cmd (102)
+[20:57:08.637] [INFO] [WebServer] Motor cmd raw motor=52 cmd=set raw=0 normalized=+0.000 force_stop=True
+[20:57:08.637] [INFO] [WebServer] Motor 52 set to 0%
+[20:57:08.789] [INFO] [WebServer] GET /api/status (103)
+[20:57:08.982] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:08.987] [INFO] [WebServer] GET /api/status (104)
+[20:57:09.140] [INFO] [WebServer] GET /api/status (105)
+[20:57:09.184] [INFO] [WebServer] GET /api/status (106)
+[20:57:09.399] [INFO] [WebServer] GET /api/status (107)
+[20:57:09.482] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:09.585] [INFO] [WebServer] GET /api/status (108)
+[20:57:09.785] [INFO] [WebServer] GET /api/status (109)
+[20:57:09.982] [INFO] [WebServer] GET /api/status (110)
+[20:57:09.987] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:10.211] [INFO] [WebServer] GET /api/status (111)
+[20:57:10.382] [INFO] [WebServer] GET /api/status (112)
+[20:57:10.487] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:10.582] [INFO] [WebServer] GET /api/status (113)
+[20:57:10.583] [INFO] [WebServer] GET /api/health (114)
+[20:57:10.787] [INFO] [WebServer] GET /api/status (115)
+[20:57:10.987] [INFO] [WebServer] GET /api/status (116)
+[20:57:10.992] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:11.183] [INFO] [WebServer] GET /api/status (117)
+[20:57:11.385] [INFO] [WebServer] GET /api/status (118)
+[20:57:11.492] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:11.589] [INFO] [WebServer] GET /api/status (119)
+[20:57:11.787] [INFO] [WebServer] GET /api/status (120)
+[20:57:11.983] [INFO] [WebServer] GET /api/status (121)
+[20:57:11.992] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:12.188] [INFO] [WebServer] GET /api/status (122)
+[20:57:12.390] [INFO] [WebServer] GET /api/status (123)
+[20:57:12.492] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:12.588] [INFO] [WebServer] GET /api/status (124)
+[20:57:12.588] [INFO] [WebServer] GET /api/health (125)
+[20:57:12.789] [INFO] [WebServer] GET /api/status (126)
+[20:57:12.991] [INFO] [WebServer] GET /api/status (127)
+[20:57:12.993] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:13.190] [INFO] [WebServer] GET /api/status (128)
+[20:57:13.387] [INFO] [WebServer] GET /api/status (129)
+[20:57:13.492] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:13.588] [INFO] [WebServer] GET /api/status (130)
+[20:57:13.788] [INFO] [WebServer] GET /api/status (131)
+[20:57:13.989] [INFO] [WebServer] GET /api/status (132)
+[20:57:13.992] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:14.188] [INFO] [WebServer] GET /api/status (133)
+[20:57:14.391] [INFO] [WebServer] GET /api/status (134)
+[20:57:14.493] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:14.609] [INFO] [WebServer] GET /api/status (135)
+[20:57:14.610] [INFO] [WebServer] GET /api/health (136)
+[20:57:14.790] [INFO] [WebServer] GET /api/status (137)
+[20:57:14.989] [INFO] [WebServer] GET /api/status (138)
+[20:57:14.994] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:15.189] [INFO] [WebServer] GET /api/status (139)
+[20:57:15.391] [INFO] [WebServer] GET /api/status (140)
+[20:57:15.498] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:15.584] [INFO] [WebServer] GET /api/status (141)
+[20:57:15.786] [INFO] [WebServer] GET /api/status (142)
+[20:57:15.987] [INFO] [WebServer] GET /api/status (143)
+[20:57:16.002] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:16.188] [INFO] [WebServer] GET /api/status (144)
+[20:57:16.389] [INFO] [WebServer] GET /api/status (145)
+[20:57:16.501] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:16.586] [INFO] [WebServer] GET /api/status (146)
+[20:57:16.587] [INFO] [WebServer] GET /api/health (147)
+[20:57:16.784] [INFO] [WebServer] GET /api/status (148)
+[20:57:16.990] [INFO] [WebServer] GET /api/status (149)
+[20:57:17.005] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:17.187] [INFO] [WebServer] GET /api/status (150)
+[20:57:17.388] [INFO] [WebServer] GET /api/status (151)
+[20:57:17.509] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:17.588] [INFO] [WebServer] GET /api/status (152)
+[20:57:17.788] [INFO] [WebServer] GET /api/status (153)
+[20:57:17.989] [INFO] [WebServer] GET /api/status (154)
+[20:57:18.012] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:18.186] [INFO] [WebServer] GET /api/status (155)
+[20:57:18.386] [INFO] [WebServer] GET /api/status (156)
+[20:57:18.516] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:18.586] [INFO] [WebServer] GET /api/status (157)
+[20:57:18.587] [INFO] [WebServer] GET /api/health (158)
+[20:57:18.783] [INFO] [WebServer] GET /api/status (159)
+[20:57:18.988] [INFO] [WebServer] GET /api/status (160)
+[20:57:19.020] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:19.188] [INFO] [WebServer] GET /api/status (161)
+[20:57:19.386] [INFO] [WebServer] GET /api/status (162)
+[20:57:19.522] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:19.584] [INFO] [WebServer] GET /api/status (163)
+[20:57:19.813] [INFO] [WebServer] GET /api/status (164)
+[20:57:19.986] [INFO] [WebServer] GET /api/status (165)
+[20:57:20.025] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:20.186] [INFO] [WebServer] GET /api/status (166)
+[20:57:20.399] [INFO] [WebServer] GET /api/status (167)
+[20:57:20.526] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:20.587] [INFO] [WebServer] GET /api/status (168)
+[20:57:20.587] [INFO] [WebServer] GET /api/health (169)
+[20:57:20.781] [INFO] [WebServer] GET /api/status (170)
+[20:57:20.988] [INFO] [WebServer] GET /api/status (171)
+[20:57:21.030] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:21.187] [INFO] [WebServer] GET /api/status (172)
+[20:57:21.385] [INFO] [WebServer] GET /api/status (173)
+[20:57:21.533] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:21.585] [INFO] [WebServer] GET /api/status (174)
+[20:57:21.783] [INFO] [WebServer] GET /api/status (175)
+[20:57:21.985] [INFO] [WebServer] GET /api/status (176)
+[20:57:22.037] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:22.212] [INFO] [WebServer] GET /api/status (177)
+[20:57:22.385] [INFO] [WebServer] GET /api/status (178)
+[20:57:22.537] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:22.586] [INFO] [WebServer] GET /api/status (179)
+[20:57:22.588] [INFO] [WebServer] GET /api/health (180)
+[20:57:22.785] [INFO] [WebServer] GET /api/status (181)
+[20:57:22.987] [INFO] [WebServer] GET /api/status (182)
+[20:57:23.042] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:23.184] [INFO] [WebServer] GET /api/status (183)
+[20:57:23.387] [INFO] [WebServer] GET /api/status (184)
+[20:57:23.544] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:23.589] [INFO] [WebServer] GET /api/status (185)
+[20:57:23.784] [INFO] [WebServer] GET /api/status (186)
+[20:57:23.987] [INFO] [WebServer] GET /api/status (187)
+[20:57:24.044] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:24.186] [INFO] [WebServer] GET /api/status (188)
+[20:57:24.386] [INFO] [WebServer] GET /api/status (189)
+[20:57:24.546] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:24.590] [INFO] [WebServer] GET /api/status (190)
+[20:57:24.591] [INFO] [WebServer] GET /api/health (191)
+[20:57:24.786] [INFO] [WebServer] GET /api/status (192)
+[20:57:24.997] [INFO] [WebServer] GET /api/status (193)
+[20:57:25.046] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:25.186] [INFO] [WebServer] GET /api/status (194)
+[20:57:25.386] [INFO] [WebServer] GET /api/status (195)
+[20:57:25.549] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:25.585] [INFO] [WebServer] GET /api/status (196)
+[20:57:25.788] [INFO] [WebServer] GET /api/status (197)
+[20:57:25.989] [INFO] [WebServer] GET /api/status (198)
+[20:57:26.036] [INFO] [WebServer] POST /api/motor/cmd (199)
+[20:57:26.036] [INFO] [WebServer] Motor cmd raw motor=1 cmd=set raw=-0.3 normalized=-0.300 force_stop=False
+[20:57:26.037] [INFO] [WebServer] Motor 1 set to -30%
+[20:57:26.054] [INFO] [HardwareMotorController] TX duty motor=1 pct=-0.30 id=0x02050081 ok=True data=9A 99 99 BE 00 00 00 00
+[20:57:26.194] [INFO] [WebServer] GET /api/status (200)
+[20:57:26.384] [INFO] [WebServer] GET /api/status (201)
+[20:57:26.555] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:26.587] [INFO] [WebServer] GET /api/status (202)
+[20:57:26.588] [INFO] [WebServer] GET /api/health (203)
+[20:57:26.790] [INFO] [WebServer] GET /api/status (204)
+[20:57:26.988] [INFO] [WebServer] GET /api/status (205)
+[20:57:27.057] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:27.187] [INFO] [WebServer] GET /api/status (206)
+[20:57:27.399] [INFO] [WebServer] GET /api/status (207)
+[20:57:27.558] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:27.590] [INFO] [WebServer] GET /api/status (208)
+[20:57:27.788] [INFO] [WebServer] GET /api/status (209)
+[20:57:27.986] [INFO] [WebServer] GET /api/status (210)
+[20:57:28.063] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:28.188] [INFO] [WebServer] GET /api/status (211)
+[20:57:28.241] [INFO] [WebServer] POST /api/motor/cmd (212)
+[20:57:28.242] [INFO] [WebServer] Motor cmd raw motor=1 cmd=set raw=-0.3 normalized=-0.300 force_stop=False
+[20:57:28.242] [INFO] [WebServer] Motor 1 set to -30%
+[20:57:28.388] [INFO] [WebServer] GET /api/status (213)
+[20:57:28.566] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:28.587] [INFO] [WebServer] GET /api/status (214)
+[20:57:28.588] [INFO] [WebServer] GET /api/health (215)
+[20:57:28.807] [INFO] [WebServer] GET /api/status (216)
+[20:57:28.991] [INFO] [WebServer] GET /api/status (217)
+[20:57:29.044] [INFO] [WebServer] POST /api/motor/cmd (218)
+[20:57:29.044] [INFO] [WebServer] Motor cmd raw motor=1 cmd=set raw=-0.3 normalized=-0.300 force_stop=False
+[20:57:29.045] [INFO] [WebServer] Motor 1 set to -30%
+[20:57:29.069] [INFO] [HardwareMotorController] TX duty motor=1 pct=-0.30 id=0x02050081 ok=True data=9A 99 99 BE 00 00 00 00
+[20:57:29.189] [INFO] [WebServer] GET /api/status (219)
+[20:57:29.390] [INFO] [WebServer] GET /api/status (220)
+[20:57:29.571] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:29.586] [INFO] [WebServer] GET /api/status (221)
+[20:57:29.787] [INFO] [WebServer] GET /api/status (222)
+[20:57:29.910] [INFO] [WebServer] POST /api/motor/cmd (223)
+[20:57:29.910] [INFO] [WebServer] Motor cmd raw motor=1 cmd=set raw=-0.3 normalized=-0.300 force_stop=False
+[20:57:29.911] [INFO] [WebServer] Motor 1 set to -30%
+[20:57:29.987] [INFO] [WebServer] GET /api/status (224)
+[20:57:30.073] [INFO] [HardwareMotorController] TX duty motor=1 pct=-0.30 id=0x02050081 ok=True data=9A 99 99 BE 00 00 00 00
+[20:57:30.186] [INFO] [WebServer] GET /api/status (225)
+[20:57:30.388] [INFO] [WebServer] GET /api/status (226)
+[20:57:30.574] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:30.586] [INFO] [WebServer] GET /api/status (227)
+[20:57:30.587] [INFO] [WebServer] GET /api/health (228)
+[20:57:30.790] [INFO] [WebServer] GET /api/status (229)
+[20:57:30.992] [INFO] [WebServer] GET /api/status (230)
+[20:57:31.079] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:31.189] [INFO] [WebServer] GET /api/status (231)
+[20:57:31.387] [INFO] [WebServer] GET /api/status (232)
+[20:57:31.409] [INFO] [WebServer] POST /api/motor/cmd (233)
+[20:57:31.410] [INFO] [WebServer] Motor cmd raw motor=1 cmd=set raw=-0.3 normalized=-0.300 force_stop=False
+[20:57:31.410] [INFO] [WebServer] Motor 1 set to -30%
+[20:57:31.581] [INFO] [HardwareMotorController] TX duty motor=1 pct=-0.30 id=0x02050081 ok=True data=9A 99 99 BE 00 00 00 00
+[20:57:31.586] [INFO] [WebServer] GET /api/status (234)
+[20:57:31.787] [INFO] [WebServer] GET /api/status (235)
+[20:57:31.989] [INFO] [WebServer] GET /api/status (236)
+[20:57:32.081] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:32.186] [INFO] [WebServer] GET /api/status (237)
+[20:57:32.387] [INFO] [WebServer] GET /api/status (238)
+[20:57:32.585] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:32.586] [INFO] [WebServer] GET /api/status (239)
+[20:57:32.587] [INFO] [WebServer] GET /api/health (240)
+[20:57:32.785] [INFO] [WebServer] GET /api/status (241)
+[20:57:32.986] [INFO] [WebServer] GET /api/status (242)
+[20:57:33.085] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:33.186] [INFO] [WebServer] GET /api/status (243)
+[20:57:33.390] [INFO] [WebServer] GET /api/status (244)
+[20:57:33.586] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:33.588] [INFO] [WebServer] GET /api/status (245)
+[20:57:33.787] [INFO] [WebServer] GET /api/status (246)
+[20:57:34.012] [INFO] [WebServer] GET /api/status (247)
+[20:57:34.088] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:34.186] [INFO] [WebServer] GET /api/status (248)
+[20:57:34.384] [INFO] [WebServer] GET /api/status (249)
+[20:57:34.593] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:34.599] [INFO] [WebServer] GET /api/status (250)
+[20:57:34.602] [INFO] [WebServer] GET /api/health (251)
+[20:57:34.781] [INFO] [WebServer] GET /api/status (252)
+[20:57:34.896] [INFO] [WebServer] POST /api/motor/cmd (253)
+[20:57:34.896] [INFO] [WebServer] Motor cmd raw motor=1 cmd=set raw=0.2 normalized=+0.200 force_stop=False
+[20:57:34.897] [INFO] [WebServer] Motor 1 set to 20%
+[20:57:34.992] [INFO] [WebServer] GET /api/status (254)
+[20:57:35.096] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.20 id=0x02050081 ok=True data=CD CC 4C 3E 00 00 00 00
+[20:57:35.186] [INFO] [WebServer] GET /api/status (255)
+[20:57:35.392] [INFO] [WebServer] GET /api/status (256)
+[20:57:35.593] [INFO] [WebServer] GET /api/status (257)
+[20:57:35.598] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.20 id=0x02050081 ok=True data=CD CC 4C 3E 00 00 00 00
+[20:57:35.787] [INFO] [WebServer] GET /api/status (258)
+[20:57:35.990] [INFO] [WebServer] GET /api/status (259)
+[20:57:36.102] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:36.192] [INFO] [WebServer] GET /api/status (260)
+[20:57:36.268] [INFO] [WebServer] POST /api/motor/cmd (261)
+[20:57:36.268] [INFO] [WebServer] Motor cmd raw motor=1 cmd=set raw=0.3 normalized=+0.300 force_stop=False
+[20:57:36.268] [INFO] [WebServer] Motor 1 set to 30%
+[20:57:36.388] [INFO] [WebServer] GET /api/status (262)
+[20:57:36.590] [INFO] [WebServer] GET /api/status (263)
+[20:57:36.592] [INFO] [WebServer] GET /api/health (264)
+[20:57:36.603] [INFO] [HardwareMotorController] TX duty motor=1 pct=+0.30 id=0x02050081 ok=True data=9A 99 99 3E 00 00 00 00
+[20:57:36.791] [INFO] [WebServer] GET /api/status (265)
+[20:57:36.988] [INFO] [WebServer] GET /api/status (266)
+[20:57:37.105] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:37.191] [INFO] [WebServer] GET /api/status (267)
+[20:57:37.389] [INFO] [WebServer] GET /api/status (268)
+[20:57:37.588] [INFO] [WebServer] GET /api/status (269)
+[20:57:37.608] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:37.790] [INFO] [WebServer] GET /api/status (270)
+[20:57:37.991] [INFO] [WebServer] GET /api/status (271)
+[20:57:38.109] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:38.191] [INFO] [WebServer] GET /api/status (272)
+[20:57:38.325] [INFO] [WebServer] POST /api/motor/cmd (273)
+[20:57:38.325] [INFO] [WebServer] Motor cmd raw motor=1 cmd=set raw=0 normalized=+0.000 force_stop=False
+[20:57:38.325] [INFO] [WebServer] Motor 1 set to 0%
+[20:57:38.388] [INFO] [WebServer] GET /api/status (274)
+[20:57:38.593] [INFO] [WebServer] GET /api/status (275)
+[20:57:38.594] [INFO] [WebServer] GET /api/health (276)
+[20:57:38.610] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:38.790] [INFO] [WebServer] GET /api/status (277)
+[20:57:38.989] [INFO] [WebServer] GET /api/status (278)
+[20:57:39.113] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:39.204] [INFO] [WebServer] GET /api/status (279)
+[20:57:39.391] [INFO] [WebServer] GET /api/status (280)
+[20:57:39.590] [INFO] [WebServer] GET /api/status (281)
+[20:57:39.613] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:39.803] [INFO] [WebServer] GET /api/status (282)
+[20:57:39.988] [INFO] [WebServer] GET /api/status (283)
+[20:57:40.113] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:40.188] [INFO] [WebServer] GET /api/status (284)
+[20:57:40.389] [INFO] [WebServer] GET /api/status (285)
+[20:57:40.587] [INFO] [WebServer] GET /api/status (286)
+[20:57:40.588] [INFO] [WebServer] GET /api/health (287)
+[20:57:40.614] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:40.790] [INFO] [WebServer] GET /api/status (288)
+[20:57:41.008] [INFO] [WebServer] GET /api/status (289)
+[20:57:41.114] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:41.189] [INFO] [WebServer] GET /api/status (290)
+[20:57:41.390] [INFO] [WebServer] GET /api/status (291)
+[20:57:41.614] [INFO] [WebServer] GET /api/status (292)
+[20:57:41.618] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:41.787] [INFO] [WebServer] GET /api/status (293)
+[20:57:41.986] [INFO] [WebServer] GET /api/status (294)
+[20:57:42.119] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:42.187] [INFO] [WebServer] GET /api/status (295)
+[20:57:42.388] [INFO] [WebServer] GET /api/status (296)
+[20:57:42.587] [INFO] [WebServer] GET /api/status (297)
+[20:57:42.588] [INFO] [WebServer] GET /api/health (298)
+[20:57:42.624] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:42.794] [INFO] [WebServer] GET /api/status (299)
+[20:57:42.987] [INFO] [WebServer] GET /api/status (300)
+[20:57:43.127] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:43.187] [INFO] [WebServer] GET /api/status (301)
+[20:57:43.390] [INFO] [WebServer] GET /api/status (302)
+[20:57:43.588] [INFO] [WebServer] GET /api/status (303)
+[20:57:43.629] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:43.784] [INFO] [WebServer] GET /api/status (304)
+[20:57:43.987] [INFO] [WebServer] GET /api/status (305)
+[20:57:44.129] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:44.186] [INFO] [WebServer] GET /api/status (306)
+[20:57:44.386] [INFO] [WebServer] GET /api/status (307)
+[20:57:44.585] [INFO] [WebServer] GET /api/status (308)
+[20:57:44.586] [INFO] [WebServer] GET /api/health (309)
+[20:57:44.629] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:44.791] [INFO] [WebServer] GET /api/status (310)
+[20:57:44.990] [INFO] [WebServer] GET /api/status (311)
+[20:57:45.134] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:45.188] [INFO] [WebServer] GET /api/status (312)
+[20:57:45.386] [INFO] [WebServer] GET /api/status (313)
+[20:57:45.587] [INFO] [WebServer] GET /api/status (314)
+[20:57:45.636] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:45.786] [INFO] [WebServer] GET /api/status (315)
+[20:57:45.987] [INFO] [WebServer] GET /api/status (316)
+[20:57:46.140] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:46.184] [INFO] [WebServer] GET /api/status (317)
+[20:57:46.433] [INFO] [WebServer] GET /api/status (318)
+[20:57:46.586] [INFO] [WebServer] GET /api/status (319)
+[20:57:46.588] [INFO] [WebServer] GET /api/health (320)
+[20:57:46.640] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:46.785] [INFO] [WebServer] GET /api/status (321)
+[20:57:46.991] [INFO] [WebServer] GET /api/status (322)
+[20:57:47.144] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:47.187] [INFO] [WebServer] GET /api/status (323)
+[20:57:47.389] [INFO] [WebServer] GET /api/status (324)
+[20:57:47.591] [INFO] [WebServer] GET /api/status (325)
+[20:57:47.645] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:47.791] [INFO] [WebServer] GET /api/status (326)
+[20:57:47.991] [INFO] [WebServer] GET /api/status (327)
+[20:57:48.148] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:48.188] [INFO] [WebServer] GET /api/status (328)
+[20:57:48.385] [INFO] [WebServer] GET /api/status (329)
+[20:57:48.586] [INFO] [WebServer] GET /api/status (330)
+[20:57:48.587] [INFO] [WebServer] GET /api/health (331)
+[20:57:48.652] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:48.790] [INFO] [WebServer] GET /api/status (332)
+[20:57:48.987] [INFO] [WebServer] GET /api/status (333)
+[20:57:49.156] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:49.189] [INFO] [WebServer] GET /api/status (334)
+[20:57:49.389] [INFO] [WebServer] GET /api/status (335)
+[20:57:49.587] [INFO] [WebServer] GET /api/status (336)
+[20:57:49.661] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:49.784] [INFO] [WebServer] GET /api/status (337)
+[20:57:50.006] [INFO] [WebServer] GET /api/status (338)
+[20:57:50.165] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:50.186] [INFO] [WebServer] GET /api/status (339)
+[20:57:50.390] [INFO] [WebServer] GET /api/status (340)
+[20:57:50.593] [INFO] [WebServer] GET /api/status (341)
+[20:57:50.593] [INFO] [WebServer] GET /api/health (342)
+[20:57:50.666] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:50.787] [INFO] [WebServer] GET /api/status (343)
+[20:57:50.988] [INFO] [WebServer] GET /api/status (344)
+[20:57:51.168] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:51.188] [INFO] [WebServer] GET /api/status (345)
+[20:57:51.389] [INFO] [WebServer] GET /api/status (346)
+[20:57:51.590] [INFO] [WebServer] GET /api/status (347)
+[20:57:51.672] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:51.807] [INFO] [WebServer] GET /api/status (348)
+[20:57:51.989] [INFO] [WebServer] GET /api/status (349)
+[20:57:52.174] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:52.188] [INFO] [WebServer] GET /api/status (350)
+[20:57:52.394] [INFO] [WebServer] GET /api/status (351)
+[20:57:52.588] [INFO] [WebServer] GET /api/status (352)
+[20:57:52.589] [INFO] [WebServer] GET /api/health (353)
+[20:57:52.677] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:52.788] [INFO] [WebServer] GET /api/status (354)
+[20:57:52.986] [INFO] [WebServer] GET /api/status (355)
+[20:57:53.180] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:53.189] [INFO] [WebServer] GET /api/status (356)
+[20:57:53.387] [INFO] [WebServer] GET /api/status (357)
+[20:57:53.593] [INFO] [WebServer] GET /api/status (358)
+[20:57:53.685] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:53.803] [INFO] [WebServer] GET /api/status (359)
+[20:57:53.985] [INFO] [WebServer] GET /api/status (360)
+[20:57:54.186] [INFO] [WebServer] GET /api/status (361)
+[20:57:54.189] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:54.387] [INFO] [WebServer] GET /api/status (362)
+[20:57:54.587] [INFO] [WebServer] GET /api/status (363)
+[20:57:54.587] [INFO] [WebServer] GET /api/health (364)
+[20:57:54.693] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:54.790] [INFO] [WebServer] GET /api/status (365)
+[20:57:54.985] [INFO] [WebServer] GET /api/status (366)
+[20:57:55.188] [INFO] [WebServer] GET /api/status (367)
+[20:57:55.198] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:55.391] [INFO] [WebServer] GET /api/status (368)
+[20:57:55.588] [INFO] [WebServer] GET /api/status (369)
+[20:57:55.702] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:55.786] [INFO] [WebServer] GET /api/status (370)
+[20:57:55.987] [INFO] [WebServer] GET /api/status (371)
+[20:57:56.188] [INFO] [WebServer] GET /api/status (372)
+[20:57:56.205] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:56.388] [INFO] [WebServer] GET /api/status (373)
+[20:57:56.587] [INFO] [WebServer] GET /api/status (374)
+[20:57:56.588] [INFO] [WebServer] GET /api/health (375)
+[20:57:56.709] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:56.783] [INFO] [WebServer] GET /api/status (376)
+[20:57:56.987] [INFO] [WebServer] GET /api/status (377)
+[20:57:57.187] [INFO] [WebServer] GET /api/status (378)
+[20:57:57.212] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:57.388] [INFO] [WebServer] GET /api/status (379)
+[20:57:57.584] [INFO] [WebServer] GET /api/status (380)
+[20:57:57.713] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:57.787] [INFO] [WebServer] GET /api/status (381)
+[20:57:58.033] [INFO] [WebServer] GET /api/status (382)
+[20:57:58.191] [INFO] [WebServer] GET /api/status (383)
+[20:57:58.216] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:58.389] [INFO] [WebServer] GET /api/status (384)
+[20:57:58.590] [INFO] [WebServer] GET /api/status (385)
+[20:57:58.591] [INFO] [WebServer] GET /api/health (386)
+[20:57:58.719] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:58.786] [INFO] [WebServer] GET /api/status (387)
+[20:57:58.986] [INFO] [WebServer] GET /api/status (388)
+[20:57:59.188] [INFO] [WebServer] GET /api/status (389)
+[20:57:59.224] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:59.387] [INFO] [WebServer] GET /api/status (390)
+[20:57:59.589] [INFO] [WebServer] GET /api/status (391)
+[20:57:59.727] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:57:59.797] [INFO] [WebServer] GET /api/status (392)
+[20:57:59.990] [INFO] [WebServer] GET /api/status (393)
+[20:58:00.187] [INFO] [WebServer] GET /api/status (394)
+[20:58:00.227] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:00.386] [INFO] [WebServer] GET /api/status (395)
+[20:58:00.587] [INFO] [WebServer] GET /api/status (396)
+[20:58:00.591] [INFO] [WebServer] GET /api/health (397)
+[20:58:00.730] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:00.784] [INFO] [WebServer] GET /api/status (398)
+[20:58:00.987] [INFO] [WebServer] GET /api/status (399)
+[20:58:01.187] [INFO] [WebServer] GET /api/status (400)
+[20:58:01.234] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:01.387] [INFO] [WebServer] GET /api/status (401)
+[20:58:01.591] [INFO] [WebServer] GET /api/status (402)
+[20:58:01.737] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:01.791] [INFO] [WebServer] GET /api/status (403)
+[20:58:01.990] [INFO] [WebServer] GET /api/status (404)
+[20:58:02.192] [INFO] [WebServer] GET /api/status (405)
+[20:58:02.237] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:02.391] [INFO] [WebServer] GET /api/status (406)
+[20:58:02.588] [INFO] [WebServer] GET /api/status (407)
+[20:58:02.589] [INFO] [WebServer] GET /api/health (408)
+[20:58:02.742] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:02.790] [INFO] [WebServer] GET /api/status (409)
+[20:58:02.990] [INFO] [WebServer] GET /api/status (410)
+[20:58:03.193] [INFO] [WebServer] GET /api/status (411)
+[20:58:03.242] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:03.396] [INFO] [WebServer] GET /api/status (412)
+[20:58:03.593] [INFO] [WebServer] GET /api/status (413)
+[20:58:03.744] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:03.791] [INFO] [WebServer] GET /api/status (414)
+[20:58:03.989] [INFO] [WebServer] GET /api/status (415)
+[20:58:04.188] [INFO] [WebServer] GET /api/status (416)
+[20:58:04.248] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:04.390] [INFO] [WebServer] GET /api/status (417)
+[20:58:04.603] [INFO] [WebServer] GET /api/status (418)
+[20:58:04.603] [INFO] [WebServer] GET /api/health (419)
+[20:58:04.751] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:04.791] [INFO] [WebServer] GET /api/status (420)
+[20:58:04.991] [INFO] [WebServer] GET /api/status (421)
+[20:58:05.190] [INFO] [WebServer] GET /api/status (422)
+[20:58:05.253] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:05.402] [INFO] [WebServer] GET /api/status (423)
+[20:58:05.594] [INFO] [WebServer] GET /api/status (424)
+[20:58:05.755] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:05.783] [INFO] [WebServer] GET /api/status (425)
+[20:58:05.988] [INFO] [WebServer] GET /api/status (426)
+[20:58:06.188] [INFO] [WebServer] GET /api/status (427)
+[20:58:06.259] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:06.387] [INFO] [WebServer] GET /api/status (428)
+[20:58:06.588] [INFO] [WebServer] GET /api/status (429)
+[20:58:06.589] [INFO] [WebServer] GET /api/health (430)
+[20:58:06.760] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:06.787] [INFO] [WebServer] GET /api/status (431)
+[20:58:06.988] [INFO] [WebServer] GET /api/status (432)
+[20:58:07.187] [INFO] [WebServer] GET /api/status (433)
+[20:58:07.260] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:07.392] [INFO] [WebServer] GET /api/status (434)
+[20:58:07.588] [INFO] [WebServer] GET /api/status (435)
+[20:58:07.762] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:07.788] [INFO] [WebServer] GET /api/status (436)
+[20:58:07.991] [INFO] [WebServer] GET /api/status (437)
+[20:58:08.185] [INFO] [WebServer] GET /api/status (438)
+[20:58:08.267] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:08.388] [INFO] [WebServer] GET /api/status (439)
+[20:58:08.586] [INFO] [WebServer] GET /api/status (440)
+[20:58:08.587] [INFO] [WebServer] GET /api/health (441)
+[20:58:08.772] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:08.788] [INFO] [WebServer] GET /api/status (442)
+[20:58:08.989] [INFO] [WebServer] GET /api/status (443)
+[20:58:09.188] [INFO] [WebServer] GET /api/status (444)
+[20:58:09.276] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:09.388] [INFO] [WebServer] GET /api/status (445)
+[20:58:09.588] [INFO] [WebServer] GET /api/status (446)
+[20:58:09.780] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:09.789] [INFO] [WebServer] GET /api/status (447)
+[20:58:09.987] [INFO] [WebServer] GET /api/status (448)
+[20:58:10.188] [INFO] [WebServer] GET /api/status (449)
+[20:58:10.284] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00
+[20:58:10.388] [INFO] [WebServer] GET /api/status (450)
+[20:58:10.583] [INFO] [WebServer] GET /api/status (451)
+[20:58:10.584] [INFO] [WebServer] GET /api/health (452)
+[20:58:10.787] [INFO] [HardwareMotorController] TX control motor=1 arb=0x02050081 setpoint=+0.000 data=00 00 00 00 00 00 00 00

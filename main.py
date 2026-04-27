@@ -111,9 +111,9 @@ class WaveCan:
         Background task: Update motor physics at ~100Hz
         Runs periodically to advance motor state
         """
-        update_interval_ms = 5  # 5ms keeps SPARK MAX 24.x command refresh continuous
+        update_interval_ms = 5  # Match the fast control cadence REV allows for native CAN send threads
         last_telemetry_ms = 0
-        telemetry_interval_ms = 100  # Broadcast telemetry every 100ms
+        telemetry_interval_ms = 10  # Keep encoder telemetry fresher than the previous dashboard-visible lag
 
         while self.web_server.is_running:
             try:

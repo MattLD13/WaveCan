@@ -16,6 +16,7 @@ from rev_sparkmax_protocol import (
     API_CLASS_PERIODIC_STATUS,
     API_INDEX_STATUS_0,
     API_INDEX_STATUS_1,
+    API_INDEX_STATUS_2,
     extract_frc_can_fields,
     make_duty_cycle_setpoint_frame,
     make_enable_frame,
@@ -26,6 +27,7 @@ from rev_sparkmax_protocol import (
     make_trusted_speed_setpoint_frame,
     make_universal_heartbeat_frame,
     make_set_control_type_frame,
+    make_periodic_status_period_frame,
 )
 from wavecan_platform import get_ticks_ms, log
 
@@ -81,10 +83,12 @@ class HardwareMotorProxy:
         self.config = config
         self.motor_id = config.motor_id
         self.current_rpm = 0.0
+        self.current_position = 0.0
         self.target_rpm = 0.0
         self.temperature = 25.0
         self.current_amps = 0.0
         self.output_percent = 0.0
+        self.applied_output_percent = 0.0
         self.enabled = True
         self.last_command_ms = 0
         self.last_status_ms = 0
@@ -96,8 +100,12 @@ class HardwareMotorProxy:
         self.last_rx_status0_data_hex = ""
         self.last_rx_status1_arb_id = ""
         self.last_rx_status1_data_hex = ""
+        self.last_rx_status2_arb_id = ""
+        self.last_rx_status2_data_hex = ""
         self.last_tx_failure_ms = 0
         self.online = True
+        self.telemetry_trusted = False
+        self.telemetry_api_class = None
         self.fault_bits = 0
         self.sticky_fault_bits = 0
         self.fault_names: list[str] = []
@@ -111,6 +119,7 @@ class HardwareMotorProxy:
         self.pid_last_output = 0.0
         self.pid_last_error = 0.0
         self.pid_enabled = False
+        self.pid_allowed = True
         self.telemetry_timeout_ms = 750
 
     def get_state(self) -> dict:
@@ -120,9 +129,11 @@ class HardwareMotorProxy:
             "target_rpm": self.target_rpm,
             "max_rpm": self.config.max_rpm,
             "output_percent": self.output_percent * 100.0,
+            "applied_output_percent": self.applied_output_percent * 100.0,
             "temperature_c": self.temperature,
             "current_amps": self.current_amps,
-            "position_rad": 0.0,
+            "position_rotations": self.current_position,
+            "position_rad": self.current_position * (2.0 * math.pi),
             "voltage": 12.0 * self.output_percent,
             "enabled": self.enabled,
             "last_command_ms": self.last_command_ms,
@@ -130,6 +141,7 @@ class HardwareMotorProxy:
             "control_mode": self.control_mode,
             "pid": {
                 "enabled": self.pid_enabled,
+                "allowed": self.pid_allowed,
                 "target_rpm": self.target_rpm,
                 "error_rpm": self.pid_last_error,
                 "last_output": self.pid_last_output,
@@ -144,12 +156,14 @@ class HardwareMotorProxy:
                 },
             },
             "faults": {
+                "trusted": self.telemetry_trusted,
                 "active_bits": self.fault_bits,
                 "active": self.fault_names,
                 "sticky_bits": self.sticky_fault_bits,
                 "sticky": self.sticky_fault_names,
             },
             "can_debug": {
+                "telemetry_api_class": self.telemetry_api_class,
                 "tx_arb_id": self.last_tx_arb_id,
                 "tx_data_hex": self.last_tx_data_hex,
                 "rx_arb_id": self.last_rx_arb_id,
@@ -158,6 +172,8 @@ class HardwareMotorProxy:
                 "rx_status0_data_hex": self.last_rx_status0_data_hex,
                 "rx_status1_arb_id": self.last_rx_status1_arb_id,
                 "rx_status1_data_hex": self.last_rx_status1_data_hex,
+                "rx_status2_arb_id": self.last_rx_status2_arb_id,
+                "rx_status2_data_hex": self.last_rx_status2_data_hex,
             },
         }
 
@@ -165,13 +181,18 @@ class HardwareMotorProxy:
 class HardwareMotorController:
     """Controller facade used by the web server in hardware mode."""
 
+    ALT_PERIODIC_STATUS_CLASS = 0x2E
+    ALT_PERIODIC_STATUS2_CLASS = 0x2F
     COMMAND_EPSILON = 0.001
-    MIN_RESEND_INTERVAL_MS = 5
+    MIN_RESEND_INTERVAL_MS = 50
+    COMMAND_REFRESH_INTERVAL_MS = 5
     ENABLE_RESEND_INTERVAL_MS = 100
     CONTROL_TYPE_RESEND_INTERVAL_MS = 250
-    HEARTBEAT_RESEND_INTERVAL_MS = 5
-    TX_FAILURE_BACKOFF_MS = 5000
-    TX_FAILURES_BEFORE_BACKOFF = 3
+    HEARTBEAT_RESEND_INTERVAL_MS = 20
+    STATUS_PERIOD_REFRESH_INTERVAL_MS = 3000
+    TX_FAILURE_BACKOFF_MS = 0
+    TX_FAILURES_BEFORE_BACKOFF = 999999
+    IDLE_ZERO_SKIP_AFTER_MS = 250
 
     def __init__(self, can_bus, motor_ids):
         self.can_bus = can_bus
@@ -183,6 +204,7 @@ class HardwareMotorController:
         self._last_command: Dict[int, tuple[float, int]] = {}
         self._last_enable_ms: Dict[int, int] = {}
         self._last_control_type_ms: Dict[int, int] = {}
+        self._last_status_period_request_ms: Dict[int, int] = {}
         self._last_heartbeat_ms = 0
         self._last_tx_debug_ms = 0
         self._tx_failure_count = 0
@@ -218,6 +240,25 @@ class HardwareMotorController:
         # The working 24.x command path does not require a separate control-type frame.
         self._last_control_type_ms[motor_id] = now_ms
         return True
+
+    def _request_status_frames_if_due(self, motor_id: int, now_ms: int, force: bool = False) -> bool:
+        last_ms = self._last_status_period_request_ms.get(motor_id, 0)
+        if not force and (now_ms - last_ms) < self.STATUS_PERIOD_REFRESH_INTERVAL_MS:
+            return True
+
+        requested_any = False
+        # Request only the periodic status groups we actively decode so the
+        # periodic refresh does not add unnecessary CAN bursts during manual-duty runs.
+        for status_index, period_ms in ((0, 10), (1, 10), (2, 10)):
+            msg = make_periodic_status_period_frame(motor_id, status_index, period_ms)
+            requested_any = True
+            if not self.can_bus.send(msg):
+                return False
+
+        if requested_any:
+            self._last_status_period_request_ms[motor_id] = now_ms
+        return True
+
     def _send_output_setpoint(self, motor_id: int, value: float, now_ms: int):
         duty_msg = make_duty_cycle_setpoint_frame(motor_id, value, no_ack=True)
 
@@ -251,19 +292,11 @@ class HardwareMotorController:
         return [m.get_state() for m in self.motors.values()]
 
     def _should_attempt_tx(self, now_ms: int) -> bool:
-        return now_ms >= self._tx_backoff_until_ms
+        return True
 
     def _record_tx_failure(self, motor: HardwareMotorProxy, motor_id: int, now_ms: int) -> None:
         motor.online = False
         motor.last_tx_failure_ms = now_ms
-        self._tx_failure_count += 1
-        if self._tx_failure_count >= self.TX_FAILURES_BEFORE_BACKOFF:
-            self._tx_backoff_until_ms = now_ms + self.TX_FAILURE_BACKOFF_MS
-            log(
-                f"[HardwareMotorController] CAN bus transmit failures detected; pausing TX for {self.TX_FAILURE_BACKOFF_MS}ms",
-                "WARN",
-            )
-            self._tx_failure_count = 0
         log(f"[HardwareMotorController] CAN send failed motor={motor_id}", "WARN")
 
     def _record_tx_success(self, motor: HardwareMotorProxy, motor_id: int, msg, now_ms: int) -> None:
@@ -295,6 +328,17 @@ class HardwareMotorController:
                     f"motor={motor_id} arb=0x{msg.arbitration_id:08X} setpoint={setpoint:+.3f} data={motor.last_tx_data_hex}",
                 )
 
+    def _clear_reported_faults(self, motor: HardwareMotorProxy) -> None:
+        # The current REV status-frame maps available on this platform are good
+        # enough for command/telemetry transport, but not reliable enough to
+        # treat fault bits as user-facing truth. Keep the dashboard quiet until
+        # we have a verified fault decoder for the attached firmware.
+        motor.telemetry_trusted = False
+        motor.fault_bits = 0
+        motor.sticky_fault_bits = 0
+        motor.fault_names = []
+        motor.sticky_fault_names = []
+
     def _decode_status_message(self, message) -> None:
         fields = extract_frc_can_fields(message.arbitration_id)
         if fields["device_type"] != 2 or fields["manufacturer"] != 5:
@@ -306,29 +350,82 @@ class HardwareMotorController:
         if motor is None:
             return
 
-        if api_class not in (API_CLASS_STATUS, API_CLASS_PERIODIC_STATUS):
+        is_periodic_status = api_class == API_CLASS_PERIODIC_STATUS
+        is_alt_periodic_status = api_class == self.ALT_PERIODIC_STATUS_CLASS
+        is_alt_periodic_status2 = api_class == self.ALT_PERIODIC_STATUS2_CLASS
+        if (
+            api_class != API_CLASS_STATUS
+            and not is_periodic_status
+            and not is_alt_periodic_status
+            and not is_alt_periodic_status2
+        ):
             return
 
         motor.last_status_ms = get_ticks_ms()
+        motor.telemetry_api_class = api_class
         arb_id_hex = f"0x{message.arbitration_id:08X}"
         data = bytes(message.data)
         data_hex = _format_can_bytes(data)
         motor.last_rx_arb_id = arb_id_hex
         motor.last_rx_data_hex = data_hex
 
+        # Firmware 25.x+/REVLib 2026 remaps periodic telemetry into alternate
+        # API families. Official REVLib docs indicate that:
+        # - PeriodicStatus1 is warnings/fault-oriented, not velocity
+        # - PeriodicStatus2 carries primary encoder velocity/position
+        #
+        # Until the exact bit-level map is fully validated for every frame, keep
+        # warning/fault interpretation suppressed and only decode velocity from
+        # the dedicated encoder-status frame.
+        if is_alt_periodic_status:
+            self._clear_reported_faults(motor)
+            if api_index == 0:
+                motor.last_rx_status0_arb_id = arb_id_hex
+                motor.last_rx_status0_data_hex = data_hex
+                if len(data) >= 2:
+                    duty_raw = struct.unpack("<h", data[:2])[0]
+                    motor.applied_output_percent = max(-1.0, min(1.0, duty_raw / 32768.0))
+                if len(data) >= 5:
+                    motor.temperature = float(data[4])
+            elif api_index == 1:
+                motor.last_rx_status1_arb_id = arb_id_hex
+                motor.last_rx_status1_data_hex = data_hex
+            elif api_index == API_INDEX_STATUS_2:
+                motor.last_rx_status2_arb_id = arb_id_hex
+                motor.last_rx_status2_data_hex = data_hex
+                if len(data) >= 8:
+                    candidate_rpm = struct.unpack("<f", data[:4])[0]
+                    candidate_position = struct.unpack("<f", data[4:8])[0]
+                    if math.isfinite(candidate_rpm) and abs(candidate_rpm) <= 200000.0:
+                        motor.current_rpm = candidate_rpm
+                    if math.isfinite(candidate_position) and abs(candidate_position) <= 1.0e9:
+                        motor.current_position = candidate_position
+            return
+
+        # Some newer firmwares emit the encoder-status frame on the next
+        # periodic class family. Capture it as the velocity candidate if it
+        # appears there.
+        if is_alt_periodic_status2 and api_index == 0:
+            self._clear_reported_faults(motor)
+            motor.last_rx_status2_arb_id = arb_id_hex
+            motor.last_rx_status2_data_hex = data_hex
+            if len(data) >= 8:
+                candidate_rpm = struct.unpack("<f", data[:4])[0]
+                if math.isfinite(candidate_rpm):
+                    motor.current_rpm = candidate_rpm
+            return
+
         # Firmware 24.x periodic status decoding, matching known-good Linux Spark CAN implementations.
-        if api_class == API_CLASS_PERIODIC_STATUS and api_index == 0 and len(data) >= 8:
+        if is_periodic_status and api_index == 0 and len(data) >= 8:
+            self._clear_reported_faults(motor)
             duty_raw = struct.unpack("<h", data[:2])[0]
-            motor.output_percent = max(-1.0, min(1.0, duty_raw / 32768.0))
-            motor.fault_bits = struct.unpack("<H", data[2:4])[0]
-            motor.sticky_fault_bits = struct.unpack("<H", data[4:6])[0]
-            motor.fault_names = _decode_fault_names(motor.fault_bits)
-            motor.sticky_fault_names = _decode_fault_names(motor.sticky_fault_bits)
+            motor.applied_output_percent = max(-1.0, min(1.0, duty_raw / 32768.0))
             motor.last_rx_status0_arb_id = arb_id_hex
             motor.last_rx_status0_data_hex = data_hex
             return
 
-        if api_class == API_CLASS_PERIODIC_STATUS and api_index == 1 and len(data) >= 8:
+        if is_periodic_status and api_index == 1 and len(data) >= 8:
+            self._clear_reported_faults(motor)
             motor.current_rpm = struct.unpack("<f", data[:4])[0]
             motor.temperature = float(data[4])
             motor.voltage = struct.unpack("<H", data[5:7])[0] / 128.0
@@ -341,7 +438,7 @@ class HardwareMotorController:
         if api_index == API_INDEX_STATUS_0 and len(data) >= 4:
             applied_output = struct.unpack("<f", data[:4])[0]
             if math.isfinite(applied_output):
-                motor.output_percent = max(-1.0, min(1.0, applied_output))
+                motor.applied_output_percent = max(-1.0, min(1.0, applied_output))
             motor.last_rx_status0_arb_id = arb_id_hex
             motor.last_rx_status0_data_hex = data_hex
         elif api_index == API_INDEX_STATUS_1 and len(data) >= 8:
@@ -356,7 +453,7 @@ class HardwareMotorController:
             )
 
             if looks_like_output_current_pair:
-                motor.output_percent = max(-1.0, min(1.0, value_a))
+                motor.applied_output_percent = max(-1.0, min(1.0, value_a))
                 motor.current_amps = max(0.0, value_b)
             else:
                 if math.isfinite(value_a) and abs(value_a) <= 200000.0:
@@ -371,6 +468,15 @@ class HardwareMotorController:
         motor = self.get_motor(motor_id)
         if not motor:
             raise ValueError(f"Motor {motor_id} not found")
+
+        if "allowed" in kwargs and kwargs["allowed"] is not None:
+            allowed = bool(kwargs["allowed"])
+            motor.pid_allowed = allowed
+            if not allowed:
+                self.stop_pid(motor_id)
+
+        if not motor.pid_allowed:
+            return motor.get_state()["pid"]
 
         cfg = motor.pid_config
         for key in ("kp", "ki", "kd", "kf", "integral_limit", "output_limit"):
@@ -388,6 +494,24 @@ class HardwareMotorController:
         motor = self.get_motor(motor_id)
         if not motor:
             raise ValueError(f"Motor {motor_id} not found")
+        if not motor.pid_allowed:
+            raise ValueError(f"PID control is disabled for motor {motor_id}")
+
+        # Keep velocity-hold ownership exclusive so one tuning session does not
+        # quietly leave another motor driving in the background.
+        for other_id, other_motor in self.motors.items():
+            if other_id == motor_id:
+                continue
+            if other_motor.pid_enabled or other_motor.control_mode == "velocity_pid":
+                other_motor.control_mode = "duty"
+                other_motor.pid_enabled = False
+                other_motor.target_rpm = 0.0
+                other_motor.pid_integral = 0.0
+                other_motor.pid_prev_error = 0.0
+                other_motor.pid_last_error = 0.0
+                other_motor.pid_last_output = 0.0
+                other_motor.output_percent = 0.0
+                self._last_command[other_id] = (0.0, 0)
 
         motor.control_mode = "velocity_pid"
         motor.pid_enabled = True
@@ -413,6 +537,8 @@ class HardwareMotorController:
         motor.pid_prev_error = 0.0
         motor.pid_last_error = 0.0
         motor.pid_last_output = 0.0
+        motor.output_percent = 0.0
+        self._last_command[motor_id] = (0.0, 0)
 
     def _compute_pid_output(self, motor: HardwareMotorProxy, now_ms: int) -> float:
         cfg = motor.pid_config
@@ -513,6 +639,7 @@ class HardwareMotorController:
                 continue
 
             self._send_enable_if_due(motor_id, now_ms)
+            self._request_status_frames_if_due(motor_id, now_ms)
 
             if not motor.online and motor.last_tx_failure_ms and (now_ms - motor.last_tx_failure_ms) < self.TX_FAILURE_BACKOFF_MS:
                 continue
@@ -521,20 +648,27 @@ class HardwareMotorController:
                 motor.output_percent = self._compute_pid_output(motor, now_ms)
 
             last_value, last_sent_ms = self._last_command.get(motor_id, (motor.output_percent, 0))
-            if (now_ms - last_sent_ms) < 5:
+            if (now_ms - last_sent_ms) < self.COMMAND_REFRESH_INTERVAL_MS:
                 continue
 
-            command_value = motor.output_percent if motor.control_mode == "velocity_pid" else last_value
+            command_value = motor.output_percent
+            if (
+                motor.control_mode != "velocity_pid"
+                and abs(command_value) <= self.COMMAND_EPSILON
+                and (now_ms - last_sent_ms) >= self.IDLE_ZERO_SKIP_AFTER_MS
+            ):
+                continue
+
             ok, msg = self._send_output_setpoint(motor_id, command_value, now_ms)
             if ok:
                 motor.output_percent = command_value
                 self._record_tx_success(motor, motor_id, msg, now_ms)
             else:
                 self._record_tx_failure(motor, motor_id, now_ms)
-                break
+                continue
 
     def broadcast_telemetry(self) -> None:
-        for _ in range(16):
+        for _ in range(64):
             msg = self.can_bus.recv(timeout_ms=0)
             if msg is None:
                 break
@@ -547,6 +681,7 @@ class HardwareMotorController:
             motor.enabled = True
             self._send_control_type_if_due(motor.motor_id, now_ms, force=True)
             self._send_enable_if_due(motor.motor_id, now_ms, force=True)
+            self._request_status_frames_if_due(motor.motor_id, now_ms, force=True)
 
     def disable_all(self, send_can: bool = False) -> None:
         for motor_id in list(self.motors.keys()):

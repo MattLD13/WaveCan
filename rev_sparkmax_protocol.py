@@ -42,6 +42,9 @@ API_INDEX_TRUSTED_SET_SETPOINT_NO_ACK = 10
 API_INDEX_SET_SETPOINT_NO_ACK = 11
 API_INDEX_STATUS_0 = 0
 API_INDEX_STATUS_1 = 1
+API_INDEX_STATUS_2 = 2
+API_INDEX_STATUS_3 = 3
+API_INDEX_STATUS_4 = 4
 
 
 def extract_frc_can_fields(arbitration_id: int) -> dict:
@@ -156,7 +159,6 @@ def make_set_control_type_frame(device_id: int, control_type: int) -> CANMessage
     data = struct.pack("<B", control_type)
     return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
 
-
 def make_status_0_frame(device_id: int, rpm: float, temperature_c: float, voltage_v: float) -> CANMessage:
     """Build a Spark MAX status-0 telemetry frame."""
     arbitration_id = build_arbitration_id(
@@ -251,4 +253,25 @@ def make_universal_heartbeat_frame(enabled: bool = True, watchdog: bool = True) 
         api_index=2,
     )
     data = (b"\xFF" * 8) if enabled else (b"\x00" * 8)
+    return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
+
+
+def make_periodic_status_period_frame(device_id: int, status_index: int, period_ms: int) -> CANMessage:
+    """
+    Request a SPARK periodic status frame at a specific period.
+
+    REVLib 2026 documents that encoder velocity/position live in higher periodic
+    frames and may remain disabled until explicitly requested. The wire command
+    is still addressed through the periodic status API family with a uint16
+    period payload in milliseconds.
+    """
+    if not (0 <= status_index <= 9):
+        raise ValueError("status_index must be in [0, 9]")
+    arbitration_id = build_arbitration_id(
+        device_id=device_id,
+        api_class=API_CLASS_PERIODIC_STATUS,
+        api_index=status_index,
+    )
+    clamped_period_ms = max(1, min(65535, int(period_ms)))
+    data = struct.pack("<H", clamped_period_ms)
     return CANMessage(arbitration_id=arbitration_id, data=data, is_extended_id=True)
