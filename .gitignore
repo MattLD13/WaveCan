@@ -21,6 +21,7 @@ wheels/
 *.egg
 
 # Virtual environments
+.venv/
 venv/
 ENV/
 env/
@@ -43,3 +44,29 @@ Thumbs.db
 # Project-specific
 *.mpy
 *.uf2
+
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+secrets*.json
+auth.json
+.claude/settings.local.json
+
+# Runtime data
+*.log
+*.pid
+*.db
+*.sqlite
+*.sqlite-*
+
+# Backups
+*.bak
+*.backup
+*.old
+*~

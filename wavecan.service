@@ -1,0 +1,20 @@
+[Unit]
+Description=WaveCan Motor Control Platform
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/WaveCan
+Environment="WAVECAN_RUNTIME_MODE=mock"
+Environment="WAVECAN_HTTP_HOST=0.0.0.0"
+Environment="WAVECAN_HTTP_PORT=8080"
+ExecStart=/usr/bin/python3 /home/pi/WaveCan/main.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -11,6 +11,7 @@ from wavecan_platform import get_platform_info, get_can_bus_class, get_ticks_ms,
 from mock_sparkmax import MockMotorController, MockSPARKMAXConfig
 from hardware_motor_controller import HardwareMotorController
 from web_server import WebServer
+from network_manager import ensure_network_available
 from config import (
     CAN_BITRATE,
     CAN_INTERFACE,
@@ -159,6 +160,9 @@ class WaveCan:
 
 async def main():
     """Main async entry point"""
+    # Ensure network is available (WiFi or LUSI hotspot)
+    ensure_network_available()
+
     app = WaveCan()
     await app.run()
 
