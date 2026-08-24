@@ -32,10 +32,12 @@ def is_can_interface_available(interface: str = "can1") -> bool:
 
 # Motor Configuration
 MOTORS = {
-    1: {"name": "Motor 1", "max_rpm": 5700, "inertia": 0.001},
-    2: {"name": "Motor 2", "max_rpm": 5700, "inertia": 0.001},
-    3: {"name": "Motor 3", "max_rpm": 5700, "inertia": 0.001},
-    4: {"name": "Motor 4", "max_rpm": 5700, "inertia": 0.001},
+    1: {"name": "Motor 1 (Drive L)", "max_rpm": 5700, "inertia": 0.001},
+    2: {"name": "Motor 2 (Drive R)", "max_rpm": 5700, "inertia": 0.001},
+    3: {"name": "Motor 3 (AUX)", "max_rpm": 5700, "inertia": 0.001},
+    4: {"name": "Motor 4 (AUX)", "max_rpm": 5700, "inertia": 0.001},
+    5: {"name": "Steer Front Left", "max_rpm": 5700, "inertia": 0.001},
+    6: {"name": "Steer Front Right", "max_rpm": 5700, "inertia": 0.001},
 }
 
 # CAN Configuration
@@ -75,7 +77,7 @@ else:
         RUNTIME_MODE = "mock"  # Use mock hardware on Windows/macOS
 
 # Motor IDs to expose in web UI/controller
-MOTOR_IDS = [1, 2, 3, 4]
+MOTOR_IDS = [1, 2, 3, 4, 5, 6]
 
 # Telemetry Configuration
 TELEMETRY_UPDATE_MS = 100  # Update every 100ms

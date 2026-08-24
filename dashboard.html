@@ -140,9 +140,11 @@ canvas#roverCanvas {
 .role-menu-btn.open {
   box-shadow: 0 0 0 1px rgba(88,166,255,0.3);
 }
-.role-menu-btn.L  { border-color: var(--accent); color: var(--accent); background: #131c2e; }
-.role-menu-btn.R  { border-color: var(--red); color: var(--red); background: #1e1013; }
-.role-menu-btn.AUX{ border-color: var(--yellow); color: var(--yellow); background: #1e1a0e; }
+.role-menu-btn.L   { border-color: var(--accent); color: var(--accent); background: #131c2e; }
+.role-menu-btn.R   { border-color: var(--red); color: var(--red); background: #1e1013; }
+.role-menu-btn.AUX { border-color: var(--yellow); color: var(--yellow); background: #1e1a0e; }
+.role-menu-btn.FL  { border-color: #7c8cff; color: #7c8cff; background: #12143f; }
+.role-menu-btn.FR  { border-color: #ff9b7c; color: #ff9b7c; background: #3f1812; }
 .role-menu-list {
   position: absolute;
   left: 0;
@@ -795,6 +797,31 @@ canvas#rpmChart { display: block; }
       </div>
     </div>
 
+    <!-- Steering Control -->
+    <div class="card" data-collapse-id="steer-control">
+      <div class="card-head"><span class="card-title">Steering Control</span></div>
+      <div class="card-body">
+        <div style="margin-bottom:12px">
+          <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--muted)">Front Left Steer</label>
+          <div class="spd-row">
+            <div class="spd-num zero" id="steerLeftDisplay">0%</div>
+            <input type="range" id="steerLeftSlider" min="-100" max="100" value="0" step="1" oninput="onSteerLeftSlider(this.value)">
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--muted)">Front Right Steer</label>
+          <div class="spd-row">
+            <div class="spd-num zero" id="steerRightDisplay">0%</div>
+            <input type="range" id="steerRightSlider" min="-100" max="100" value="0" step="1" oninput="onSteerRightSlider(this.value)">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="applySteerPreset(0)">Center All</button>
+          <button class="btn btn-ghost" onclick="resetSteeringInputs()">Reset</button>
+        </div>
+      </div>
+    </div>
+
     <div class="card" data-collapse-id="can-telemetry">
       <div class="card-head"><span class="card-title">CAN Telemetry</span></div>
       <div class="card-body">
@@ -1080,6 +1107,7 @@ const S = {
   manualPct: 0,
   manualRpm: 1000,
   leftCmd: 0, rightCmd: 0,  // last commanded wheel speeds (-1..1)
+  steerLeftCmd: 0, steerRightCmd: 0,  // last commanded steer angles (-1..1)
   driveNet: {
     inFlight: false,
     lastById: {},
@@ -1166,7 +1194,7 @@ const S = {
 };
 
 const COLORS = ['#58a6ff','#3fb950','#f0883e','#bc8cff','#ff7b72','#79c0ff','#ffa198','#56d364'];
-const ROLES  = [null, 'L', 'R', 'AUX'];
+const ROLES  = [null, 'L', 'R', 'AUX', 'FL', 'FR'];
 const COLLAPSE_KEY = 'wavecan.dashboard.collapse.v1';
 const CENTER_ORDER_KEY = 'wavecan.dashboard.centerOrder.v1';
 
@@ -1546,8 +1574,10 @@ function renderMotors() {
             <button type="button" class="role-menu-btn${role ? ' ' + role : ''}${S.roleMenuOpen[id] ? ' open' : ''}" data-motor-action="toggle-role-menu" data-motor-id="${id}">${role || 'None'}</button>
             <div class="role-menu-list">
               <button type="button" class="role-menu-option${role === null ? ' active' : ''}" data-motor-action="set-role" data-motor-id="${id}" data-role-value="">None</button>
-              <button type="button" class="role-menu-option${role === 'L' ? ' active' : ''}" data-motor-action="set-role" data-motor-id="${id}" data-role-value="L">L</button>
-              <button type="button" class="role-menu-option${role === 'R' ? ' active' : ''}" data-motor-action="set-role" data-motor-id="${id}" data-role-value="R">R</button>
+              <button type="button" class="role-menu-option${role === 'L' ? ' active' : ''}" data-motor-action="set-role" data-motor-id="${id}" data-role-value="L">L (Drive Left)</button>
+              <button type="button" class="role-menu-option${role === 'R' ? ' active' : ''}" data-motor-action="set-role" data-motor-id="${id}" data-role-value="R">R (Drive Right)</button>
+              <button type="button" class="role-menu-option${role === 'FL' ? ' active' : ''}" data-motor-action="set-role" data-motor-id="${id}" data-role-value="FL">FL (Steer Left)</button>
+              <button type="button" class="role-menu-option${role === 'FR' ? ' active' : ''}" data-motor-action="set-role" data-motor-id="${id}" data-role-value="FR">FR (Steer Right)</button>
               <button type="button" class="role-menu-option${role === 'AUX' ? ' active' : ''}" data-motor-action="set-role" data-motor-id="${id}" data-role-value="AUX">AUX</button>
             </div>
           </div>
@@ -3452,6 +3482,37 @@ function updateManualButton() {
     btn.classList.remove('btn-danger');
   }
 }
+
+//  Steering Control Functions
+function onSteerLeftSlider(v) {
+  const raw = Number(v);
+  S.steerLeftCmd = raw / 100;
+  const display = document.getElementById('steerLeftDisplay');
+  if (display) display.textContent = Math.round(raw) + '%';
+  driveSendTick();
+}
+
+function onSteerRightSlider(v) {
+  const raw = Number(v);
+  S.steerRightCmd = raw / 100;
+  const display = document.getElementById('steerRightDisplay');
+  if (display) display.textContent = Math.round(raw) + '%';
+  driveSendTick();
+}
+
+function applySteerPreset(angle) {
+  const sl = document.getElementById('steerLeftSlider');
+  const sr = document.getElementById('steerRightSlider');
+  if (sl) sl.value = angle;
+  if (sr) sr.value = angle;
+  onSteerLeftSlider(angle);
+  onSteerRightSlider(angle);
+}
+
+function resetSteeringInputs() {
+  applySteerPreset(0);
+}
+
 async function emergencyStop() {
   if (S.eStop.stopping) return;
   S.eStop.active = true;
@@ -3496,14 +3557,18 @@ async function driveSendTick() {
   if (S.driveNet.inFlight) return;
 
   const ids = sortedIds();
-  const leftIds  = ids.filter(id => S.roles[id] === 'L');
-  const rightIds = ids.filter(id => S.roles[id] === 'R');
-  if (!leftIds.length && !rightIds.length) return;
+  const leftIds   = ids.filter(id => S.roles[id] === 'L');
+  const rightIds  = ids.filter(id => S.roles[id] === 'R');
+  const flIds     = ids.filter(id => S.roles[id] === 'FL');
+  const frIds     = ids.filter(id => S.roles[id] === 'FR');
+  if (!leftIds.length && !rightIds.length && !flIds.length && !frIds.length) return;
 
   const now = Date.now();
   const updates = [];
   leftIds.forEach(id => updates.push([id, S.leftCmd]));
   rightIds.forEach(id => updates.push([id, S.rightCmd]));
+  flIds.forEach(id => updates.push([id, S.steerLeftCmd]));
+  frIds.forEach(id => updates.push([id, S.steerRightCmd]));
 
   const toSend = updates.filter(([id, value]) => {
     const last = S.driveNet.lastById[id];

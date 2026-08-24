@@ -1,0 +1,30 @@
+[Unit]
+Description=WaveCan Bluetooth LE motor controller
+After=bluetooth.service setup-can.service
+Requires=bluetooth.service
+Wants=setup-can.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/pi/WaveCan
+Environment="PYTHONUNBUFFERED=1"
+Environment="WAVECAN_RUNTIME_MODE=socketcan"
+Environment="WAVECAN_CAN_INTERFACE=can1"
+Environment="WAVECAN_CAN_BITRATE=1000000"
+Environment="WAVECAN_BLE_NAME=WaveCan"
+Environment="WAVECAN_BLE_WATCHDOG_MS=600"
+ExecStartPre=/usr/sbin/rfkill unblock bluetooth
+ExecStart=/usr/bin/python3 -u /home/pi/WaveCan/bluetooth_bridge.py
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictRealtime=true
+
+[Install]
+WantedBy=multi-user.target

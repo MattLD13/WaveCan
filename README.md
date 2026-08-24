@@ -1,301 +1,138 @@
-# WaveCan - SPARK MAX Motor Control Platform
+# WaveCan
 
-A comprehensive multi-motor control platform for Raspberry Pi RP2350 with full SPARK MAX CAN protocol support, web-based interface, and PID autotune capabilities.
+WaveCan is a Raspberry Pi motor-control service for REV Robotics SPARK MAX controllers on a SocketCAN bus. It provides a browser dashboard, a JSON HTTP API, automatic motor discovery, direct output control, software velocity PID, telemetry decoding, and a mock simulator for development without hardware.
 
-## Project Status
+It also includes a Windows desktop controller that communicates directly with the Pi over paired Bluetooth Low Energy, allowing the laptop to keep its normal Wi-Fi connection. See [Bluetooth controller](docs/BLUETOOTH.md).
 
-**Phase 0: Simulation & Testing - COMPLETE ✅**
+The recovered deployment targets a Raspberry Pi 4 Model B with a Waveshare dual-MCP2515 CAN HAT. `can1` is the active interface at 1 Mbit/s.
 
-All core simulation components are complete and tested:
-- ✅ Mock CAN bus with message routing (100% functional)
-- ✅ Mock SPARK MAX motors with realistic physics simulation (100% functional)
-- ✅ Async HTTP web server with REST API (100% functional)
-- ✅ Platform abstraction layer for desktop/RP2350 compatibility
-- ✅ 16 unit tests - all passing
-- ✅ Ready for web dashboard integration and Phase 1 hardware testing
+> [!CAUTION]
+> The HTTP server has no authentication or authorization. In its default configuration it listens on `0.0.0.0:8080` and exposes motor-control, CAN-control, and Wi-Fi connection endpoints. Run it only on a trusted, isolated network until access control is added.
 
-**Planned: Phase 1 - Core Hardware (When RP2350 arrives)**
-- Real CAN driver for XL2515 controller
-- Real SPARK MAX CAN protocol encoder/decoder
-- USB Ethernet configuration for desktop connectivity
-- Hardware telemetry integration
+## How it works
 
-## Quick Start (Desktop Testing)
-
-### 1. Install Dependencies
-```bash
-pip install -r requirements-dev.txt
+```mermaid
+flowchart LR
+    Browser[Browser dashboard] -->|HTTP/JSON| Web[web_server.py]
+    Web --> Controller{Runtime mode}
+    Controller -->|mock| Mock[MockMotorController]
+    Controller -->|socketcan| Hardware[HardwareMotorController]
+    Hardware --> Protocol[REV frame encoder/decoder]
+    Protocol --> SocketCAN[python-can / can1]
+    SocketCAN --> MCP[MCP2515 CAN controller]
+    MCP <--> Motors[SPARK MAX motors]
+    Motors -->|status frames| MCP
+    Mock --> Sim[Motor physics simulator]
 ```
 
-### 2. Run Tests
-```bash
-pytest tests/ -v
-```
-All 16 tests should pass, confirming core logic is working.
+`main.py` selects mock or hardware mode, discovers/configures motors, creates the controller and web server, enables the motors, and runs the HTTP server alongside a 5 ms controller loop. Hardware telemetry is decoded and exposed through `/api/status`; dashboard commands travel in the opposite direction and become 29-bit REV/FRC CAN frames.
 
-### 3. Start the Simulation Server (Coming Soon)
-```bash
-python main.py
-```
-Then open browser to `http://localhost:8080` to control mock motors.
+See [Architecture](docs/ARCHITECTURE.md) for the full startup sequence, component responsibilities, CAN data flow, and operational caveats.
 
-## Raspberry Pi 4B + Waveshare 2-CH CAN HAT
+## Quick start: simulation
 
-### 1. Install dependencies
+Requires Python 3.10 or newer.
+
 ```bash
-python3 -m pip install -r requirements-dev.txt
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-dev.txt
+WAVECAN_RUNTIME_MODE=mock python main.py
 ```
 
-### 2. Configure SocketCAN
-Use your Waveshare HAT instructions to bring up CAN. For a typical `can1` bring-up:
-```bash
-sudo ip link set can1 down
-sudo ip link set can1 type can bitrate 500000
-sudo ip link set can1 up
-ip -details link show can1
-```
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`, then set `$env:PYTHONUTF8 = "1"` and `$env:WAVECAN_RUNTIME_MODE = "mock"` before running `python main.py`.
 
-### 3. Run WaveCan in hardware mode
+Open `http://127.0.0.1:8080`.
+
+## Raspberry Pi hardware mode
+
+Install the Python dependency and bring up `can1`:
+
 ```bash
+python3 -m pip install --user python-can
+sudo cp systemd/setup-can.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now setup-can.service
+
 export WAVECAN_RUNTIME_MODE=socketcan
 export WAVECAN_CAN_INTERFACE=can1
+export WAVECAN_CAN_BITRATE=1000000
 export WAVECAN_HTTP_HOST=0.0.0.0
 python3 main.py
 ```
 
-The dashboard will be reachable at `http://<pi-ip>:8080`.
+The included `wavecan.service` is a template and currently forces `mock` mode. Change that environment setting to `socketcan` before installing it for real motors. More installation details are in [INSTALL.md](INSTALL.md).
 
-### 4. Host over built-in Wi-Fi (AP mode)
-Configure `hostapd` + `dnsmasq` on `wlan0` so client devices can join directly.
-Typical static AP subnet: `192.168.4.1/24`, then browse `http://192.168.4.1:8080`.
+For Bluetooth control instead of the browser/hotspot workflow:
 
-### Important protocol note
-Hardware mode now uses REV-style framing with the FRC 29-bit CAN arbitration ID layout
-(device type + manufacturer + API class/index + device ID) and transmits extended-ID
-setpoint frames from the dashboard command path.
-
-Current hardware mode primarily implements outgoing control frames; full status/config
-decode coverage is still an ongoing follow-up item.
-
-## Architecture Overview
-
-### Platform Abstraction
-The project uses a **platform abstraction layer** (`wavecan_platform.py`) that automatically detects whether code is running on:
-- **Desktop (Python 3.10+)** - Uses mock CAN bus and mock motors for testing
-- **RP2350 (MicroPython)** - Uses real CAN driver and real motors
-
-This allows **identical code** to run on both platforms.
-
-### Core Components
-
-#### 1. **Mock CAN Bus** (`mock_can.py`)
-- Simulates CAN message transport
-- Message queuing and routing
-- Listener subscriptions for specific CAN IDs
-- Deterministic for unit testing
-
-#### 2. **Mock SPARK MAX Motors** (`mock_sparkmax.py`)
-- Realistic physics simulation:
-  - Acceleration/deceleration curves
-  - Velocity control (closed-loop ramping)
-  - Voltage control mode
-  - Temperature rise under load
-  - Current draw based on load
-- Status message broadcast (CAN)
-- Independent motor control
-
-#### 3. **Motor Controller** (`mock_sparkmax.py`)
-- Multi-motor management (3-8 motors)
-- Group control operations
-- Telemetry collection
-- State tracking (rpm, temperature, current, etc.)
-
-#### 4. **Web Server** (`web_server.py`)
-- Async HTTP server (asyncio-based)
-- REST API endpoints:
-  - `GET /` - Dashboard UI
-  - `GET /api/status` - Motor telemetry (JSON)
-  - `POST /api/motor/cmd` - Send motor commands
-  - `GET /api/motors` - List available motors
-  - `GET /api/health` - Server health check
-- Compatible with both Python and MicroPython
-
-#### 5. **Configuration** (`config.py`)
-- Motor definitions and parameters
-- CAN bus settings
-- HTTP server config
-- Simulation parameters
-
-## CAN Protocol Implementation
-
-### REV / FRC Extended-ID Scheme (hardware mode)
-Hardware mode uses the FRC CAN bit layout used by REV devices:
-
-```
-29-bit arbitration ID
-  [device type:5][manufacturer:8][api id:10][device id:6]
-
-Where:
-  manufacturer (REV Robotics) = 5
-  device type (Motor Controller) = 2
-  api id = (api_class << 4) | api_index
-```
-
-For open-loop output commands, hardware mode sends Voltage Control + Set Setpoint No Ack
-frames with float32 little-endian setpoint payload in [-1.0, 1.0].
-
-### CAN ID Scheme (Mock Simulator)
-```
-Base ID = 0x100 + (motor_id * 0x10)
-
-For Motor N:
-  - Velocity Command:   base_id + 0x02
-  - Voltage Command:    base_id + 0x04
-  - Status Message 0:   base_id + 0x00
-  - Status Message 1:   base_id + 0x01
-```
-
-Example for Motor 1 (base_id = 0x110):
-- Velocity: 0x112
-- Voltage: 0x114
-- Status: 0x110, 0x111
-
-This spacing avoids CAN ID collisions when managing 3-8 motors.
-
-### Real SPARK MAX Protocol (Phase 1)
-Once hardware arrives, the system will implement the actual REV Robotics SPARK MAX protocol:
-- Proper CAN message formats
-- Extended status messages
-- Configuration commands
-- Full REV Robotics compatibility
-
-## Testing
-
-### Unit Tests (16 passing)
 ```bash
-pytest tests/test_motor_controller.py -v
+bash setup_bluetooth.sh
 ```
 
-Tests cover:
-- Motor physics simulation accuracy
-- Multi-motor coordination
-- CAN message handling
-- Telemetry collection
-- Controller logic
+Then build or run the controller in `windows_app/`. The Bluetooth bridge has an independent 600 ms command watchdog that stops and disarms every motor after a lost connection.
 
-### Manual Testing
-- Mock motor commands via CAN messages
-- Physics verification (acceleration, velocity)
-- Telemetry broadcast correctness
-- Multi-motor independence
+## HTTP API
 
-## File Structure
-```
-wavecan/
-├── main.py                 # Entry point
-├── config.py              # Configuration
-├── wavecan_platform.py    # Platform abstraction layer
-│
-├── mock_can.py            # Mock CAN bus implementation
-├── mock_sparkmax.py       # Mock motor controllers
-│
-├── web_server.py          # HTTP server
-│
-├── tests/
-│   ├── conftest.py        # Test fixtures
-│   └── test_motor_controller.py  # Unit tests (16 tests)
-│
-├── requirements-dev.txt   # Python dev dependencies
-├── requirements.txt       # MicroPython dependencies
-└── README.md
-```
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /` or `/dashboard` | Serve the embedded dashboard |
+| `GET /api/status` | Motor telemetry, controller capabilities, and CAN statistics |
+| `GET /api/motors` | List configured/discovered motors |
+| `GET /api/health` | Process uptime and CAN health |
+| `POST /api/motor/cmd` | Set duty cycle, set target RPM, or stop PID |
+| `POST /api/motor/pid` | Configure software PID gains and limits |
+| `POST /api/can/open` | Open the CAN adapter |
+| `POST /api/can/close` | Close the CAN adapter |
+| `POST /api/network/connect` | Ask NetworkManager to join a Wi-Fi network |
 
-## API Examples
+Example direct-output command:
 
-### Get Motor Status
 ```bash
-curl http://localhost:8080/api/status | jq
-```
-
-Response:
-```json
-{
-  "timestamp_ms": 12345,
-  "motors": [
-    {
-      "motor_id": 1,
-      "rpm": 2850.0,
-      "temperature_c": 28.5,
-      "current_amps": 12.3,
-      "output_percent": 50.0,
-      "voltage": 6.0
-    }
-  ]
-}
-```
-
-### Send Motor Command
-```bash
-curl -X POST http://localhost:8080/api/motor/cmd \
+curl -X POST http://127.0.0.1:8080/api/motor/cmd \
   -H "Content-Type: application/json" \
-  -d '{"id": 1, "cmd": "set", "value": 0.5}'
+  -d '{"id":1,"cmd":"set","value":0.25}'
 ```
 
-## Technology Stack
+`value` is normally `-1.0` to `1.0`; percent-like values from `-100` to `100` are normalized automatically.
 
-- **Language:** Python 3.10+ (Desktop), MicroPython (RP2350)
-- **Async:** asyncio (Python) / uasyncio (MicroPython)
-- **Protocol:** CAN 2.0B via XL2515 (MCP2515 compatible)
-- **Hardware:** Waveshare RP2350-CAN board
-- **Testing:** pytest with custom fixtures
-- **Architecture:** Modular, platform-agnostic design
+## Configuration
 
-## Next Steps (Phase 1)
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `WAVECAN_RUNTIME_MODE` | `socketcan` on Linux, `mock` elsewhere | Controller/backend selection |
+| `WAVECAN_CAN_INTERFACE` | `can1` | Linux SocketCAN interface |
+| `WAVECAN_CAN_BITRATE` | `1000000` | Expected CAN bitrate |
+| `WAVECAN_HTTP_HOST` | `0.0.0.0` | HTTP bind address |
 
-When RP2350 arrives:
-1. Flash MicroPython firmware to device
-2. Configure USB as virtual Ethernet adapter
-3. Port real CAN driver for XL2515
-4. Implement actual SPARK MAX protocol
-5. Integration testing with real motors
-6. Performance optimization and tuning
+The HTTP port is currently fixed at `8080` in `config.py`. Default fallback motor IDs are `1` through `6`; hardware mode first probes IDs `1` through `63` and uses detected devices when possible.
 
-## Development Notes
+## Repository layout
 
-### Circular Import Solution
-The project solved a circular import issue by using **lazy imports** in `wavecan_platform.py`:
-- `get_can_bus_class()` - Returns appropriate CAN driver
-- `get_motor_class()` - Returns appropriate motor driver
-- Prevents `platform.py` from shadowing built-in Python `platform` module
+- `main.py` — application entry point and concurrent control loop
+- `web_server.py` / `dashboard.html` — raw asyncio HTTP server, API, and UI
+- `hardware_motor_controller.py` — hardware state, output refresh, PID, and telemetry decode
+- `socketcan_bus.py` — `python-can` transport, discovery, queues, and statistics
+- `rev_sparkmax_protocol.py` — REV/FRC arbitration IDs and frame builders
+- `mock_can.py` / `mock_sparkmax.py` — deterministic development simulator
+- `network_manager.py` — connectivity check, Wi-Fi join, and hotspot fallback
+- `bluetooth_bridge.py` / `bluetooth_protocol.py` — paired BLE service, motor watchdog, and wire protocol
+- `windows_app/` — Windows Bluetooth controller and executable build script
+- `systemd/` and `wavecan.service` — Pi boot/service templates
+- `tools/` — recovered manual launcher and external sparkcan diagnostic probe
+- `tests/` — protocol, controller, and simulation tests
 
-### Physics Simulation Accuracy
-The mock motor physics use:
-- First-order acceleration model with configurable rates
-- Load-dependent current draw
-- Temperature rise proportional to power dissipation
-- Position integration for encoder simulation
+## Verification status
 
-### Extensibility
-The design allows easy additions:
-- New motor types by subclassing `MockSPARKMAX`
-- Custom CAN message handlers
-- Additional telemetry fields
-- New web API endpoints
+The Pi working tree was recovered on August 23, 2026 after its local Git object database became corrupt. The source files were preserved, scanned for credentials, overlaid on the healthy GitHub history, and documented. See [Recovery notes](docs/RECOVERY.md).
 
-## References
+The recovered suite plus Bluetooth protocol coverage currently reports **24 passing and 10 failing tests** in a clean Python 3.13 environment. Run it with:
 
-- [Raspberry Pi RP2350 Datasheet](https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf)
-- [Waveshare RP2350-CAN Wiki](https://www.waveshare.com/wiki/RP2350-CAN)
-- [REV Robotics SPARK MAX Docs](https://docs.revrobotics.com/)
-- [can2040 Software CAN](https://github.com/KevinOConnor/can2040)
-- [MicroPython Documentation](https://docs.micropython.org/)
+```bash
+python -m pytest -q
+```
 
-## License & Notes
+The remaining failures are recorded in the recovery notes and should be resolved before relying on the software for unattended physical motor control.
 
-This is a hobby robotics project for personal development and testing. Use as a reference or starting point for your own projects.
+## License
 
----
-
-**Status:** Phase 0 Complete  
-**Last Updated:** April 9, 2026  
-**Tests:** 16/16 passing ✅
+No project license has been selected. The separate `sparkcan` library referenced by `tools/sparkcan_ref_probe.cpp` is MIT-licensed and is not vendored here.

@@ -7,6 +7,8 @@ Works on both desktop (Python 3) and RP2350 (MicroPython)
 import asyncio
 import json
 import os
+import urllib.parse
+import network_manager
 from wavecan_platform import log, get_ticks_ms
 
 # Load dashboard HTML from file
@@ -139,6 +141,12 @@ class WebServer:
                 response = await self.handle_dashboard(request)
             elif request.path == '/api/status':
                 response = await self.handle_status(request)
+            elif request.path == '/api/can/open' and request.method == 'POST':
+                response = await self.handle_can_open(request)
+            elif request.path == '/api/can/close' and request.method == 'POST':
+                response = await self.handle_can_close(request)
+            elif request.path == '/api/network/connect' and request.method == 'POST':
+                response = await self.handle_network_connect(request)
             elif request.path == '/api/motor/cmd' and request.method == 'POST':
                 response = await self.handle_motor_command(request)
             elif request.path == '/api/motor/pid' and request.method == 'POST':
@@ -192,8 +200,20 @@ class WebServer:
 </head>
 <body>
     <h1>WaveCan Motor Control Dashboard</h1>
-    <p>Status: <span class="status-ok">Connected</span></p>
+    <p>Status: <span id="netStatus" class="status-ok">Unknown</span></p>
     <div id="motors"></div>
+    <div>
+        <h3>Network</h3>
+        <input id="ssid" placeholder="SSID">
+        <input id="password" placeholder="Password">
+        <button onclick="connectWifi()">Connect WiFi</button>
+        <div id="connectResult"></div>
+    </div>
+    <div>
+        <h3>CAN Bus</h3>
+        <button id="canToggle" onclick="toggleCan()">Toggle CAN</button>
+        <div id="canStatus"></div>
+    </div>
     <div>
         <h3>Quick Control</h3>
         <input type="range" id="speedSlider" min="-100" max="100" value="0">
@@ -225,6 +245,38 @@ class WebServer:
                     motorsDiv.appendChild(card);
                 });
             }
+            // Network status
+            const netStatus = document.getElementById('netStatus');
+            if (data.can_bus && data.runtime_mode) {
+                const canInfo = data.can_bus;
+                document.getElementById('canStatus').textContent = `CAN open=${canInfo.is_open} channel=${canInfo.channel}`;
+            }
+            if (data.runtime_mode) {
+                netStatus.textContent = data.runtime_mode;
+            }
+        }
+
+        function connectWifi() {
+            const ssid = document.getElementById('ssid').value;
+            const password = document.getElementById('password').value;
+            fetch('/api/network/connect', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ssid: ssid, password: password})
+            }).then(r => r.json()).then(res => {
+                document.getElementById('connectResult').textContent = JSON.stringify(res);
+            }).catch(e => document.getElementById('connectResult').textContent = e.toString());
+        }
+
+        function toggleCan() {
+            // Query current status then call open/close
+            fetch('/api/status').then(r => r.json()).then(data => {
+                const isOpen = data.can_bus && data.can_bus.is_open;
+                const url = isOpen ? '/api/can/close' : '/api/can/open';
+                fetch(url, {method: 'POST'}).then(r => r.json()).then(j => {
+                    document.getElementById('canStatus').textContent = JSON.stringify(j);
+                }).catch(e => document.getElementById('canStatus').textContent = e.toString());
+            });
         }
 
         function sendCommand() {
@@ -408,6 +460,53 @@ class WebServer:
             'runtime_mode': self.runtime_mode,
             'can_bus': can_stats,
         })
+
+    async def handle_can_open(self, request: HTTPRequest) -> HTTPResponse:
+        """Open / enable the CAN bus adapter if possible"""
+        try:
+            can_bus = getattr(self.motor_controller, 'can_bus', None)
+            if can_bus is None:
+                return HTTPResponse(400).set_json({'error': 'No CAN bus attached'})
+            try:
+                can_bus.open()
+                return HTTPResponse(200).set_json({'success': True, 'is_open': getattr(can_bus, 'is_open', True)})
+            except Exception as e:
+                return HTTPResponse(500).set_json({'error': str(e)})
+        except Exception as e:
+            return HTTPResponse(500).set_json({'error': str(e)})
+
+    async def handle_can_close(self, request: HTTPRequest) -> HTTPResponse:
+        """Close / disable the CAN bus adapter if possible"""
+        try:
+            can_bus = getattr(self.motor_controller, 'can_bus', None)
+            if can_bus is None:
+                return HTTPResponse(400).set_json({'error': 'No CAN bus attached'})
+            try:
+                can_bus.close()
+                return HTTPResponse(200).set_json({'success': True, 'is_open': getattr(can_bus, 'is_open', False)})
+            except Exception as e:
+                return HTTPResponse(500).set_json({'error': str(e)})
+        except Exception as e:
+            return HTTPResponse(500).set_json({'error': str(e)})
+
+    async def handle_network_connect(self, request: HTTPRequest) -> HTTPResponse:
+        """Attempt to connect to a WiFi network (Linux nmcli fallback)
+
+        Expects JSON body: {ssid: string, password?: string}
+        """
+        try:
+            if not request.body:
+                return HTTPResponse(400).set_json({'error': 'No request body'})
+            payload = json.loads(request.body)
+            ssid = payload.get('ssid')
+            password = payload.get('password')
+            if not ssid:
+                return HTTPResponse(400).set_json({'error': 'ssid required'})
+
+            ok, msg = network_manager.connect_to_wifi(ssid, password)
+            return HTTPResponse(200 if ok else 500).set_json({'success': ok, 'message': msg})
+        except Exception as e:
+            return HTTPResponse(500).set_json({'error': str(e)})
 
     async def run(self):
         """Start the HTTP server"""
