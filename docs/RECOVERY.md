@@ -56,7 +56,7 @@ Declared development/runtime dependencies are:
 
 ## Test baseline
 
-A clean recovery run under Python 3.13.1 produced 17 passing and 10 failing tests. One root-level async test is not marked/configured for `pytest-asyncio`. The remaining failures show disagreements between current REV frame constants/decoding behavior and older mock/controller test expectations.
+A clean recovery run under Python 3.13.1 now produces 24 passing and 10 failing tests, including seven passing Bluetooth protocol tests. One root-level async test is not marked/configured for `pytest-asyncio`. The remaining failures show disagreements between current REV frame constants/decoding behavior and older mock/controller test expectations.
 
 A mock-mode smoke test successfully started the HTTP service with six simulated motors and returned `status: ok` from `/api/health`. Windows consoles require UTF-8 mode for the current Unicode log symbols.
 

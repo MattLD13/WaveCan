@@ -2,6 +2,8 @@
 
 WaveCan is a Raspberry Pi motor-control service for REV Robotics SPARK MAX controllers on a SocketCAN bus. It provides a browser dashboard, a JSON HTTP API, automatic motor discovery, direct output control, software velocity PID, telemetry decoding, and a mock simulator for development without hardware.
 
+It also includes a Windows desktop controller that communicates directly with the Pi over paired Bluetooth Low Energy, allowing the laptop to keep its normal Wi-Fi connection. See [Bluetooth controller](docs/BLUETOOTH.md).
+
 The recovered deployment targets a Raspberry Pi 4 Model B with a Waveshare dual-MCP2515 CAN HAT. `can1` is the active interface at 1 Mbit/s.
 
 > [!CAUTION]
@@ -61,6 +63,14 @@ python3 main.py
 
 The included `wavecan.service` is a template and currently forces `mock` mode. Change that environment setting to `socketcan` before installing it for real motors. More installation details are in [INSTALL.md](INSTALL.md).
 
+For Bluetooth control instead of the browser/hotspot workflow:
+
+```bash
+bash setup_bluetooth.sh
+```
+
+Then build or run the controller in `windows_app/`. The Bluetooth bridge has an independent 600 ms command watchdog that stops and disarms every motor after a lost connection.
+
 ## HTTP API
 
 | Endpoint | Purpose |
@@ -105,6 +115,8 @@ The HTTP port is currently fixed at `8080` in `config.py`. Default fallback moto
 - `rev_sparkmax_protocol.py` — REV/FRC arbitration IDs and frame builders
 - `mock_can.py` / `mock_sparkmax.py` — deterministic development simulator
 - `network_manager.py` — connectivity check, Wi-Fi join, and hotspot fallback
+- `bluetooth_bridge.py` / `bluetooth_protocol.py` — paired BLE service, motor watchdog, and wire protocol
+- `windows_app/` — Windows Bluetooth controller and executable build script
 - `systemd/` and `wavecan.service` — Pi boot/service templates
 - `tools/` — recovered manual launcher and external sparkcan diagnostic probe
 - `tests/` — protocol, controller, and simulation tests
@@ -113,7 +125,7 @@ The HTTP port is currently fixed at `8080` in `config.py`. Default fallback moto
 
 The Pi working tree was recovered on August 23, 2026 after its local Git object database became corrupt. The source files were preserved, scanned for credentials, overlaid on the healthy GitHub history, and documented. See [Recovery notes](docs/RECOVERY.md).
 
-The recovered suite currently reports **17 passing and 10 failing tests** in a clean Python 3.13 environment. Run it with:
+The recovered suite plus Bluetooth protocol coverage currently reports **24 passing and 10 failing tests** in a clean Python 3.13 environment. Run it with:
 
 ```bash
 python -m pytest -q
