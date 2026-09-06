@@ -6,7 +6,7 @@ Design proposal, September 6, 2026. Documentation only.
 
 Build one operator product with a shared web interface, packaged in Electron for Windows and Linux, with browser access for network clients. Retain the existing LUSI ROS 2 Humble control stack behind a rover gateway. Adapt WaveCan's Bluetooth connection and motor diagnostics into that product.
 
-A Steam Deck can own driving while a laptop with a SpaceMouse owns the arm. Other laptops can operate science equipment or observe telemetry. All clients share the same rover identity, module state, faults, and control ownership.
+Every supported device must operate every available module. An iPad can drive and move the arm using touch; a Steam Deck can operate the arm using gamepad controls. A laptop and SpaceMouse are optional input choices, not requirements for arm access. Device roles are selectable workspaces, not permanent restrictions. All clients share the same rover identity, module state, faults, and control ownership.
 
 This is feasible as an incremental integration. It does not require rewriting every LUSI module in JavaScript or installing ROS on every operator device. Electron is an operator shell; actuator control remains on the rover.
 
@@ -137,7 +137,27 @@ Use the Deck sticks for proportional drive and steering, a held trigger or bumpe
 
 Steam Input can translate controls into gamepad or desktop input. Verify that the app receives analog gamepad axes, not just mouse emulation, in both Desktop and Gaming modes. Menu overlays, suspend, focus changes, and controller disconnects must invalidate motion input. [Valve input documentation](https://partner.steamgames.com/doc/features/steam_controller/concepts), [Steam Deck desktop FAQ](https://help.steampowered.com/en/faqs/view/671A-4453-E8D2-323C)
 
-Start validation on Windows and Linux laptops, then Steam Deck Desktop mode, then Gaming mode through a Steam shortcut. macOS network monitoring can follow; BLE and SpaceMouse support require explicit testing. Browser availability does not equal full device support.
+Validate Windows and Linux laptops, iPad browser or installed web app, and Steam Deck as full module clients. Desktop and Gaming modes require separate Deck tests. macOS follows the same full module target. Direct BLE and specialized peripherals require separate validation; all modules remain accessible over the network.
+
+## Full capability on every device
+
+Every supported client exposes Drive, Arm, Science, Cameras, Mission, and authorized Diagnostics. Permissions, ownership, rover capabilities, and physical interlocks still apply equally. Selecting a workspace never grants ownership automatically.
+
+Touch driving uses a proportional screen joystick, precision speed selection, a separate held enable region, and a persistent stop control. Releasing either enable or motion input requests zero. No persistent touchscreen throttle is required.
+
+Touch arm control provides an XY pad, held Z movement buttons, and a clearly labeled rotation mode covering roll, pitch, and yaw. Include gripper open and close, frame selection, precision speed, and bounded joint jog. All supported axes must be accessible, but they need not be commanded simultaneously.
+
+For Steam Deck arm control, a candidate translation mapping uses the left stick for XY and right stick vertical axis for Z. Rotation mode maps pitch, yaw, and roll to the sticks. Show active bindings and provide dedicated enable and gripper controls. Changing modes requires centered controls and enable release. Validate these mappings with operators.
+
+Mouse and keyboard controls offer equivalent held jog actions. All input adapters produce the same intent contract with identical units, limits, ownership, and freshness checks. SpaceMouse remains an optional precision input.
+
+A touch cancellation, lost pointer capture, page hiding, screen lock, app switch, controller disconnect, or app suspension invalidates motion. The gateway expires commands independently if the client cannot send a final stop. Orientation or layout changes stop motion before repositioning controls. Track enable and motion pointer identities separately. A new touch must not inherit an old gesture. Browser pointer cancellation can occur during gestures and orientation changes. [Pointer cancellation reference](https://developer.mozilla.org/en-US/docs/Web/API/Element/pointercancel_event)
+
+Use the iPad web interface over WiFi through the local or field network. Full module access does not require Electron or direct Web Bluetooth on iPad. If direct iPad BLE becomes mandatory, evaluate a native transport adapter or nearby BLE to network bridge separately. Functional parity does not imply identical peripheral APIs or connection methods.
+
+External iPad gamepads are optional and require testing of the actual controller and browser combination. Touch alone must suffice. [Gamepad API reference](https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API)
+
+A monitoring only tablet or driving only Deck does not satisfy the finished product. Require each supported device to complete the same module exercises, with device appropriate controls.
 
 ## Input freshness and link changes
 
@@ -193,3 +213,7 @@ These are source grounded integration tasks, not changes made by this proposal. 
 Keep this proposal in WaveCan as the integration design. Future UI and connection work can begin here. Keep the existing ROS control packages in urc_software until an explicit team decision changes ownership. A shared versioned API can unify the product without immediately combining repositories.
 
 Do not copy old private team documents or credentials into this repository. This proposal references public code and documentation only. The requested scope includes documentation, not application implementation, service changes, or deployment.
+
+## Base station usability followup
+
+See [base station setup proposal](BASESTATION_SETUP_DESIGN.md) for the current setup review and a proposed guided operating flow.

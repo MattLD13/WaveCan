@@ -8,16 +8,16 @@ Status: proposed work only. No implementation or runtime testing was performed f
 
 The entries below are targets, not claims of tested support.
 
-| Client | Network operation | Nearby Bluetooth | Primary role | Validation required |
-| :--- | :--- | :--- | :--- | :--- |
-| Windows Electron | Full operator interface | Native adapter | Arm, mission, diagnostics | SpaceMouse model, BLE pairing, gamepad input, installer |
-| Linux Electron | Full operator interface | Native adapter | Full base station | BlueZ, device permissions, graphics, gamepad input |
-| Steam Deck Electron | Drive interface first | Later optional capability | Driving and camera view | Desktop and Gaming modes, suspend, Steam Input, focus |
-| Browser on laptop | Shared UI and monitoring; control after validation | Optional supported browsers only | Observer or module operator | Secure context, input support, focus and throttling |
-| macOS Electron | Network interface target | Later validation | Arm or observer | Device adapter, signing, platform permissions |
-| Tablet browser | Monitoring first | Not a baseline requirement | Cameras and science results | Touch layout, browser lifecycle, video decoding |
+| Client | Final module target | Input options | Connection target |
+| :--- | :--- | :--- | :--- |
+| Windows Electron | All available modules | Mouse, keyboard, gamepad, optional SpaceMouse | Network and validated native BLE |
+| Linux Electron | All available modules | Mouse, keyboard, gamepad, optional SpaceMouse | Network and validated native BLE |
+| Steam Deck | All available modules, including Arm | Gamepad and touch | Network; BLE after validation |
+| iPad browser or installed web app | All available modules, including Drive and Arm | Touch required; validated gamepad optional | Local or field network |
+| Laptop browser | All available modules | Mouse, keyboard, supported gamepad | Network |
+| macOS client | All available modules | Mouse, keyboard, supported peripherals | Network; BLE after validation |
 
-A device may display a module without owning it. BLE motor maintenance is narrower than complete rover operation. The first release does not promise video over BLE or full arm operation over the legacy protocol.
+Roles are workspace presets, not device restrictions. A device may display a module without owning it. BLE motor maintenance is narrower than complete rover operation. The first release does not promise video over BLE or full arm operation over the legacy protocol.
 
 ## Operator walkthroughs
 
@@ -67,9 +67,9 @@ Exit condition: device input is visible in diagnostics on Windows and Linux, and
 
 ### Stage 3: isolated simulation and ownership
 
-Implement the simulator backend, module leases, control epochs, handoff, stale input expiry, and shared interlocks. Exercise Deck driving and laptop arm operation together.
+Implement the simulator backend, module leases, control epochs, handoff, stale input expiry, and shared interlocks. Exercise Deck driving and laptop arm operation together, then reverse their roles. Repeat Drive and Arm using only iPad touch controls. Test other available modules on every client.
 
-Exit condition: conflicting owners and expired commands are rejected, and simulated motion cannot reach any real controller.
+Exit condition: every supported client completes every available module exercise, conflicting owners and expired commands are rejected, and simulated motion cannot reach any real controller.
 
 ### Stage 4: controlled physical integration
 
@@ -93,6 +93,9 @@ Exit condition: a fresh supported laptop can join through the documented setup f
 
 | Scenario | Expected result |
 | :--- | :--- |
+| iPad drives and operates the arm using touch alone | Same task capability as laptop |
+| Steam Deck selects Arm | All arm axes and gripper controls are available |
+| Pointer cancellation, lock, or layout change occurs | Stop and deliberate enable required |
 | Two clients request Drive simultaneously | Exactly one lease is granted |
 | A second browser tab sends commands | It cannot inherit ownership implicitly |
 | Old owner sends after handoff | Old epoch is rejected |
@@ -124,7 +127,7 @@ For BLE, measure sustainable command and notification rates with the actual adap
 4. Which motors are owned by existing LUSI processes and which by WaveCan?
 5. What is the current arm geometry, feedback quality, and permitted drive configuration?
 6. Which SpaceMouse models and laptop operating systems must be supported first?
-7. Is initial Steam Deck support limited to Desktop mode?
+7. Which SteamOS and iPadOS versions and launch modes must be validated first?
 8. What camera resolutions, encoders, and simultaneous streams are required?
 9. Which science and autonomy actions already have stable interfaces?
 10. Who may grant control, perform maintenance, and reset a global stop?
@@ -133,4 +136,4 @@ These questions do not prevent writing the interface specification or building i
 
 ## Scope of this repository update
 
-Only this document and UNIFIED_OPERATOR_DESIGN.md are added. Existing source, tests, configuration, services, launch scripts, and README remain untouched. No deployment is requested or performed.
+This documentation set comprises this file, UNIFIED_OPERATOR_DESIGN.md, and BASESTATION_SETUP_DESIGN.md. Existing source, tests, configuration, services, launch scripts, and README remain untouched. No deployment is requested or performed.
