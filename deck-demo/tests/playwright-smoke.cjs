@@ -27,7 +27,7 @@ const server = http.createServer((req,res)=>{ const url = new URL(req.url,'http:
     await page.keyboard.up('w'); await page.keyboard.up('Space'); await page.waitForTimeout(80);
     if (await page.locator('#deadman-badge').textContent() !== 'HOLD TO ENABLE') throw new Error('deadman did not release');
     await page.locator('[data-camera="arm"]').click();
-    if (await page.locator('#camera-name').textContent() !== 'ARM CAM') throw new Error('camera action failed');
+    await page.waitForFunction(() => document.querySelector('#camera-name')?.textContent === 'ARM CAM');
     await page.locator('#sim-link-toggle').click();
     if (await page.locator('#connection-label').textContent() !== 'LINK LOST') throw new Error('link loss action failed');
     if (!await page.locator('#no-downlink-image').evaluate((node) => node.classList.contains('visible'))) throw new Error('no-downlink state not visible');
