@@ -46,7 +46,7 @@ jobs:
           path: deck-demo/release/*.AppImage
 
   release:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: test-and-package
     runs-on: ubuntu-22.04
     steps:

@@ -24,6 +24,8 @@ Date: 2026-09-07. Scope: simulation and UI design only. LUSI Rover Ops does not 
 
 ## Implementable 1280×800 specification
 
+The strip directly below the header is a single continuous 5 px status visor, never simultaneous module segments. It is green when ready/healthy, blue for connect phase, amber for a drive gate or pending phase, cyan for active camera/drive, yellow for comms loss, and pulsing red for disconnection or safety stop. Detailed module text remains in the compact utility rail and feed overlay.
+
 The screen is divided into a 64 px header, a 690 px cockpit area, and a 46 px footer. The cockpit uses 18 px outer margins and a 14 px gutter:
 
 | Region | Size | Purpose |

@@ -29,7 +29,7 @@ The X post [“never expected =rand() would be so valuable”](https://x.com/p_m
 - Design to the full 1280×800 screen and reclaim space from decorative chrome. Use layered composition: the 2D camera feed is the base layer, safety and camera cues are small overlays, and controls are a compact utility layer.
 - Keep the live feed visually dominant and centered in the full composition. Prefer a 16:9 feed that uses as much of the display as practical, with a narrow utility rail or overlay; do not let a control rail become the primary surface.
 - The drive demo feed is a 2D view from a front mounted rover camera. It is not a 3D rover scene or a free camera visualizer.
-- Put a five pixel high module and phase status ribbon directly below the top bar and run it across the full screen width. It is a quick status scan, not a detailed status panel. Give each connected module a stable color and show the current phase through segment color or a small visor marker. Put expanded labels and explanations in a focused overlay or utility view.
+- Put one continuous five pixel high status visor directly below the top bar and run it across the full screen width. It is a quick scan, not a detailed status panel: never show simultaneous module-colored segments. Change the single visor color with current purpose/phase and put expanded labels and explanations in the compact rail or feed overlay.
 - Put map, link/watchdog, and stop/recovery state in a slim rail or edge HUD.
 - Keep telemetry and mission phase in a bottom ribbon directly associated with the feed.
 - Every panel must answer one operator question: “What do I see?”, “Where am I?”, “What command is active?”, or “What failed/how do I recover?”
@@ -63,9 +63,9 @@ Conceptual references to *The Martian* and *Project Hail Mary* mean disciplined 
 | #f6bd60 | Mission cue, pending action, telemetry emphasis |
 | #ff6b6b | Fault, stop, lost link |
 
-The module and phase strip uses these semantic states:
+The single status visor uses these semantic states:
 
-Normal quick-scan segments are distinct and stable: LUSI Vision cyan, Drive command amber, Comms green, Watchdog violet, and Simulation route blue. A lost Comms state changes its segment to yellow; a disconnected Comms state changes it to pulsing red. A watchdog fault changes its segment to pulsing red. Expanded labels live in the utility rail or focused overlay, not in the five-pixel ribbon.
+Ready/healthy is stable green; connect phase is blue; drive-gate/pending is amber; active camera or drive is cyan; comms loss is yellow; disconnected or safety stop is pulsing red. Only one color is visible at a time. Expanded module detail lives in the utility rail or focused overlay, never in the five-pixel ribbon.
 
 | State | Visual treatment | Meaning |
 | --- | --- | --- |

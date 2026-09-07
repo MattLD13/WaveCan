@@ -10,7 +10,7 @@ def font(size, bold=False):
     return ImageFont.truetype(p, size) if p.exists() else ImageFont.load_default()
 def txt(d, xy, s, size=12, color=INK, bold=False, anchor=None): d.text(xy, s, font=font(size,bold), fill=color, anchor=anchor)
 def box(d, xy, r=8, fill=PANEL, outline=LINE): d.rounded_rectangle(xy, radius=r, fill=fill, outline=outline, width=1)
-def base(d, alt=False):
+def base(d, alt=False, demo=False):
     d.rectangle((0,0,W,H), fill=BG); d.rectangle((0,0,W,64), fill="#08141d"); d.line((0,63,W,63), fill=LINE)
     txt(d,(24,28),"◈",25,CYAN,True,"lm"); txt(d,(53,26),"LUSI",18,INK,True,"lm"); txt(d,(111,26),"//OPS",18,DIM,True,"lm")
     d.rounded_rectangle((229,17,298,38),radius=4,fill="#17282c",outline="#765b36"); txt(d,(263,28),"SIM ONLY",10,AMBER,True,"mm")
@@ -18,8 +18,8 @@ def base(d, alt=False):
     d.ellipse((1015,26,1024,35),fill=CYAN); txt(d,(1031,15),"SIM LINK",12,INK,True); txt(d,(1031,34),"42 ms • 60 Hz",10,DIM)
     d.rounded_rectangle((1175,23,1194,33),radius=2,outline=GREEN); d.rectangle((1177,25,1191,31),fill=GREEN); txt(d,(1207,28),"94%",12,INK,True,"lm")
     d.rectangle((0,64,W,69),fill="#091820"); d.line((0,68,W,68),fill=LINE)
-    colors=[CYAN,AMBER,RED if alt else GREEN,RED if alt else (195,139,255),(110,168,255)]
-    for i,color in enumerate(colors): d.rectangle((i*W/5,64,(i+1)*W/5-1,68),fill=color)
+    visor_color = RED if alt else (AMBER if demo else GREEN)
+    d.rectangle((0,64,W,68),fill=visor_color)
 def camera(d,x,y,w,h,alt=False):
     box(d,(x,y,x+w,y+h),5,fill="#0a1820",outline="#244954"); d.rectangle((x+1,y+1,x+w-1,y+h-1),fill="#153b44")
     horizon=y+h*.42; d.rectangle((x+1,y+h*.42,x+w-1,y+h-1),fill="#285044")
@@ -40,7 +40,7 @@ def mapview(d,x,y,w,h):
     d.line(pts,fill=AMBER,width=3,joint="curve"); d.ellipse((pts[-1][0]-6,pts[-1][1]-6,pts[-1][0]+6,pts[-1][1]+6),fill=GREEN)
     d.polygon([(x+w*.12+8,y+h*.76),(x+w*.12-5,y+h*.76-7),(x+w*.12-5,y+h*.76+7)],fill=CYAN); txt(d,(x+8,y+h-12),"START",8,DIM); txt(d,(x+w-100,y+12),"CHECKPOINT",8,GREEN)
 def render(path, alt=False, demo=False):
-    im=Image.new("RGB",(W,H),BG); d=ImageDraw.Draw(im); base(d,alt)
+    im=Image.new("RGB",(W,H),BG); d=ImageDraw.Draw(im); base(d,alt,demo)
     # A centered 16:9 camera surface with a slim utility rail on the right.
     box(d,(64,78,1066,594)); txt(d,(80,93),"LUSI VISION",10,DIM,True); txt(d,(80,109),"ARM CAM" if alt else "FRONT CAM",15,INK,True)
     for i,(lab,lx) in enumerate((("FRONT",834),("REAR",886),("ARM",936),("OVERHEAD",986))):

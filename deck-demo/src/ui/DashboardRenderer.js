@@ -41,11 +41,9 @@ export function createRenderer() {
     byId('connection-dot')?.classList.toggle('offline', !state.connected);
     setText('battery', `${Math.round(state.battery)}%`); setText('camera-name', cameras[state.camera]); setText('speed', `${fmt(Math.abs(state.drive.speed), 2)} m/s`); setText('heading', `${Math.round(state.pose.heading).toString().padStart(3,'0')}°`); setText('distance', `${fmt(state.distance, 2)} m`); setText('link-age', `${Math.round(state.linkAgeMs)} ms`); setText('command-state', state.safetyStop ? 'SAFETY STOP' : (state.deadman ? 'DRIVE ACTIVE' : 'READY / HOLD TO ENABLE'));
     byId('no-downlink-image')?.classList.toggle('visible', !state.connected);
-    const commsVisor = byId('module-comms-visor'); commsVisor?.classList.remove('green', 'yellow', 'red'); commsVisor?.classList.add(state.connected ? 'green' : (state.linkAgeMs > 500 ? 'red' : 'yellow'));
-    setText('module-comms-detail', state.connected ? `SIM LINK / ${state.latencyMs} ms` : (state.linkAgeMs > 500 ? 'DISCONNECTED / ZEROED' : 'COMMS LOST / ZEROED'));
-    setText('module-drive-detail', state.deadman ? 'DRIVE ACTIVE' : 'HOLD TO ENABLE'); byId('module-drive')?.classList.toggle('active', state.deadman);
-    const moduleSafety = byId('module-safety')?.querySelector('.visor'); moduleSafety?.classList.toggle('red', state.safetyStop); moduleSafety?.classList.toggle('green', !state.safetyStop);
-    document.querySelectorAll('[data-phase]').forEach((node) => { const phase = Number(node.dataset.phase); node.classList.toggle('current', phase === (state.demo.active ? state.demo.step : 1)); node.classList.toggle('done', state.demo.complete || (state.demo.active && phase < state.demo.step)); });
+    const visor = byId('status-visor');
+    const visorState = state.safetyStop ? 'red' : (!state.connected ? (state.linkAgeMs > 500 ? 'red' : 'yellow') : (state.deadman ? 'cyan' : (state.demo.active ? ({ 1: 'blue', 2: 'amber', 3: 'cyan', 4: 'green' }[state.demo.step] || 'amber') : 'green')));
+    visor?.classList.remove('green', 'amber', 'cyan', 'blue', 'yellow', 'red'); visor?.classList.add(visorState);
     const stop = byId('stop-button'); stop?.classList.toggle('latched', state.safetyStop); stop.textContent = state.safetyStop ? 'CLEAR STOP' : 'STOP OUTPUT';
     const event = byId('event-line'); event.textContent = state.event;
     byId('sim-link-toggle')?.classList.toggle('on', state.connected);
