@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LUSI Rover Ops</title><link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">◈</span><span>LUSI<span class="muted">//</span>OPS</span><span class="pill sim">SIM ONLY</span></div>
+    <div class="mission"><span class="eyebrow">MISSION</span><strong>LUSI ROVER / COURSE 01</strong></div>
+    <div class="top-stats"><span id="connection-dot" class="status-dot"></span><span><strong id="connection-label">SIM LINK</strong><small id="connection-detail">42 ms • 60 Hz</small></span><span class="battery"><span class="battery-icon"></span><strong id="battery">94%</strong></span></div>
+  </header>
+  <section class="status-strip" aria-label="LUSI module and mission state">
+    <div class="module-state" id="module-vision"><i class="visor cyan"></i><span>LUSI VISION</span><small>FRONT FEED</small></div>
+    <div class="module-state" id="module-drive"><i class="visor amber"></i><span>DRIVE CMD</span><small id="module-drive-detail">HOLD TO ENABLE</small></div>
+    <div class="module-state" id="module-comms"><i id="module-comms-visor" class="visor green"></i><span>COMMS</span><small id="module-comms-detail">SIM LINK / 42 ms</small></div>
+    <div class="module-state" id="module-safety"><i class="visor violet"></i><span>WATCHDOG</span><small>100 ms / ZERO ON FAULT</small></div>
+    <div class="module-state mode-state"><i class="visor blue"></i><span>ROUTE</span><small>SIMULATION</small></div>
+    <div class="phase-strip" aria-label="Mission phase"><span data-phase="1" class="current">1 CONNECT</span><span data-phase="2">2 DRIVE</span><span data-phase="3">3 CAMERA</span><span data-phase="4">4 CHECKPOINT</span></div>
+  </section>
+  <main class="cockpit">
+    <section class="workspace">
+      <article class="panel camera-panel">
+        <div class="panel-head"><div><span class="eyebrow">LIVE VIEW</span><h1 id="camera-name">FRONT CAM</h1></div><div class="camera-actions"><button class="chip active" data-camera="front">FRONT</button><button class="chip" data-camera="rear">REAR</button><button class="chip" data-camera="arm">ARM</button><button class="chip" data-camera="overhead">OVERHEAD</button></div></div>
+        <div class="camera-frame"><canvas id="camera-canvas" width="760" height="402"></canvas><img id="no-downlink-image" class="no-downlink" src="../assets/LUSNoDownlink.png" alt="LUSI No Downlink — Rocket M2"><div class="camera-overlay"><span class="rec-dot"></span> LUSI VISION / SIM FEED <span class="overlay-right">1080p • 30 FPS</span></div><div class="crosshair"></div><div class="feed-tag">FRONT CLEARANCE</div></div>
+        <div class="camera-foot"><span>FIELD OF VIEW <strong>78°</strong></span><span>MODE <strong id="command-state">READY / HOLD TO ENABLE</strong></span><span>LINK AGE <strong id="link-age">0 ms</strong></span></div>
+      </article>
+      <div class="lower-grid">
+        <article class="panel telemetry-panel"><div class="panel-head compact"><span class="eyebrow">ROVER TELEMETRY</span><span class="live-label">● LIVE</span></div><div class="telemetry-grid"><div><small>SPEED</small><strong id="speed">0.00 m/s</strong><div class="meter"><i id="drive-meter"></i></div></div><div><small>HEADING</small><strong id="heading">018°</strong><span class="subvalue">ROVER FRAME</span></div><div><small>DISTANCE</small><strong id="distance">0.00 m</strong><span class="subvalue">COURSE 01</span></div></div></article>
+        <article class="panel demo-panel"><div class="panel-head compact"><span class="eyebrow">GUIDED DEMO</span><span id="demo-status" class="demo-status">GUIDED DEMO READY</span></div><div class="steps"><span data-demo-step="1">1 CONNECT</span><span data-demo-step="2">2 DRIVE</span><span data-demo-step="3">3 CAMERA</span><span data-demo-step="4">4 CHECKPOINT</span></div><button id="demo-button" class="demo-button">START GUIDED DEMO <kbd>H</kbd></button></article>
+      </div>
+    </section>
+    <aside class="sidebar">
+      <article class="panel map-panel"><div class="panel-head compact"><span class="eyebrow">COURSE MAP</span><span class="map-legend"><i></i> ROVER</span></div><canvas id="map-canvas" width="342" height="188"></canvas><div class="map-foot"><span>POS <strong id="position">0.12 / 0.48</strong></span><span>CHECKPOINT <strong>01</strong></span></div></article>
+      <article class="panel drive-panel"><div class="panel-head compact"><div><span class="eyebrow">DRIVE CONTROL</span><h2>ROVER MOTION</h2></div><span id="deadman-badge" class="deadman">HOLD TO ENABLE</span></div><div class="drive-readout"><div class="axis-card"><div class="axis-label"><small>THROTTLE</small><span>FORWARD / REVERSE</span></div><strong id="throttle-readout">0.00</strong><div class="axis-line"><i id="throttle-meter"></i></div></div><div class="axis-card"><div class="axis-label"><small>TURN</small><span>HEADING</span></div><strong id="turn-readout">0.00</strong><div class="axis-line"><i id="turn-meter"></i></div></div></div><p class="throttle-explainer"><b>THROTTLE = SPEED</b><span>Sets forward / reverse motion. Release hold to command zero.</span></p><div class="touch-drive" aria-label="Touch drive controls"><button data-touch="forward" aria-label="Drive forward">▲</button><div><button data-touch="left" aria-label="Turn left">◀</button><button data-touch="stop" aria-label="Stop">■</button><button data-touch="right" aria-label="Turn right">▶</button></div><button data-touch="back" aria-label="Drive reverse">▼</button></div><div class="drive-hint"><span class="stick-icon">L</span> <span>WASD / LEFT STICK</span><span class="deadman-key">HOLD <kbd>SPACE</kbd> / <kbd>R2</kbd></span></div></article>
+      <article class="panel safety-panel"><div class="panel-head compact"><span class="eyebrow">SAFETY & LINK</span><span class="safe-label">SIM ONLY</span></div><div class="safety-row"><span class="status-dot"></span><span>SIMULATED LINK</span><button id="sim-link-toggle" class="toggle on" aria-label="Toggle simulated link"><i></i></button></div><div class="safety-row"><span class="status-dot green"></span><span>COMMAND WATCHDOG</span><strong>100 ms</strong></div><button id="stop-button" class="stop-button">STOP OUTPUT</button><div id="event-line" class="event-line">SIMULATION READY</div></article>
+    </aside>
+  </main>
+  <footer class="footer"><span><kbd>A</kbd> DEMO / SELECT</span><span><kbd>B</kbd> STOP</span><span><kbd>X</kbd> CAMERA</span><span><kbd>Y</kbd> MAP</span><span class="footer-right"><span class="key-dot"></span> INPUT READY <span class="divider"></span> <kbd>ESC</kbd> EMERGENCY STOP</span></footer>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

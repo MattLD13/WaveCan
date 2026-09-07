@@ -1,0 +1,62 @@
+name: LUSI Rover Ops
+
+on:
+  push:
+    paths:
+      - 'deck-demo/**'
+      - 'docs/STEAM_DECK_UI_RESEARCH.md'
+      - 'docs/LUSI_STEAM_DECK_STYLE_GUIDE.md'
+      - '.github/workflows/deck-demo.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test-and-package:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: deck-demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: deck-demo/package-lock.json
+      - name: Install Linux display and browser dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+        working-directory: .
+      - run: npm test
+      - run: xvfb-run -a npm run smoke:electron
+        env:
+          LUSI_SMOKE: '1'
+      - run: npm run test:playwright
+        env:
+          REQUIRE_BROWSER: '1'
+      - run: npm run package:linux
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lusi-rover-ops-linux-x64
+          path: deck-demo/release/*.AppImage
+
+  release:
+    if: github.event_name == 'workflow_dispatch'
+    needs: test-and-package
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: lusi-rover-ops-linux-x64
+          path: release
+      - name: Publish fixed demo release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view lusi-rover-ops-v0.1.0 >/dev/null 2>&1 || gh release create lusi-rover-ops-v0.1.0 --title 'LUSI Rover Ops v0.1.0' --notes 'Simulation-only LUSI rover operator cockpit for a 1280×800 LCD.'
+          gh release upload lusi-rover-ops-v0.1.0 release/*.AppImage --clobber

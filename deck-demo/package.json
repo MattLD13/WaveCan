@@ -1,0 +1,45 @@
+{
+  "name": "wavecan-lusi-rover-ops",
+  "version": "0.1.0",
+  "description": "Simulation-only LUSI rover operator cockpit for WaveCan driving demos",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "test": "node --test tests/*.test.cjs",
+    "test:playwright": "node tests/playwright-smoke.cjs",
+    "test:all": "npm run test && npm run test:playwright",
+    "package:linux": "electron-builder --linux AppImage --x64 --publish never",
+    "package:dir": "electron-builder --linux dir --x64 --publish never",
+    "smoke:electron": "electron --no-sandbox electron/main.cjs"
+  },
+  "build": {
+    "appId": "org.wavecan.lusi.roverops",
+    "productName": "LUSI Rover Ops",
+    "artifactName": "lusi-rover-ops-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Education",
+      "synopsis": "Simulation-only rover cockpit",
+      "description": "A safe, simulation-only LUSI rover driving demonstration."
+    }
+  },
+  "devDependencies": {
+    "electron": "44.2.0",
+    "electron-builder": "26.0.12",
+    "playwright": "1.55.0"
+  }
+}
