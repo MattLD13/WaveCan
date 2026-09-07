@@ -25,7 +25,7 @@ const server = http.createServer((req,res)=>{ const url = new URL(req.url,'http:
     await page.keyboard.down('Space'); await page.keyboard.down('w'); await page.waitForTimeout(130);
     if (await page.locator('#deadman-badge').textContent() !== 'DEADMAN ON') throw new Error('deadman did not engage');
     await page.keyboard.up('w'); await page.keyboard.up('Space'); await page.waitForTimeout(80);
-    if (await page.locator('#deadman-badge').textContent() !== 'DEADMAN OFF') throw new Error('deadman did not release');
+    if (await page.locator('#deadman-badge').textContent() !== 'HOLD TO ENABLE') throw new Error('deadman did not release');
     await page.locator('[data-camera="arm"]').click();
     if (await page.locator('#camera-name').textContent() !== 'ARM CAM') throw new Error('camera action failed');
     await page.locator('#sim-link-toggle').click();
