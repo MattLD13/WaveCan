@@ -29,8 +29,8 @@ const server = http.createServer((req,res)=>{ const url = new URL(req.url,'http:
     await page.locator('[data-camera="arm"]').click();
     await page.waitForFunction(() => document.querySelector('#camera-name')?.textContent === 'ARM CAM');
     await page.locator('#sim-link-toggle').click();
-    if (await page.locator('#connection-label').textContent() !== 'LINK LOST') throw new Error('link loss action failed');
-    if (!await page.locator('#no-downlink-image').evaluate((node) => node.classList.contains('visible'))) throw new Error('no-downlink state not visible');
+    await page.waitForFunction(() => document.querySelector('#connection-label')?.textContent === 'LINK LOST');
+    await page.waitForFunction(() => document.querySelector('#no-downlink-image')?.classList.contains('visible'));
     const output = process.env.PLAYWRIGHT_OUTPUT || path.resolve(__dirname, '..', 'previews', 'playwright-smoke.png');
     await page.screenshot({path:output});
     console.log(`PLAYWRIGHT_SMOKE_OK ${output}`);
