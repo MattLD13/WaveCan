@@ -44,6 +44,7 @@ button { font: inherit; color: inherit; border: 0; cursor: pointer; }
 .sidebar { position: absolute; z-index: 3; top: 14px; right: 18px; width: 178px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .panel { background: linear-gradient(145deg, #0f2029, #0b1820); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 32px #0003; overflow: hidden; }
 .camera-panel { flex: none; height: 530px; min-height: 0; padding: 14px 15px 10px; }
+.camera-panel > .panel-head { width: min(880px, 100%); margin-left: auto; margin-right: auto; }
 .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .panel-head h1, .panel-head h2 { font-size: 15px; letter-spacing: .08em; margin: 3px 0 0; }
 .panel-head h2 { font-size: 13px; }
