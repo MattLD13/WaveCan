@@ -21,7 +21,7 @@ const server = http.createServer((req,res)=>{ const url = new URL(req.url,'http:
     await page.waitForSelector('#camera-canvas');
     if (await page.title() !== 'LUSI Rover Ops') throw new Error('unexpected title');
     await page.locator('#demo-button').click();
-    if (!await page.locator('#demo-status').textContent().then((v)=>v.includes('STEP 1'))) throw new Error('demo did not start');
+    await page.waitForFunction(() => document.querySelector('#demo-status')?.textContent.includes('STEP 1'));
     await page.keyboard.down('Space'); await page.keyboard.down('w'); await page.waitForTimeout(130);
     if (await page.locator('#deadman-badge').textContent() !== 'DEADMAN ON') throw new Error('deadman did not engage');
     await page.keyboard.up('w'); await page.keyboard.up('Space'); await page.waitForTimeout(80);
