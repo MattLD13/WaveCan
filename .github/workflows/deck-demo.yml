@@ -49,6 +49,7 @@ jobs:
     needs: test-and-package
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: lusi-rover-ops-linux-x64
@@ -57,5 +58,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release view lusi-rover-ops-v0.1.0 >/dev/null 2>&1 || gh release create lusi-rover-ops-v0.1.0 --title 'LUSI Rover Ops v0.1.0' --notes 'Simulation-only LUSI rover operator cockpit for a 1280×800 LCD.'
-          gh release upload lusi-rover-ops-v0.1.0 release/*.AppImage --clobber
+          gh release view lusi-rover-ops-v0.1.0 --repo MattLD13/WaveCan >/dev/null 2>&1 || gh release create lusi-rover-ops-v0.1.0 --repo MattLD13/WaveCan --title 'LUSI Rover Ops v0.1.0' --notes 'Simulation-only LUSI rover operator cockpit for a 1280×800 LCD.'
+          gh release upload lusi-rover-ops-v0.1.0 --repo MattLD13/WaveCan release/*.AppImage --clobber
