@@ -1,55 +1,170 @@
-const COLORS = { ink: '#e6f1f5', dim: '#86a2ad', cyan: '#61e7ef', green: '#7bea9a', amber: '#f6bd60', red: '#ff6b6b', grid: '#21404b' };
-const cameras = { front: 'FRONT CAM', rear: 'REAR CAM', arm: 'ARM CAM', overhead: 'OVERHEAD CAM' };
+import { MarsWorld } from '../world/MarsWorld.js';
+import { MarsMap } from './MarsMap.js';
+import { SCIENCE_STEPS } from '../sim/MissionState.js';
 
+const cameras = {
+  front: 'FRONT CAMERA', rear: 'REAR CAMERA', arm: 'ARM CAMERA', overhead: 'OVERHEAD CAMERA', geo: 'GEO HD CAMERA'
+};
+const phaseOrder = { 'drive-outcrop': 0, science: 1, 'drive-marker': 2, beacon: 3, 'drive-final': 4, complete: 5 };
+const phaseLabel = { 'drive-outcrop': 'APPROACH', science: 'SCIENCE', 'drive-marker': 'MARKER APPROACH', beacon: 'BEACON', 'drive-final': 'FINISH', complete: 'COMPLETE' };
 const byId = (id) => document.getElementById(id);
 const setText = (id, value) => { const node = byId(id); if (node) node.textContent = value; };
 const fmt = (value, digits = 1) => Number(value).toFixed(digits);
 
-function drawCamera(canvas, state) {
-  // Original 2D front-mounted camera illustration: flat horizon, terrain, and obstacles.
-  const ctx = canvas.getContext('2d'); const w = canvas.width; const h = canvas.height; const t = state.elapsed;
-  ctx.fillStyle = '#0a1820'; ctx.fillRect(0, 0, w, h);
-  const horizon = h * 0.42;
-  const sky = ctx.createLinearGradient(0, 0, 0, horizon); sky.addColorStop(0, '#102e3b'); sky.addColorStop(1, '#2a6972');
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, w, horizon);
-  ctx.fillStyle = '#285044'; ctx.fillRect(0, horizon, w, h - horizon);
-  ctx.fillStyle = '#35695a'; ctx.beginPath(); ctx.moveTo(0, horizon + 22); ctx.lineTo(w * .16, horizon - 4); ctx.lineTo(w * .32, horizon + 17); ctx.lineTo(w * .51, horizon - 12); ctx.lineTo(w * .68, horizon + 14); ctx.lineTo(w * .84, horizon - 2); ctx.lineTo(w, horizon + 20); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = 'rgba(97,231,239,.22)'; ctx.lineWidth = 1;
-  for (let y = horizon + 42; y < h; y += 36) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-  ctx.fillStyle = '#c8a36a';
-  for (const rock of [[.18,.69,19],[.74,.64,25],[.56,.54,13],[.84,.79,33],[.32,.83,22]]) { ctx.beginPath(); ctx.ellipse(rock[0]*w, rock[1]*h, rock[2]*1.25, rock[2]*.72, 0, 0, Math.PI*2); ctx.fill(); }
-  ctx.strokeStyle = COLORS.cyan; ctx.setLineDash([9, 9]); ctx.beginPath(); ctx.moveTo(w/2, h*.52); ctx.lineTo(w/2, h*.83); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = 'rgba(7,16,25,.45)'; ctx.fillRect(0, h - 24, w, 24); ctx.fillStyle = COLORS.ink; ctx.font = '11px ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.fillText(`FRONT CAMERA  •  ${Math.round(30 + Math.sin(t) * 2)} FPS`, 12, h - 9);
-  if (state.camera !== 'front') { ctx.fillStyle = 'rgba(7,16,25,.72)'; ctx.fillRect(0,0,w,h); ctx.fillStyle = COLORS.cyan; ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`${cameras[state.camera]} • SIM VIEW`, w/2, h/2); }
-}
+const scienceInstruction = (state) => {
+  if (!state.science.parked) return 'Drive to the geology outcrop. The science module stays locked until the rover is correctly parked.';
+  if (state.science.step === 'complete') return 'Science sequence complete. The 440 nm response is a simulated demonstration, not a life-detection claim.';
+  const step = SCIENCE_STEPS.find((entry) => entry.id === state.science.step);
+  return step ? `Parked. Next: ${step.label}.` : 'Science sequence ready.';
+};
 
-function drawMap(canvas, state) {
-  const ctx = canvas.getContext('2d'); const w = canvas.width; const h = canvas.height;
-  ctx.fillStyle = '#0c1b23'; ctx.fillRect(0,0,w,h); ctx.strokeStyle = COLORS.grid; ctx.lineWidth = 1;
-  for (let x=0;x<w;x+=24){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();} for (let y=0;y<h;y+=24){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
-  ctx.strokeStyle = '#f6bd60'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(w*.12,h*.76); ctx.bezierCurveTo(w*.28,h*.65,w*.31,h*.32,w*.52,h*.42); ctx.bezierCurveTo(w*.68,h*.55,w*.66,h*.2,w*.88,h*.24); ctx.stroke();
-  ctx.fillStyle = COLORS.green; ctx.beginPath(); ctx.arc(w*.88,h*.24,6,0,Math.PI*2); ctx.fill();
-  const x = state.pose.x*w; const y = state.pose.y*h; ctx.save(); ctx.translate(x,y); ctx.rotate(state.pose.heading*Math.PI/180); ctx.fillStyle = COLORS.cyan; ctx.beginPath(); ctx.moveTo(13,0); ctx.lineTo(-9,-8); ctx.lineTo(-9,8); ctx.closePath(); ctx.fill(); ctx.restore();
-  ctx.fillStyle = COLORS.dim; ctx.font = '11px sans-serif'; ctx.fillText('START', 10, h-10); ctx.fillStyle = COLORS.green; ctx.fillText('CHECKPOINT', w*.74, h*.18);
-}
+const scienceValue = (state, id) => {
+  if (!state.science.completed.includes(id)) return '—';
+  if (id === 'classify-rock') return `${state.science.rockName.toUpperCase()} / 87%`;
+  if (id === 'deep-sample') return `${state.science.depthCm.toFixed(1)} CM`;
+  if (id === 'load-cell') return `${state.science.loadCellG.toFixed(1)} G`;
+  if (id === 'soil-capture') return `${state.science.moisturePct.toFixed(1)}% / ${state.science.temperatureC.toFixed(1)}°C`;
+  if (id === 'sample-reading') return `${state.science.assay.absorbance440.toFixed(2)} @ 440`;
+  return 'DONE';
+};
+
+const updateScience = (state) => {
+  const phase = state.mission.phase;
+  const scienceModule = byId('science-module');
+  const beaconModule = byId('beacon-module');
+  const completeModule = byId('complete-module');
+  const showingComplete = state.mission.complete;
+  const showingBeacon = phase === 'beacon' || phase === 'drive-final';
+  if (scienceModule) scienceModule.hidden = showingComplete || showingBeacon;
+  if (beaconModule) beaconModule.hidden = showingComplete || !showingBeacon;
+  if (completeModule) completeModule.hidden = !showingComplete;
+  setText('module-title', showingComplete ? 'MISSION COMPLETE' : showingBeacon ? 'FIELD BEACON MODULE' : 'SCIENCE MODULE');
+  setText('module-status', showingComplete ? 'LOGGED' : showingBeacon ? (state.beacon.parked ? 'PARKED' : 'PARK TO ACCESS') : (state.science.parked ? 'PARKED' : 'PARK TO ACCESS'));
+  if (!showingBeacon && !showingComplete) {
+    setText('science-park-status', state.science.parked ? 'OUTCROP PARKED' : 'OUTCROP NOT PARKED');
+    setText('science-instruction', scienceInstruction(state));
+    document.querySelectorAll('[data-science-step]').forEach((node) => {
+      const id = node.dataset.scienceStep;
+      const complete = state.science.completed.includes(id);
+      node.classList.toggle('done', complete);
+      node.classList.toggle('current', id === state.science.step && !complete);
+      const value = node.querySelector('b');
+      if (value) value.textContent = scienceValue(state, id);
+    });
+    const sampleReadout = byId('sample-readout');
+    if (sampleReadout) sampleReadout.hidden = state.science.assay.absorbance440 == null;
+    setText('absorbance-value', state.science.assay.absorbance440 == null ? '—' : state.science.assay.absorbance440.toFixed(2));
+    setText('color-value', state.science.assay.observedColor || '—');
+    const action = byId('science-action');
+    const next = SCIENCE_STEPS.find((entry) => entry.id === state.science.step);
+    if (action) {
+      action.textContent = state.science.step === 'complete' ? 'SCIENCE COMPLETE' : (next ? next.label.toUpperCase() : 'DRIVE TO OUTCROP');
+      action.disabled = state.science.step === 'complete' || !state.science.parked || !state.connected || state.safetyStop;
+    }
+  }
+  if (showingBeacon && !showingComplete) {
+    setText('beacon-park-status', state.beacon.parked ? 'FIELD MARKER PARKED' : 'FIELD MARKER NOT PARKED');
+    setText('beacon-instruction', state.beacon.parked ? (state.beacon.macroRunning ? 'Arm macro running. Keep the rover parked until the beacon pulse is verified.' : state.beacon.beaconRepaired ? 'Beacon active. Drive to the final checkpoint.' : 'Ready. Run the visible arm macro to place the sample marker and repair the beacon.') : 'Park within the field marker ring to enable the visible arm automation.');
+    document.querySelectorAll('[data-macro-step-label]').forEach((node) => {
+      const step = Number(node.dataset.macroStepLabel);
+      node.textContent = step <= state.beacon.macroStep ? 'DONE' : (step === state.beacon.macroStep + 1 && state.beacon.macroRunning ? 'RUNNING' : 'WAIT');
+      node.parentElement?.classList.toggle('done', step <= state.beacon.macroStep);
+      node.parentElement?.classList.toggle('current', step === state.beacon.macroStep + 1 && state.beacon.macroRunning);
+    });
+    const fill = byId('macro-progress-fill');
+    if (fill) fill.style.width = `${(state.beacon.macroStep / state.beacon.macroTotal) * 100}%`;
+    const action = byId('beacon-action');
+    if (action) {
+      action.textContent = state.beacon.beaconRepaired ? 'BEACON ACTIVE • DRIVE TO FINISH' : state.beacon.macroRunning ? `ARM MACRO ${state.beacon.macroStep}/${state.beacon.macroTotal}` : state.beacon.parked ? 'RUN ARM MACRO' : 'DRIVE TO FIELD MARKER';
+      action.disabled = state.beacon.beaconRepaired || state.beacon.macroRunning || !state.beacon.parked || !state.connected || state.safetyStop;
+    }
+  }
+  const macroState = byId('macro-state');
+  if (macroState) {
+    if (state.mission.complete) macroState.textContent = 'COMPLETE';
+    else if (state.beacon.macroRunning) macroState.textContent = `ARM ${state.beacon.macroStep}/${state.beacon.macroTotal}`;
+    else if (state.science.step !== 'geo-camera' && state.mission.phase === 'science') macroState.textContent = 'SCIENCE ACTIVE';
+    else macroState.textContent = 'STANDBY';
+  }
+};
 
 export function createRenderer() {
-  const cameraCanvas = byId('camera-canvas'); const mapCanvas = byId('map-canvas');
+  const cameraCanvas = byId('camera-canvas');
+  const mapCanvas = byId('map-canvas');
+  const world = new MarsWorld(cameraCanvas);
+  const map = new MarsMap(mapCanvas);
   const render = (state) => {
-    drawCamera(cameraCanvas, state); drawMap(mapCanvas, state);
-    setText('connection-label', state.connected ? 'SIM LINK' : 'LINK LOST'); setText('connection-detail', state.connected ? `${state.latencyMs} ms • 60 Hz` : 'OUTPUT ZEROED');
-    byId('connection-dot')?.classList.toggle('offline', !state.connected);
-    setText('battery', `${Math.round(state.battery)}%`); setText('camera-name', cameras[state.camera]); setText('speed', `${fmt(Math.abs(state.drive.speed), 2)} m/s`); setText('heading', `${Math.round(state.pose.heading).toString().padStart(3,'0')}°`); setText('distance', `${fmt(state.distance, 2)} m`); setText('link-age', `${Math.round(state.linkAgeMs)} ms`); setText('command-state', state.safetyStop ? 'SAFETY STOP' : (state.deadman ? 'DRIVE ACTIVE' : 'READY / HOLD TO ENABLE'));
-    byId('no-downlink-image')?.classList.toggle('visible', !state.connected);
-    const visor = byId('status-visor');
-    const visorState = state.safetyStop ? 'red' : (!state.connected ? (state.linkAgeMs > 500 ? 'red' : 'yellow') : (state.deadman ? 'cyan' : (state.demo.active ? ({ 1: 'blue', 2: 'amber', 3: 'cyan', 4: 'green' }[state.demo.step] || 'amber') : 'green')));
-    visor?.classList.remove('green', 'amber', 'cyan', 'blue', 'yellow', 'red'); visor?.classList.add(visorState);
-    const stop = byId('stop-button'); stop?.classList.toggle('latched', state.safetyStop); stop.textContent = state.safetyStop ? 'CLEAR STOP' : 'STOP OUTPUT';
-    const event = byId('event-line'); event.textContent = state.event;
-    byId('sim-link-toggle')?.classList.toggle('on', state.connected);
-    const progress = state.demo.complete ? 4 : state.demo.step; document.querySelectorAll('[data-demo-step]').forEach((node) => node.classList.toggle('done', Number(node.dataset.demoStep) < progress));
-    byId('demo-status').textContent = state.demo.complete ? 'DEMO COMPLETE' : (state.demo.active ? `GUIDED DEMO • STEP ${state.demo.step}/4` : 'GUIDED DEMO READY');
-    byId('drive-meter').style.width = `${Math.min(100, Math.abs(state.drive.speed) / .8 * 100)}%`;
+    world.update(state);
+    world.render();
+    map.render(state);
+    const throttle = state.drive.throttle;
+    const turn = state.drive.turn;
+    setText('connection-label', state.connected ? 'SIM LINK' : 'LINK LOST');
+    setText('connection-detail', state.connected ? `${state.latencyMs} ms • LOCAL` : 'OUTPUT ZEROED');
+    setText('connection-mini', state.connected ? 'CONNECTED' : 'LOST');
+    setText('battery', `${Math.round(state.battery)}%`);
+    const batteryFill = byId('battery-fill'); if (batteryFill) batteryFill.style.width = `${Math.round(state.battery)}%`;
+    setText('steam-battery', '82%');
+    setText('top-mode', 'SIM');
+    setText('camera-name', cameras[state.camera] || 'FRONT CAMERA');
+    setText('active-feed', (state.camera || 'front').toUpperCase());
+    setText('camera-state', state.connected ? 'LIVE • LOCAL' : 'STALE • OUTPUT ZEROED');
+    setText('top-speed', fmt(Math.abs(state.drive.speed), 2));
+    setText('top-heading', `${Math.round(state.pose.heading).toString().padStart(3, '0')}°`);
+    setText('top-distance', fmt(state.distance, 1));
+    setText('map-distance', `${fmt(state.distance, 1)} M`);
+    setText('map-target', state.mission.complete ? 'COMPLETE' : state.mission.currentCheckpoint.toUpperCase());
+    setText('map-detail-status', state.mapDetail ? 'DETAIL' : 'ROUTE');
+    setText('speed', `${fmt(Math.abs(state.drive.speed), 2)} M/S`);
+    setText('heading', `${Math.round(state.pose.heading).toString().padStart(3, '0')}°`);
+    setText('distance', `${fmt(state.distance, 1)} M`);
+    setText('link-age', `${Math.round(state.linkAgeMs)} MS`);
+    setText('latency-value', `${Math.round(state.latencyMs)} MS`);
+    setText('route-value', state.connected ? 'BLUETOOTH' : 'NO LINK');
+    setText('safe-drive-value', state.connected && !state.safetyStop ? 'YES' : 'NO');
+    setText('can-link', state.connected ? 'CONNECTED' : 'LOST');
+    setText('can-port', 'CAN0');
+    const drivePower = Math.round(Math.min(1, Math.abs(throttle)) * 100);
+    const motorPower = [drivePower, Math.round(drivePower * 0.78), Math.round(drivePower * 0.58), Math.round(drivePower * 0.86)];
+    ['m1', 'm2', 'm3', 'm4'].forEach((motor, index) => {
+      const value = motorPower[index];
+      const fill = byId(`motor-${motor}-power`); if (fill) fill.style.width = `${value}%`;
+      setText(`motor-${motor}-value`, `${value}%`);
+      setText(`motor-${motor}-direction`, throttle < -0.02 ? 'REV' : value > 0 ? 'FWD' : 'STBY');
+    });
+    setText('command-state', state.safetyStop ? 'SIM E-STOP' : (state.deadman ? 'DRIVE ACTIVE' : 'READY / HOLD TO ENABLE'));
+    const dot = byId('connection-dot'); dot?.classList.toggle('offline', !state.connected);
+    const miniDot = byId('connection-mini-dot'); miniDot?.classList.toggle('offline', !state.connected);
+    const badge = byId('deadman-badge'); if (badge) { badge.textContent = state.deadman ? 'DEADMAN ON' : 'HOLD TO ENABLE'; badge.classList.toggle('on', state.deadman); }
+    const leftDot = byId('left-stick-dot'); if (leftDot) leftDot.style.transform = `translate(${turn * 22}px, ${-throttle * 22}px)`;
+    const rightDot = byId('right-stick-dot'); if (rightDot) rightDot.style.transform = `translate(${(state.view?.yaw || 0) * 22}px, ${(state.view?.pitch || 0) * 22}px)`;
+    document.querySelectorAll('[data-camera]').forEach((button) => button.classList.toggle('active', button.dataset.camera === state.camera));
+    const phase = phaseOrder[state.mission.phase] ?? 0;
+    document.querySelectorAll('[data-phase]').forEach((node) => {
+      const nodePhase = node.dataset.phase;
+      const order = phaseOrder[nodePhase] ?? 0;
+      node.classList.toggle('active', nodePhase === state.mission.phase);
+      node.classList.toggle('done', order < phase);
+    });
+    setText('mission-phase-label', phaseLabel[state.mission.phase] || 'APPROACH');
+    const objective = {
+      'drive-outcrop': 'Drive to geology outcrop', science: 'Run outcrop science sequence', 'drive-marker': 'Drive to field marker', beacon: 'Place marker + repair beacon', 'drive-final': 'Drive to final checkpoint', complete: 'Survey Ridge complete'
+    }[state.mission.phase];
+    const hint = {
+      'drive-outcrop': 'Follow the pale route. Park inside the ring to unlock science.', science: 'Use GEO HD, classify, sample deep, then run the assay in order.', 'drive-marker': 'Science logged. Follow the route to the field marker.', beacon: 'Hold position while the arm macro places and verifies the beacon.', 'drive-final': 'Beacon is active. Drive to the final checkpoint.', complete: 'All mission objects visited. Nice work, rover operator.'
+    }[state.mission.phase];
+    setText('mission-objective', objective);
+    setText('mission-hint', hint);
+    const start = byId('demo-button'); if (start) { start.textContent = state.mission.started ? (state.mission.complete ? 'MISSION COMPLETE' : 'MISSION ACTIVE') : 'START MISSION'; start.disabled = state.mission.started; }
+    const stop = byId('stop-button'); if (stop) { stop.classList.toggle('latched', state.safetyStop); stop.textContent = state.safetyStop ? 'CLEAR E-STOP' : 'STOP OUTPUT'; }
+    const toggle = byId('sim-link-toggle'); toggle?.classList.toggle('on', state.connected);
+    const activate = byId('activate-button');
+    if (activate) {
+      activate.textContent = state.controlsActive ? 'DEACTIVATE' : 'ACTIVATE';
+      activate.classList.toggle('active', state.controlsActive);
+    }
+    setText('event-line', state.event);
+    updateScience(state);
   };
-  return { render };
+  return { render, world, map };
 }

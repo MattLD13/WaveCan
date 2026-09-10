@@ -21,7 +21,7 @@ const createWindow = () => {
   if (process.env.LUSI_SMOKE === '1') {
     window.webContents.once('did-finish-load', async () => {
       const result = await window.webContents.executeJavaScript(`({ title: document.title, camera: Boolean(document.querySelector('#camera-canvas')), stop: Boolean(document.querySelector('#stop-button')) })`);
-      if (result.title !== 'LUSI Rover Ops' || !result.camera || !result.stop) { console.error('ELECTRON_SMOKE_FAILED', result); app.exit(1); return; }
+      if (result.title !== 'LUSI Mars Analog 01' || !result.camera || !result.stop) { console.error('ELECTRON_SMOKE_FAILED', result); app.exit(1); return; }
       console.log('ELECTRON_SMOKE_OK');
       app.exit(0);
     });

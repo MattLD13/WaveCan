@@ -12,7 +12,9 @@ npm ci
 npm start
 ```
 
-The window opens at the target of 1280×800. To start the guided route, click **START GUIDED DEMO** or press `H`. Throttle is the forward/reverse speed command; hold `Space` while pressing `W/A/S/D` (or hold `R2` with the left stick) to drive. Touch arrows are available in the Drive Control panel. Releasing the deadman immediately zeros the simulated output. `B` or `Esc` stops; `X` cycles cameras; `L` toggles the simulated link.
+`deck-demo/index.html` is a launch note for file browser users. The cockpit itself is `src/index.html` and uses ES modules, so opening that file directly with a `file://` URL is not a supported browser launch. Use `npm start` for the packaged Electron app, or run `npm run browser` and open `http://127.0.0.1:4173/src/index.html` for browser development.
+
+The window opens at the target of 1280×800. Click **START MISSION** or press `H`/gamepad `A`. Hold `Space` while pressing `W/A/S/D` (or hold `R2` with the left stick) to drive. Releasing the deadman immediately zeros the simulated output. `B` or `Esc` stops; `X` cycles cameras; `L` toggles the simulated link. The top striped control is a hold-for-0.8-second simulated E-stop. Science and beacon controls unlock only inside their map checkpoint rings.
 
 ## Package an AppImage
 

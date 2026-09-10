@@ -1,96 +1,128 @@
 import { InputController } from './input/InputController.js';
+import { SimulationEngine } from './sim/MissionState.js';
 import { createRenderer } from './ui/DashboardRenderer.js';
 
-const sim = requireSimulation();
+// The renderer and model are intentionally local to this window. There is no
+// IPC command surface, network client, radio adapter, or hardware fallback.
+const sim = new SimulationEngine();
 const renderer = createRenderer();
+// Local smoke tests use this handle to place the rover at mission checkpoints;
+// it never contains a transport and is harmless outside the test harness.
+window.__LUSI_SIM__ = sim;
+
+const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
+const updateDeadman = (held) => {
+  const badge = document.getElementById('deadman-badge');
+  if (badge) { badge.textContent = held ? 'DEADMAN ON' : 'HOLD TO ENABLE'; badge.classList.toggle('on', held); }
+};
+
+const updateController = (info) => {
+  const label = info?.connected ? info.label : 'KEYBOARD FALLBACK';
+  setText('controller-status', label);
+  const dot = document.getElementById('controller-dot');
+  dot?.classList.toggle('offline', !info?.connected);
+};
+
+const contextAction = () => {
+  const state = sim.state;
+  const stopped = !state.deadman && Math.abs(state.drive.speed) < 0.02;
+  if (!stopped) {
+    setText('event-line', 'A ACTION LOCKED • RELEASE DEADMAN + STOP ROVER');
+    return;
+  }
+  if (!state.mission.started) {
+    sim.startMission();
+  } else if (state.mission.phase === 'science' && state.science.parked) {
+    const result = sim.performScience(state.science.step);
+    if (!result.ok) setText('event-line', result.message);
+  } else if (state.mission.phase === 'beacon' && state.beacon.parked) {
+    const result = sim.performBeacon('run-macro');
+    if (!result.ok) setText('event-line', result.message);
+  } else {
+    setText('event-line', 'A ACTION READY • PARK AT THE ACTIVE MISSION OBJECT');
+  }
+};
+
+const triggerStop = (reason = 'SIM E-STOP LATCHED • OUTPUT ZEROED') => {
+  sim.setSafetyStop(true);
+  setText('event-line', reason);
+};
+
 const input = new InputController({
-  onDrive: (throttle, turn, deadman) => { sim.commandDrive(throttle, turn, deadman); },
-  onDeadman: (held) => { if (!held) sim.stop('DEADMAN RELEASED'); updateDeadmanBadge(held); },
+  onDrive: (throttle, turn, deadman) => sim.commandDrive(throttle, turn, deadman),
+  onLook: (yaw, pitch) => sim.setCameraLook(yaw, pitch),
+  onDeadman: (held) => {
+    updateDeadman(held);
+    if (!held && !sim.state.safetyStop) sim.stop('DEADMAN RELEASED • OUTPUT ZEROED');
+  },
   onAction: (action, value) => {
-    if (action === 'stop') { sim.setSafetyStop(true); setTimeout(() => sim.setSafetyStop(false), 700); }
-    if (action === 'camera') { sim.cycleCamera(); advanceDemo(3); syncCameraButtons(); }
+    if (action === 'stop' || action === 'b') triggerStop(value || 'SIM E-STOP LATCHED • OUTPUT ZEROED');
+    if (action === 'camera' || action === 'x') sim.cycleCamera();
     if (action === 'link') sim.setConnected(!sim.state.connected);
-    if (action === 'demo' || action === 'a') { sim.startDemo(); advanceDemo(1); }
-    if (action === 'gamepad') setText('event-line', value ? 'GAMEPAD CONNECTED' : 'GAMEPAD DISCONNECTED • OUTPUT ZEROED');
+    if (action === 'demo' || action === 'a' || action === 'context') contextAction();
+    if (action === 'map' || action === 'y') sim.toggleMapDetail();
+    if (action === 'controller') updateController(value);
+    if (action === 'gamepad') setText('event-line', value ? 'GAMEPAD CONNECTED • SIM INPUT READY' : 'GAMEPAD DISCONNECTED • OUTPUT ZEROED');
   }
 });
 
-function requireSimulation() {
-  // The browser file loader cannot synchronously import the CommonJS test model.
-  // Keep this adapter readable and behaviorally identical to SimulationEngine.cjs;
-  // both implement the same transport-safe simulation boundary and are tested via
-  // the CJS model in tests/simulation.test.cjs.
-  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-  class BrowserSimulation {
-    constructor() {
-      this.state = {
-        connected: true, safetyStop: false, deadman: false,
-        drive: { throttle: 0, turn: 0, speed: 0 },
-        pose: { x: 0.12, y: 0.48, heading: 18 }, camera: 'front',
-        battery: 94, latencyMs: 42, linkAgeMs: 0, elapsed: 0, distance: 0,
-        demo: { active: false, step: 0, complete: false }, event: 'SIMULATION READY'
-      };
-    }
-    commandDrive(throttle, turn, deadman) {
-      this.state.deadman = Boolean(deadman);
-      if (!deadman || !this.state.connected || this.state.safetyStop) {
-        this.stop(deadman ? 'OUTPUT INHIBITED' : 'DEADMAN RELEASED'); return;
-      }
-      this.state.drive.throttle = clamp(Number(throttle) || 0, -1, 1);
-      this.state.drive.turn = clamp(Number(turn) || 0, -1, 1);
-      this.state.event = 'DRIVE COMMAND ACTIVE';
-    }
-    stop(event = 'STOPPED') {
-      this.state.drive.throttle = 0; this.state.drive.turn = 0; this.state.drive.speed = 0;
-      this.state.deadman = false; this.state.event = event;
-    }
-    setConnected(connected) {
-      this.state.connected = Boolean(connected);
-      if (!this.state.connected) this.stop('LINK LOST • OUTPUT ZEROED');
-      else this.state.event = 'SIM LINK RESTORED';
-    }
-    setSafetyStop(stopped) {
-      this.state.safetyStop = Boolean(stopped);
-      if (stopped) this.stop('SAFETY STOP LATCHED'); else this.state.event = 'SAFETY STOP CLEARED';
-    }
-    cycleCamera() {
-      const cameras = ['front', 'rear', 'arm', 'overhead'];
-      const next = (cameras.indexOf(this.state.camera) + 1) % cameras.length;
-      this.state.camera = cameras[next < 0 ? 0 : next];
-    }
-    startDemo() {
-      this.state.demo = { active: true, step: 1, complete: false };
-      this.state.event = 'DEMO STARTED • HOLD DEADMAN TO DRIVE';
-    }
-    tick(dtSeconds) {
-      const dt = clamp(Number(dtSeconds) || 0, 0, 0.1);
-      this.state.elapsed += dt;
-      this.state.linkAgeMs = this.state.connected ? 0 : this.state.linkAgeMs + dt * 1000;
-      const canDrive = this.state.deadman && this.state.connected && !this.state.safetyStop;
-      const targetSpeed = canDrive ? this.state.drive.throttle * 0.8 : 0;
-      this.state.drive.speed += (targetSpeed - this.state.drive.speed) * Math.min(1, dt * 8);
-      this.state.pose.heading = (this.state.pose.heading + this.state.drive.turn * 75 * dt + 360) % 360;
-      const radians = this.state.pose.heading * Math.PI / 180;
-      this.state.pose.x = clamp(this.state.pose.x + Math.cos(radians) * this.state.drive.speed * dt, 0.04, 0.96);
-      this.state.pose.y = clamp(this.state.pose.y + Math.sin(radians) * this.state.drive.speed * dt, 0.08, 0.92);
-      this.state.distance += Math.abs(this.state.drive.speed * dt);
-      this.state.battery = clamp(this.state.battery - Math.abs(this.state.drive.speed) * dt * 0.012, 0, 100);
-      this.state.latencyMs = 38 + Math.round(Math.abs(Math.sin(this.state.elapsed * 0.8)) * 12);
-      return this.state;
-    }
-  }
-  return new BrowserSimulation();
-}
-const setText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
-function updateDeadmanBadge(held) { const badge=document.getElementById('deadman-badge'); badge.textContent=held?'DEADMAN ON':'HOLD TO ENABLE'; badge.classList.toggle('on',held); }
-function setMeter(id, value) { const node=document.getElementById(id); if(node) node.style.width=`${Math.min(100,Math.abs(value)*100)}%`; }
-function advanceDemo(step){ if(!sim.state.demo.active)return; sim.state.demo.step=Math.max(sim.state.demo.step,step); if(sim.state.demo.step>=4&&sim.state.distance>.05){sim.state.demo.complete=true;sim.state.demo.active=false;sim.state.event='DEMO COMPLETE • COURSE CHECKPOINT REACHED';} }
-function syncCameraButtons(){document.querySelectorAll('[data-camera]').forEach(b=>b.classList.toggle('active',b.dataset.camera===sim.state.camera));}
+updateController(null);
 
-document.querySelectorAll('[data-camera]').forEach((button)=>button.addEventListener('click',()=>{sim.state.camera=button.dataset.camera;advanceDemo(3);syncCameraButtons();}));
-document.getElementById('demo-button').addEventListener('click',()=>{sim.startDemo();advanceDemo(1);});
-document.getElementById('sim-link-toggle').addEventListener('click',()=>sim.setConnected(!sim.state.connected));
-document.getElementById('stop-button').addEventListener('click',()=>sim.setSafetyStop(!sim.state.safetyStop));
-for(const button of document.querySelectorAll('[data-touch]')) { const value=button.dataset.touch; const start=()=>{ if(value==='stop'){sim.setSafetyStop(true);setTimeout(()=>sim.setSafetyStop(false),700);return;} input.setTouchAxis(value==='forward'||value==='back'?'throttle':'turn',value==='forward'?1:value==='back'?-1:value==='left'?-1:1); }; const end=()=>{input.setTouchAxis(value==='forward'||value==='back'?'throttle':'turn',0);}; button.addEventListener('pointerdown',start); button.addEventListener('pointerup',end); button.addEventListener('pointerleave',end); }
-setInterval(()=>input.poll(),33);
-let last=performance.now(); function frame(now){const dt=(now-last)/1000;last=now;const state=sim.tick(dt);renderer.render(state);setText('position',`${state.pose.x.toFixed(2)} / ${state.pose.y.toFixed(2)}`);setText('throttle-readout',state.drive.throttle.toFixed(2));setText('turn-readout',state.drive.turn.toFixed(2));setMeter('throttle-meter',state.drive.throttle);setMeter('turn-meter',state.drive.turn);requestAnimationFrame(frame);} requestAnimationFrame(frame);
+document.querySelectorAll('[data-camera]').forEach((button) => button.addEventListener('click', () => sim.setCamera(button.dataset.camera)));
+document.getElementById('demo-button')?.addEventListener('click', () => sim.startMission());
+document.getElementById('activate-button')?.addEventListener('click', () => {
+  if (!sim.state.mission.started) sim.startMission();
+  sim.setControlsActive(!sim.state.controlsActive);
+});
+document.getElementById('sim-link-toggle')?.addEventListener('click', () => sim.setConnected(!sim.state.connected));
+document.getElementById('stop-button')?.addEventListener('click', () => {
+  if (sim.state.safetyStop) sim.setSafetyStop(false);
+  else triggerStop();
+});
+
+document.getElementById('science-action')?.addEventListener('click', () => {
+  const result = sim.performScience(sim.state.science.step);
+  if (!result.ok) setText('event-line', result.message);
+});
+document.querySelectorAll('[data-macro]').forEach((button) => button.addEventListener('click', () => {
+  const action = button.dataset.macro;
+  if (action === 'run-beacon') {
+    const result = sim.performBeacon('run-macro');
+    if (!result.ok) setText('event-line', result.message);
+  } else {
+    const result = sim.performScience(action);
+    if (!result.ok) setText('event-line', result.message);
+  }
+}));
+document.getElementById('beacon-action')?.addEventListener('click', () => {
+  const result = sim.performBeacon('run-macro');
+  if (!result.ok) setText('event-line', result.message);
+});
+
+// Steam Deck-friendly hold-to-stop affordance. A short tap cannot latch it;
+// keyboard ESC/B remain immediate stop bindings for accessibility.
+let emergencyTimer = null;
+const emergencyButton = document.getElementById('emergency-stop');
+const cancelEmergency = () => { if (emergencyTimer) window.clearTimeout(emergencyTimer); emergencyTimer = null; emergencyButton?.classList.remove('armed'); };
+const armEmergency = (event) => {
+  event?.preventDefault();
+  cancelEmergency();
+  emergencyButton?.classList.add('armed');
+  emergencyTimer = window.setTimeout(() => { emergencyTimer = null; triggerStop('SIM E-STOP LATCHED • HOLD CONFIRMED'); }, 800);
+};
+emergencyButton?.addEventListener('pointerdown', armEmergency);
+emergencyButton?.addEventListener('pointerup', cancelEmergency);
+emergencyButton?.addEventListener('pointerleave', cancelEmergency);
+emergencyButton?.addEventListener('pointercancel', cancelEmergency);
+
+setInterval(() => input.poll(), 33);
+let last = performance.now();
+const frame = (now) => {
+  const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
+  last = now;
+  const state = sim.tick(dt);
+  renderer.render(state);
+  window.requestAnimationFrame(frame);
+};
+renderer.render(sim.snapshot());
+window.requestAnimationFrame(frame);

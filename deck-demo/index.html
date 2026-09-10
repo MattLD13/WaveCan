@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LUSI Rover Ops</title>
+  <style>
+    :root { color-scheme: dark; font: 16px system-ui, sans-serif; color: #ede8f0; background: #090b0e; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: radial-gradient(circle at 50% 20%, #201a2b, #090b0e 60%); }
+    main { width: min(560px, calc(100% - 40px)); padding: 32px; border: 1px solid #3e424a; border-radius: 8px; background: #141619; box-shadow: 0 18px 50px #0008; }
+    h1 { margin: 0 0 8px; letter-spacing: .08em; }
+    p { color: #989aa2; line-height: 1.5; }
+    code { color: #d7c1ff; }
+    a { display: inline-block; margin-top: 12px; padding: 10px 14px; border: 1px solid #8d69c5; border-radius: 4px; color: #eadfff; text-decoration: none; }
+    a:hover { background: #2a2037; }
+    .note { padding-top: 14px; border-top: 1px solid #292d33; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>LUSI ROVER OPS</h1>
+    <p>The working cockpit is the Electron application in <code>src/index.html</code>. This page exists so opening the folder does not produce a blank or misleading screen.</p>
+    <a href="src/index.html">Open cockpit source</a>
+    <p class="note">For the complete simulation, use <code>npm start</code>. For browser development, use <code>npm run browser</code>, then open <code>http://127.0.0.1:4173/src/index.html</code>.</p>
+  </main>
+</body>
+</html>
