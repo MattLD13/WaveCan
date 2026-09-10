@@ -3635,13 +3635,17 @@ setInterval(() => {
   let kr = kb.turn || 0;
   let changed = false;
   const step = S.driveSettings.keyboardStep;
-  if (keys['ArrowUp'])    { kt = Math.min(1, kt + step); changed = true; }
-  if (keys['ArrowDown'])  { kt = Math.max(-1, kt - step); changed = true; }
-  if (keys['ArrowLeft'])  { kr = Math.max(-1, kr - step); changed = true; }
-  if (keys['ArrowRight']) { kr = Math.min(1, kr + step); changed = true; }
-  if (!keys['ArrowUp'] && !keys['ArrowDown'] && Math.abs(kt) > 0.01)
+  const up = keys['ArrowUp'] || keys['w'] || keys['W'];
+  const down = keys['ArrowDown'] || keys['s'] || keys['S'];
+  const left = keys['ArrowLeft'] || keys['a'] || keys['A'];
+  const right = keys['ArrowRight'] || keys['d'] || keys['D'];
+  if (up)    { kt = Math.min(1, kt + step); changed = true; }
+  if (down)  { kt = Math.max(-1, kt - step); changed = true; }
+  if (left)  { kr = Math.max(-1, kr - step); changed = true; }
+  if (right) { kr = Math.min(1, kr + step); changed = true; }
+  if (!up && !down && Math.abs(kt) > 0.01)
     { kt *= 0.85; if (Math.abs(kt) < 0.02) kt = 0; changed = true; }
-  if (!keys['ArrowLeft'] && !keys['ArrowRight'] && Math.abs(kr) > 0.01)
+  if (!left && !right && Math.abs(kr) > 0.01)
     { kr *= 0.80; if (Math.abs(kr) < 0.02) kr = 0; changed = true; }
   if (changed) setArcadeTarget('kb', kt, kr);
 }, 50);
@@ -3664,9 +3668,19 @@ function updateGpPill(on, label) {
 }
 
 let gpLastFwd=0, gpLastTurn=0;
+function detectExistingGamepad() {
+  if (S.gpIdx !== null || typeof navigator.getGamepads !== 'function') return;
+  const pads = navigator.getGamepads();
+  const gp = Array.from(pads || []).find(Boolean);
+  if (gp) {
+    S.gpIdx = gp.index;
+    updateGpPill(true, gp.id || 'Gamepad');
+  }
+}
+
 function pollGamepad() {
   if (S.gpIdx !== null && S.driveMode !== 'off') {
-    const gp = navigator.getGamepads()[S.gpIdx];
+    const gp = typeof navigator.getGamepads === 'function' ? navigator.getGamepads()[S.gpIdx] : null;
     if (gp) {
       const moveRaw = withInvert(-(gp.axes[S.axes.move] || 0), S.invert.move);
       const turnRaw = withInvert(-(gp.axes[S.axes.turn] || 0), S.invert.turn);
@@ -3699,6 +3713,7 @@ function pollGamepad() {
       gpLastTurn = turn;
     }
   }
+  detectExistingGamepad();
   requestAnimationFrame(pollGamepad);
 }
 pollGamepad();
@@ -4126,12 +4141,13 @@ async function pollHealth() {
     const r = await fetch('/api/health');
     const d = await r.json();
     document.getElementById('iUptime').textContent  = fmtUptime(d.uptime_ms);
-    document.getElementById('iPlatform').textContent = d.runtime_mode === 'socketcan'  ? 'Linux / SocketCAN' : 'Desktop / Mock';
+    const socketCanMode = d.runtime_mode === 'socketcan' || d.runtime_mode === 'socketcan-ble';
+    document.getElementById('iPlatform').textContent = d.runtime_mode === 'socketcan-ble' ? 'Pi / SocketCAN over BLE' : (socketCanMode ? 'Linux / SocketCAN' : 'Desktop / Mock');
 
     const can = d.can_bus || {};
     const canLabel = can.channel
-       ? `${d.runtime_mode === 'socketcan'  ? 'SocketCAN' : 'MockCAN'} ${can.channel}${can.speed_kbps  ? ` @ ${can.speed_kbps} kbps` : ''}`
-      : (d.runtime_mode === 'socketcan'  ? 'SocketCAN' : 'MockCAN');
+       ? `${socketCanMode ? 'SocketCAN' : 'MockCAN'} ${can.channel}${can.speed_kbps  ? ` @ ${can.speed_kbps} kbps` : ''}`
+      : (socketCanMode ? 'SocketCAN' : 'MockCAN');
     const canCounters = [
       can.total_messages !== undefined  ? `tx ${can.total_messages}` : null,
       can.tx_count !== undefined  ? `txq ${can.tx_count}` : null,

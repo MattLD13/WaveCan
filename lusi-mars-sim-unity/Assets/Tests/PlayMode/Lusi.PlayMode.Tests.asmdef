@@ -1,0 +1,6 @@
+{
+  "name": "Lusi.PlayMode.Tests",
+  "rootNamespace": "LusiSimulator.Tests",
+  "references": ["Lusi.Simulator"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

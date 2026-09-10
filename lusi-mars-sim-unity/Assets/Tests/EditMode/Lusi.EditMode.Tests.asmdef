@@ -1,0 +1,7 @@
+{
+  "name": "Lusi.EditMode.Tests",
+  "rootNamespace": "LusiSimulator.Tests",
+  "references": ["Lusi.Simulator"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "includePlatforms": ["Editor"]
+}

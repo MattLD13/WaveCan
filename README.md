@@ -63,6 +63,43 @@ python3 main.py
 
 The included `wavecan.service` is a template and currently forces `mock` mode. Change that environment setting to `socketcan` before installing it for real motors. More installation details are in [INSTALL.md](INSTALL.md).
 
+## Direct REV Hub USB controller (no Pi)
+
+For a simpler setup with brushed DC motors plugged into REV Hub motor ports, use [rev_hub_usb_controller.py](rev_hub_usb_controller.py). This path talks to the REV Hub directly from a Windows, Linux, or macOS computer over USB; it does not use the Raspberry Pi, SocketCAN, SPARK MAX CAN IDs, or Bluetooth.
+
+Install its separate dependency set:
+
+```powershell
+python -m pip install -r requirements-usb.txt
+python rev_hub_usb_controller.py --list
+python rev_hub_usb_controller.py
+```
+
+The script maps the first six discovered motor channels to logical motors 1 through 6 and provides a small interactive command line. A single REV Hub exposes four motor channels, so six motors require two hubs or two linked hub modules. If the six motors are SPARK MAX controllers rather than bare DC motors, keep using the existing CAN-based path instead; the REV Hub motor ports are not a replacement for SPARK MAX CAN control.
+
+For a browser UI instead of the command line:
+
+```powershell
+python rev_hub_usb_web.py --open-browser
+```
+
+The browser UI is local by default at `http://127.0.0.1:8081/`. To make it reachable from another device on the same network, bind explicitly with `--host 0.0.0.0` and use the computer's LAN IP. It includes six motor sliders, per-motor stop buttons, an emergency stop, and live USB mapping status.
+
+## SPARK MAX USB browser controller
+
+If your hardware looks like the REV Hardware Client screen—SPARK MAX controllers with CAN IDs—use [sparkmax_usb_web.py](sparkmax_usb_web.py), not the REV Hub script above. Connect one SPARK MAX directly to the computer by USB-C and leave the other SPARK MAX controllers connected to its CAN bus. The USB-connected controller acts as the bridge for the six IDs.
+
+Install the smaller dependency set and run:
+
+```powershell
+python -m pip install -r requirements-sparkmax-usb.txt
+python sparkmax_usb_web.py --open-browser
+```
+
+Current SPARK MAX firmware presents as a WinUSB bulk device rather than a COM port, so this controller uses the `gs_usb` CAN protocol through PyUSB/libusb. Close the REV Hardware Client before starting this program because only one application should control the USB/CAN session at a time. This implements the Run-tab motor-control path; it is not a firmware-update or parameter-management replacement.
+
+The SPARK MAX page also includes WaveCan-style Arcade Drive and Tank Drive. The default role map is CAN ID 1 = left drive, 2 = right drive, 3–4 = auxiliary, 5 = steer left, and 6 = steer right. Drive input supports the on-screen stick, W/S/A/D keyboard control, and a browser gamepad, with configurable deadzone and invert settings. On Windows, the page also polls native XInput, so an Xbox controller connected over Bluetooth can be used even when Chrome does not expose it through `navigator.getGamepads()`.
+
 For Bluetooth control instead of the browser/hotspot workflow:
 
 ```bash

@@ -70,3 +70,16 @@ auth.json
 *.backup
 *.old
 *~
+
+# Unity simulator generated data
+lusi-mars-sim-unity/[Ll]ibrary/
+lusi-mars-sim-unity/[Tt]emp/
+lusi-mars-sim-unity/[Oo]bj/
+lusi-mars-sim-unity/[Bb]uild/
+lusi-mars-sim-unity/[Bb]uilds/
+lusi-mars-sim-unity/[Ll]ogs/
+lusi-mars-sim-unity/[Uu]ser[Ss]ettings/
+lusi-mars-sim-unity/MemoryCaptures/
+lusi-mars-sim-unity/*.csproj
+lusi-mars-sim-unity/*.sln
+lusi-mars-sim-unity/*.slnx
