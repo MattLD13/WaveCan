@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800">
+  <defs>
+    <linearGradient id="mars" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b1b1a"/>
+      <stop offset="0.54" stop-color="#4e2b20"/>
+      <stop offset="1" stop-color="#9b4c2d"/>
+    </linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9d5030"/>
+      <stop offset="1" stop-color="#3b211c"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="800" fill="#07090b"/>
+  <rect y="0" width="1280" height="720" fill="url(#mars)"/>
+  <path d="M0 540 C140 465 270 512 390 470 S660 465 780 515 S1050 435 1280 505 L1280 720 L0 720Z" fill="url(#ground)" opacity=".92"/>
+  <path d="M0 591 C210 551 338 579 526 545 S889 559 1280 526" fill="none" stroke="#d27945" stroke-opacity=".25" stroke-width="3"/>
+  <g fill="#181719" opacity=".65">
+    <path d="M120 532 l65 -30 76 22 18 47 -190 11z"/>
+    <path d="M830 512 l68 -43 87 22 35 51 -204 8z"/>
+    <path d="M1040 570 l55 -31 103 17 24 39 -170 12z"/>
+  </g>
+  <rect y="720" width="1280" height="75" fill="#101217"/>
+  <rect y="720" width="1280" height="1" fill="#363a42"/>
+  <g stroke="#383c44" stroke-width="1">
+    <path d="M250 729 V786"/><path d="M486 729 V786"/><path d="M736 729 V786"/><path d="M979 729 V786"/>
+  </g>
+  <g font-family="Arial, sans-serif" fill="#858a95">
+    <text x="24" y="755" font-size="27" font-weight="700" fill="#c18b35" letter-spacing="2">LUSI</text>
+    <text x="24" y="784" font-size="9" letter-spacing="2">MARS ANALOG 01</text>
+    <text x="275" y="741" font-size="9" letter-spacing="1">SPEED</text><text x="275" y="770" font-size="15" fill="#e8e9ec">0.0 m/s</text>
+    <text x="330" y="741" font-size="9" letter-spacing="1">HDG</text><text x="330" y="770" font-size="15" fill="#e8e9ec">000°</text>
+    <text x="386" y="741" font-size="9" letter-spacing="1">DIST</text><text x="386" y="770" font-size="15" fill="#e8e9ec">12.4 m</text>
+    <text x="445" y="741" font-size="9" letter-spacing="1">MODE</text><text x="445" y="770" font-size="15" fill="#e8e9ec">SIM</text>
+    <text x="506" y="740" font-size="9" letter-spacing="1">ROVER</text><rect x="506" y="748" width="90" height="14" rx="2" fill="#292d34"/><rect x="512" y="752" width="78" height="6" fill="#e8e9ec"/><text x="608" y="770" font-size="13" fill="#e8e9ec">94%</text>
+    <text x="662" y="740" font-size="9" letter-spacing="1">DECK</text><rect x="662" y="748" width="66" height="14" rx="2" fill="#292d34"/><rect x="668" y="752" width="54" height="6" fill="#e8e9ec"/><text x="662" y="780" font-size="11" fill="#e8e9ec">100%</text>
+    <text x="752" y="740" font-size="9" letter-spacing="1">MOTORS</text>
+    <text x="752" y="756" font-size="9" fill="#e8e9ec">M1 00% IDLE</text><text x="752" y="768" font-size="9" fill="#e8e9ec">M2 00% IDLE</text><text x="752" y="780" font-size="9" fill="#e8e9ec">M3 00% IDLE</text>
+    <text x="870" y="756" font-size="9">CAN PORT  OK</text><text x="870" y="770" font-size="9">CAN LINK  SIM</text>
+  </g>
+  <rect x="993" y="733" width="98" height="48" rx="2" fill="#191d22" stroke="#40dc8f"/>
+  <text x="1042" y="762" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#40dc8f" letter-spacing="1">ACTIVATE</text>
+  <rect x="1104" y="728" width="158" height="59" rx="3" fill="#210d10" stroke="#e5bd16" stroke-width="5" stroke-dasharray="13 8"/>
+  <rect x="1104" y="728" width="4" height="59" fill="#e81c24"/>
+  <text x="1183" y="744" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#92959c" letter-spacing="1">HOLD TO STOP</text>
+  <text x="1183" y="765" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#ffcf10" font-weight="700">E STOP</text>
+  <text x="1183" y="779" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#92959c">B / ESC 1.2 s</text>
+  <rect y="795" width="1280" height="5" fill="#9449f5"/>
+</svg>
