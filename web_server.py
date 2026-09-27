@@ -283,6 +283,7 @@ class WebServer:
                 },
                 'rover_control': {
                     'armed': self._rover_armed,
+                    'owner': self.rover_safety_gate.owner,
                     'watchdog_ms': self._rover_watchdog_ms,
                 },
             }
@@ -298,7 +299,11 @@ class WebServer:
             if operation == 'arm':
                 if not self.rover_safety_gate.acquire('http'):
                     return HTTPResponse(409, 'Conflict').set_json({'error': 'another rover controller is armed'})
-                self.motor_controller.enable_all()
+                try:
+                    self.motor_controller.enable_all()
+                except Exception:
+                    self.rover_safety_gate.release('http')
+                    raise
                 self._rover_armed = True
                 self._rover_last_command_ms = get_ticks_ms()
                 return HTTPResponse(200).set_json({'success': True, 'armed': True})

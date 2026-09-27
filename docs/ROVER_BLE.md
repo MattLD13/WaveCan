@@ -46,4 +46,4 @@ Tag a release as `v*` to build a Windows x64 zip, macOS Apple Silicon app zip, a
 
 Protocol version 1 uses little-endian fixed-size frames small enough for the default ATT payload. Commands are 8 bytes; telemetry is 20 bytes; bridge status is 8 bytes. The UUIDs and pack/unpack methods live in `rover_control/protocol.py`. The desktop application and Pi service import the same module to keep framing consistent.
 
-The existing repository has no separate asset or document explicitly named “Steam Deck UI concept.” The Pi page follows the closest in-repo concept: the dark WaveCan rover dashboard with gamepad/joystick interaction and telemetry cards.
+The Pi page adapts the LUSI Rover Ops handheld style in WaveCan: dark blue-green surfaces, one narrow status visor, a centered touch drive control, a compact right-side safety rail, arm/release-to-zero messaging, and a telemetry ribbon. The Steam Deck reference is a simulation-only cockpit, so this Pi view uses only motor telemetry and commands reported by live hardware; it does not render its simulated camera, course map, or demo state.
