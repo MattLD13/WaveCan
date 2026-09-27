@@ -43,3 +43,6 @@ Thumbs.db
 # Project-specific
 *.mpy
 *.uf2
+
+# PyInstaller build artifacts
+*.spec

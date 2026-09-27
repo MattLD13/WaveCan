@@ -6,6 +6,7 @@ from rev_sparkmax_protocol import (
     API_CLASS_SPEED_CONTROL,
     API_INDEX_TRUSTED_SET_SETPOINT_NO_ACK,
     API_CLASS_VOLTAGE_CONTROL,
+    API_INDEX_SET_SETPOINT,
     API_INDEX_SET_SETPOINT_NO_ACK,
     build_api_id,
     build_arbitration_id,
@@ -13,6 +14,7 @@ from rev_sparkmax_protocol import (
     make_duty_cycle_setpoint_frame,
     make_trusted_speed_setpoint_frame,
     make_voltage_setpoint_frame,
+    make_speed_setpoint_frame,
     make_status_0_frame,
     make_status_1_frame,
 )
@@ -39,13 +41,13 @@ def test_build_arbitration_id_matches_wpilib_layout():
 def test_make_duty_cycle_setpoint_frame_extended_rev_id():
     msg = make_duty_cycle_setpoint_frame(device_id=1, output_percent=0.5, no_ack=True)
 
-    expected_api_id = build_api_id(API_CLASS_VOLTAGE_CONTROL, API_INDEX_SET_SETPOINT_NO_ACK)
+    expected_api_id = build_api_id(API_CLASS_VOLTAGE_CONTROL, API_INDEX_SET_SETPOINT)
     expected_arb = ((2 & 0x1F) << 24) | ((5 & 0xFF) << 16) | ((expected_api_id & 0x3FF) << 6) | 1
 
     assert msg.is_extended_id is True
     assert msg.arbitration_id == expected_arb
     assert struct.unpack("<f", msg.data[:4])[0] == pytest.approx(0.5)
-    assert msg.data[4:] == b"\x01\x00\x00\x00"
+    assert msg.data[4:] == b"\x00\x00\x00\x00"
 
 
 def test_duty_cycle_is_clamped():
@@ -60,8 +62,35 @@ def test_voltage_setpoint_frame_uses_volts():
     msg = make_voltage_setpoint_frame(device_id=1, voltage=2.4, no_ack=True)
 
     assert msg.is_extended_id is True
+    fields = build_arbitration_id(
+        device_id=1,
+        api_class=4,
+        api_index=API_INDEX_SET_SETPOINT,
+    )
+    assert msg.arbitration_id == fields
     assert struct.unpack("<f", msg.data[:4])[0] == pytest.approx(2.4)
     assert msg.data[4:] == b"\x01\x00\x00\x00"
+
+
+def test_velocity_setpoint_frame_uses_live_spark_api_index():
+    msg = make_speed_setpoint_frame(device_id=1, normalized_speed=0.2)
+
+    expected = build_arbitration_id(
+        device_id=1,
+        api_class=API_CLASS_SPEED_CONTROL,
+        api_index=API_INDEX_SET_SETPOINT,
+    )
+    assert msg.arbitration_id == expected
+    assert struct.unpack("<f", msg.data[:4])[0] == pytest.approx(0.2)
+
+
+def test_non_finite_setpoints_are_rejected():
+    with pytest.raises(ValueError, match="finite"):
+        make_duty_cycle_setpoint_frame(device_id=1, output_percent=float("nan"))
+    with pytest.raises(ValueError, match="finite"):
+        make_duty_cycle_setpoint_frame(device_id=1, output_percent=float("inf"))
+    with pytest.raises(ValueError, match="finite"):
+        make_voltage_setpoint_frame(device_id=1, voltage=float("nan"))
 
 
 def test_trusted_speed_setpoint_uses_speed_control_class():

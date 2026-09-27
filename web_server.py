@@ -6,8 +6,10 @@ Works on both desktop (Python 3) and RP2350 (MicroPython)
 
 import asyncio
 import json
+import math
 import os
 from wavecan_platform import log, get_ticks_ms
+from rover_control.runtime import RoverSafetyGate
 
 # Load dashboard HTML from file
 _here = os.path.dirname(os.path.abspath(__file__))
@@ -105,17 +107,22 @@ class WebServer:
     Handles motor control commands and telemetry streaming
     """
 
-    def __init__(self, motor_controller, port: int = 8080, host: str = '127.0.0.1', runtime_mode: str = 'mock'):
+    def __init__(self, motor_controller, port: int = 8080, host: str = '127.0.0.1',
+                 rover_safety_gate: RoverSafetyGate | None = None):
         self.motor_controller = motor_controller
         self.port = port
         self.host = host
-        self.runtime_mode = runtime_mode
+        self.runtime_mode = 'socketcan'
         self.is_running = True   # True from init so physics_loop doesn't exit before server binds
         self.request_count = 0
         self.start_time_ms = get_ticks_ms()
         self._last_nonzero_cmd_ms = {}
         self._last_nonzero_cmd_value = {}
         self._zero_suppress_window_ms = 300
+        self._rover_armed = False
+        self._rover_last_command_ms = 0
+        self._rover_watchdog_ms = 600
+        self.rover_safety_gate = rover_safety_gate or RoverSafetyGate()
 
         log(f"[WebServer] Initialized at {host}:{port}", "INFO")
 
@@ -137,10 +144,14 @@ class WebServer:
             # Route request
             if request.path == '/' or request.path == '/dashboard':
                 response = await self.handle_dashboard(request)
+            elif request.path in ('/rover', '/rover/') and request.method == 'GET':
+                response = await self.handle_rover_drive(request)
             elif request.path == '/api/status':
                 response = await self.handle_status(request)
             elif request.path == '/api/motor/cmd' and request.method == 'POST':
                 response = await self.handle_motor_command(request)
+            elif request.path == '/api/rover/drive' and request.method == 'POST':
+                response = await self.handle_rover_drive_command(request)
             elif request.path == '/api/motor/pid' and request.method == 'POST':
                 response = await self.handle_motor_pid(request)
             elif request.path == '/api/motors' and request.method == 'GET':
@@ -244,6 +255,16 @@ class WebServer:
 </html>"""
             return HTTPResponse(200).set_html(html)
 
+    async def handle_rover_drive(self, _request: HTTPRequest) -> HTTPResponse:
+        """Serve the touch-first Pi rover drive and live motor test panel."""
+        path = os.path.join(_here, 'rover_touch.html')
+        try:
+            with open(path, 'r', encoding='utf-8') as page:
+                return HTTPResponse(200).set_html(page.read())
+        except OSError as exc:
+            log(f"[WebServer] Could not load rover drive page: {exc}", "ERROR")
+            return HTTPResponse(500).set_body('Rover drive UI is unavailable')
+
     async def handle_status(self, request: HTTPRequest) -> HTTPResponse:
         """Return current motor status as JSON"""
         try:
@@ -260,10 +281,97 @@ class WebServer:
                     'supports_velocity_pid': hasattr(self.motor_controller, 'set_motor_velocity_pid'),
                     'supports_pid_config': hasattr(self.motor_controller, 'configure_pid'),
                 },
+                'rover_control': {
+                    'armed': self._rover_armed,
+                    'watchdog_ms': self._rover_watchdog_ms,
+                },
             }
             return HTTPResponse(200).set_json(response_data)
         except Exception as e:
             return HTTPResponse(500).set_json({'error': str(e)})
+
+    async def handle_rover_drive_command(self, request: HTTPRequest) -> HTTPResponse:
+        """Handle arm, tank-drive keepalives, and stop for the Pi rover view."""
+        try:
+            payload = json.loads(request.body or '{}')
+            operation = str(payload.get('op', ''))
+            if operation == 'arm':
+                if not self.rover_safety_gate.acquire('http'):
+                    return HTTPResponse(409, 'Conflict').set_json({'error': 'another rover controller is armed'})
+                self.motor_controller.enable_all()
+                self._rover_armed = True
+                self._rover_last_command_ms = get_ticks_ms()
+                return HTTPResponse(200).set_json({'success': True, 'armed': True})
+            if operation == 'stop':
+                self._rover_armed = False
+                self.motor_controller.disable_all()
+                self.rover_safety_gate.release('http')
+                self._last_nonzero_cmd_ms.clear()
+                self._last_nonzero_cmd_value.clear()
+                return HTTPResponse(200).set_json({'success': True, 'armed': False, 'stopped': True})
+            if not self._rover_armed or self.rover_safety_gate.owner != 'http':
+                self._rover_armed = False
+                return HTTPResponse(409, 'Conflict').set_json({'error': 'rover drive is disarmed'})
+            if operation == 'heartbeat':
+                self._rover_last_command_ms = get_ticks_ms()
+                return HTTPResponse(200).set_json({'success': True, 'armed': True})
+            if operation == 'motor':
+                motor_id = int(payload.get('motor_id', 0))
+                value = float(payload.get('value', 0.0))
+                if not math.isfinite(value) or not -1.0 <= value <= 1.0:
+                    return HTTPResponse(400, 'Bad Request').set_json({'error': 'motor output must be finite and between -1 and 1'})
+                if motor_id not in self.motor_controller.motors:
+                    return HTTPResponse(404, 'Not Found').set_json({'error': f'motor {motor_id} is not registered'})
+                self.motor_controller.set_motor_output(motor_id, value)
+                self._rover_last_command_ms = get_ticks_ms()
+                return HTTPResponse(200).set_json({'success': True, 'motor_id': motor_id, 'value': value})
+            if operation != 'drive':
+                return HTTPResponse(400, 'Bad Request').set_json({'error': 'unsupported rover operation'})
+
+            left = float(payload.get('left', 0.0))
+            right = float(payload.get('right', 0.0))
+            if not all(math.isfinite(value) and -1.0 <= value <= 1.0 for value in (left, right)):
+                return HTTPResponse(400, 'Bad Request').set_json({'error': 'drive values must be finite and between -1 and 1'})
+            left_ids = self._parse_rover_motor_ids(payload.get('left_ids', []))
+            right_ids = self._parse_rover_motor_ids(payload.get('right_ids', []))
+            if set(left_ids) & set(right_ids):
+                return HTTPResponse(400, 'Bad Request').set_json({'error': 'left and right motor IDs must not overlap'})
+            registered = set(self.motor_controller.motors)
+            unknown = (set(left_ids) | set(right_ids)) - registered
+            if unknown:
+                return HTTPResponse(404, 'Not Found').set_json({'error': f'unregistered motor IDs: {sorted(unknown)}'})
+            for motor_id in left_ids:
+                self.motor_controller.set_motor_output(motor_id, left)
+            for motor_id in right_ids:
+                self.motor_controller.set_motor_output(motor_id, right)
+            self._rover_last_command_ms = get_ticks_ms()
+            return HTTPResponse(200).set_json({'success': True, 'left': left, 'right': right})
+        except (TypeError, ValueError) as exc:
+            return HTTPResponse(400, 'Bad Request').set_json({'error': str(exc)})
+        except Exception as exc:
+            return HTTPResponse(500, 'Internal Server Error').set_json({'error': str(exc)})
+
+    @staticmethod
+    def _parse_rover_motor_ids(values) -> list[int]:
+        if not isinstance(values, list) or not values:
+            raise ValueError('each drive side needs at least one motor ID')
+        ids = [int(value) for value in values]
+        if any(value < 1 or value > 63 for value in ids) or len(set(ids)) != len(ids):
+            raise ValueError('motor IDs must be unique values from 1 to 63')
+        return ids
+
+    async def _rover_watchdog(self):
+        while self.is_running:
+            if self._rover_armed and get_ticks_ms() - self._rover_last_command_ms > self._rover_watchdog_ms:
+                log('[WebServer] Rover drive heartbeat expired; stopping all live motors', 'WARN')
+                self._rover_armed = False
+                try:
+                    self.motor_controller.disable_all()
+                except Exception as exc:
+                    log(f'[WebServer] Rover watchdog stop failed: {exc}', 'ERROR')
+                finally:
+                    self.rover_safety_gate.release('http')
+            await asyncio.sleep(0.05)
 
     async def handle_motor_command(self, request: HTTPRequest) -> HTTPResponse:
         """Handle motor command from dashboard"""
@@ -276,6 +384,21 @@ class WebServer:
             cmd = command.get('cmd', 'set')
             value = command.get('value', None)
             force_stop = bool(command.get('force_stop', False))
+
+            if cmd == 'enable_all':
+                if self.rover_safety_gate.owner is not None:
+                    return HTTPResponse(409, 'Conflict').set_json({'error': 'a rover controller currently owns the motors'})
+                self.motor_controller.enable_all()
+                return HTTPResponse(200).set_json({'success': True, 'enabled': True})
+            if cmd == 'stop_all':
+                self.motor_controller.disable_all()
+                self._rover_armed = False
+                self.rover_safety_gate.release('http')
+                self._last_nonzero_cmd_ms.clear()
+                self._last_nonzero_cmd_value.clear()
+                return HTTPResponse(200).set_json({'success': True, 'stopped': True})
+            if self.rover_safety_gate.owner is not None:
+                return HTTPResponse(409, 'Conflict').set_json({'error': 'a rover controller currently owns the motors'})
 
             # Accept common alternate payload keys and percent-style values.
             if value is None:
@@ -306,7 +429,7 @@ class WebServer:
                 # In hardware mode the dashboard can emit rapid zero updates
                 # that immediately cancel nonzero commands from the same gesture.
                 now_ms = get_ticks_ms()
-                if self.runtime_mode == 'socketcan' and not force_stop and abs(value) < 1e-6:
+                if not force_stop and abs(value) < 1e-6:
                     last_nonzero_ms = self._last_nonzero_cmd_ms.get(motor_id, 0)
                     if (now_ms - last_nonzero_ms) < self._zero_suppress_window_ms:
                         last_nonzero_value = self._last_nonzero_cmd_value.get(motor_id, 0.0)
@@ -360,6 +483,8 @@ class WebServer:
     async def handle_motor_pid(self, request: HTTPRequest) -> HTTPResponse:
         """Configure software PID settings for one motor."""
         try:
+            if self.rover_safety_gate.owner is not None:
+                return HTTPResponse(409, 'Conflict').set_json({'error': 'a rover controller currently owns the motors'})
             if not request.body:
                 return HTTPResponse(400).set_json({'error': 'No request body'})
 
@@ -421,8 +546,12 @@ class WebServer:
             self.is_running = True
             log(f"[WebServer] Listening on {self.host}:{self.port}")
 
+            watchdog = asyncio.create_task(self._rover_watchdog())
             async with server:
-                await server.serve_forever()
+                try:
+                    await server.serve_forever()
+                finally:
+                    watchdog.cancel()
         except Exception as e:
             log(f"[WebServer] Error: {e}", "ERROR")
             self.is_running = False

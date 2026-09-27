@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sparkmax-can"
+version = "0.1.0"
+description = "Python CAN protocol and control helpers for REV SPARK MAX motor controllers"
+readme = "sparkmax_can/README.md"
+requires-python = ">=3.10"
+dependencies = ["python-can>=4.3"]
+
+[tool.setuptools.packages.find]
+include = ["sparkmax_can*"]

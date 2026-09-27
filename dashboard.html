@@ -366,19 +366,6 @@ input[type=range]::-webkit-slider-thumb {
 }
 .mode-btn.active { border-color: var(--accent); color: var(--accent); background: #131c2e; }
 
-/*  Drivetrain Viz  */
-.dt-canvas-wrap { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px 12px; }
-canvas#dtCanvas {
-  display: block;
-  width: 100%;
-  height: clamp(240px, 34vh, 300px);
-  border-radius: 8px;
-  background: #0f141b;
-}
-.dt-footer { display: flex; gap: 8px; align-items: center; font-size: .72rem; color: var(--muted); }
-.dt-footer button { padding: 3px 10px; font-size: .7rem; border-radius: 5px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; }
-.dt-footer button:hover { border-color: var(--accent); color: var(--accent); }
-
 /*  Deadzone Popover  */
 .dz-wrap { position: relative; }
 .dz-btn { background: none; border: 1px solid var(--border); border-radius: 5px; padding: 3px 8px; font-size: .72rem; color: var(--muted); cursor: pointer; transition: all .15s; }
@@ -659,6 +646,7 @@ canvas#rpmChart { display: block; }
 <div class="topbar">
   <div class="logo">Wave<span>Can</span></div>
   <div class="topbar-spacer"></div>
+  <a class="pill" href="/rover" style="color:var(--text);text-decoration:none;font-weight:800">Rover Drive</a>
   <div class="pill" id="gpPill"><span class="dot"></span> No Gamepad</div>
   <div class="pill" id="connPill"><span class="dot"></span> Connecting...</div>
 </div>
@@ -953,23 +941,6 @@ canvas#rpmChart { display: block; }
         </div>
       </div>
     </div>
-
-    <!-- Drivetrain Visualization -->
-    <div class="card" data-collapse-id="drivetrain-view">
-      <div class="card-head"><span class="card-title"> Drivetrain View</span>
-        <span id="dtInfo" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:.72rem;color:var(--muted);margin-left:6px"></span>
-      </div>
-      <div class="dt-canvas-wrap">
-        <canvas id="dtCanvas" width="720" height="280"></canvas>
-        <div class="dt-footer">
-          <span id="dtHeading"> 0</span>
-          <span id="dtRadius" style="margin-left:4px"></span>
-          <span style="flex:1"></span>
-          <button onclick="resetRobot()">Reset</button>
-        </div>
-      </div>
-    </div>
-
     <!-- RPM Chart -->
     <div class="card" data-collapse-id="rpm-history">
       <div class="card-head"><span class="card-title"> RPM History</span></div>
@@ -1151,18 +1122,6 @@ const S = {
   lastReqTs: 0,
   reqCount: 0,
   prevReqCount: 0,
-  // Robot simulation (differential drive)
-  robot: {
-    x: 140, y: 140,   // canvas pixels (starts at center)
-    anchorX: 140, anchorY: 140,
-    prevAnchorX: null, prevAnchorY: null,
-    heading: -Math.PI/2,  // radians, -/2 = facing up
-    path: [],         // [{x,y}] history
-    maxPath: 120,
-    trackWidth: 40,   // pixels between left/right wheels
-    pxPerUnit: 18,    // pixels per "unit speed" at 100%
-    lastMotionMs: 0,
-  },
 };
 
 const COLORS = ['#58a6ff','#3fb950','#f0883e','#bc8cff','#ff7b72','#79c0ff','#ffa198','#56d364'];
@@ -1915,7 +1874,6 @@ function setRole(id, role) {
   S.roles[id] = role || null;
   S.roleMenuOpen[id] = false;
   renderMotors();
-  drawDrivetrain();
 }
 
 function toggleRoleMenu(id) {
@@ -3639,237 +3597,7 @@ function pollGamepad() {
 pollGamepad();
 
 //  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
-//  Drivetrain Visualization
 //  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
-const dtAnchorCanvas = document.getElementById('dtCanvas');
-const dtCanvas = dtAnchorCanvas || document.getElementById('roverCanvas');
-const dtCtx    = dtCanvas.getContext('2d');
-let dtLastTs = Date.now();
-
-function resizeRoverCanvas() {
-  if (!dtCanvas) return;
-  if (dtCanvas.id === 'roverCanvas') {
-    dtCanvas.width = window.innerWidth;
-    dtCanvas.height = Math.max(1, window.innerHeight - 50);
-  } else {
-    dtCanvas.width = dtCanvas.clientWidth || dtCanvas.width || 280;
-    dtCanvas.height = dtCanvas.clientHeight || dtCanvas.height || 280;
-  }
-}
-window.addEventListener('resize', resizeRoverCanvas);
-resizeRoverCanvas();
-
-function getDrivetrainAnchorCenter() {
-  if (!dtAnchorCanvas || dtCanvas.id !== 'roverCanvas') {
-    return { x: dtCanvas.width / 2, y: dtCanvas.height / 2 };
-  }
-  const rect = dtAnchorCanvas.getBoundingClientRect();
-  // Overlay canvas starts below the 50px top bar.
-  const overlayTop = 50;
-  return {
-    x: rect.left + rect.width / 2,
-    y: rect.top + rect.height / 2 - overlayTop,
-  };
-}
-
-function resetRobot() {
-  const anchor = getDrivetrainAnchorCenter();
-  S.robot.anchorX = anchor.x;
-  S.robot.anchorY = anchor.y;
-  S.robot.prevAnchorX = anchor.x;
-  S.robot.prevAnchorY = anchor.y;
-  S.robot.x = anchor.x;
-  S.robot.y = anchor.y;
-  S.robot.heading = -Math.PI / 2;
-  S.robot.path = [{x: S.robot.x, y: S.robot.y}];
-  S.robot.vLeft = 0;
-  S.robot.vRight = 0;
-  S.robot.lastMotionMs = Date.now();
-}
-
-function avgSideNormalized(ids, fallbackCmd) {
-  if (!ids.length) return fallbackCmd || 0;
-  const avg = ids.reduce((sum, id) => {
-    const m = S.motors[id] || {};
-    const max = m.max_rpm || 5700;
-    const rpm = m.rpm || 0;
-    return sum + (max > 0  ? rpm / max : 0);
-  }, 0) / ids.length;
-  return clamp(avg, -1, 1);
-}
-
-function drawDrivetrain() {
-  const W = dtCanvas.width, H = dtCanvas.height;
-  const ctx = dtCtx;
-  const liveAnchor = getDrivetrainAnchorCenter();
-  const prevAX = S.robot.prevAnchorX;
-  const prevAY = S.robot.prevAnchorY;
-  if (prevAX !== null && prevAY !== null) {
-    const dx = liveAnchor.x - prevAX;
-    const dy = liveAnchor.y - prevAY;
-    if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) {
-      S.robot.x += dx;
-      S.robot.y += dy;
-      S.robot.path = S.robot.path.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
-    }
-  }
-  S.robot.anchorX = liveAnchor.x;
-  S.robot.anchorY = liveAnchor.y;
-  S.robot.prevAnchorX = liveAnchor.x;
-  S.robot.prevAnchorY = liveAnchor.y;
-  const anchor = {
-    x: S.robot.anchorX  ?? (W / 2),
-    y: S.robot.anchorY  ?? (H / 2),
-  };
-  const now = Date.now();
-  const dt = Math.min(0.1, (now - dtLastTs) / 1000);
-  dtLastTs = now;
-
-  ctx.clearRect(0, 0, W, H);
-
-  const ids = sortedIds();
-  const leftIds  = ids.filter(id => S.roles[id] === 'L');
-  const rightIds = ids.filter(id => S.roles[id] === 'R');
-  const leftPct  = clamp(S.leftCmd || 0, -1, 1);
-  const rightPct = clamp(S.rightCmd || 0, -1, 1);
-
-  // Filter wheel speeds slightly to avoid jitter from telemetry updates.
-  const smooth = Math.min(1, dt * 10);
-  S.robot.vLeft += (leftPct - S.robot.vLeft) * smooth;
-  S.robot.vRight += (rightPct - S.robot.vRight) * smooth;
-
-  const wheelBase = 48; // px
-  const wheelSpeedPx = 62; // px/sec at 100%
-  const vL = S.robot.vLeft * wheelSpeedPx;
-  const vR = S.robot.vRight * wheelSpeedPx;
-  const linearV = (vL + vR) * 0.5;
-  const angularV = (vR - vL) / wheelBase;
-
-  const moving = Math.abs(linearV) > 1.5 || Math.abs(angularV) > 0.02;
-  if (moving) S.robot.lastMotionMs = now;
-
-  // Differential-drive arc integration for cleaner circle trajectories.
-  if (Math.abs(angularV) < 1e-4) {
-    S.robot.x += Math.cos(S.robot.heading) * linearV * dt;
-    S.robot.y += Math.sin(S.robot.heading) * linearV * dt;
-  } else {
-    const newHeading = S.robot.heading + angularV * dt;
-    const radius = linearV / angularV;
-    S.robot.x += radius * (Math.sin(newHeading) - Math.sin(S.robot.heading));
-    S.robot.y += -radius * (Math.cos(newHeading) - Math.cos(S.robot.heading));
-    S.robot.heading = newHeading;
-  }
-
-  if (Math.abs(angularV) < 1e-4) {
-    // Keep heading continuity when moving straight.
-    S.robot.heading += angularV * dt;
-  }
-
-  S.robot.x = clamp(S.robot.x, 22, W - 22);
-  S.robot.y = clamp(S.robot.y, 22, H - 22);
-
-  // If idle for >= 5s, return to the center reference circle.
-  if (!moving && (now - S.robot.lastMotionMs) >= 5000) {
-    S.robot.x = anchor.x;
-    S.robot.y = anchor.y;
-    S.robot.heading = -Math.PI / 2;
-    S.robot.vLeft = 0;
-    S.robot.vRight = 0;
-    S.robot.path = [{x: S.robot.x, y: S.robot.y}];
-    S.robot.lastMotionMs = now;
-  }
-
-  const p = S.robot.path;
-  if (!p.length || Math.hypot(S.robot.x - p[p.length - 1].x, S.robot.y - p[p.length - 1].y) > 2) {
-    p.push({x: S.robot.x, y: S.robot.y});
-    if (p.length > S.robot.maxPath) p.shift();
-  }
-
-  // Trail path
-  if (p.length > 1) {
-    ctx.strokeStyle = '#58a6ff66';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    p.forEach((pt, i) => i === 0  ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
-    ctx.stroke();
-  }
-
-  // Reference ring
-  ctx.strokeStyle = '#30363d';
-  ctx.setLineDash([4, 4]);
-  ctx.beginPath();
-  ctx.arc(anchor.x, anchor.y, 95, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Robot in local frame
-  ctx.save();
-  ctx.translate(S.robot.x, S.robot.y);
-  // Heading is tracked in kinematic frame (0 = +X); body art faces up by default.
-  ctx.rotate(S.robot.heading + Math.PI / 2);
-
-  const bodyW = 36, bodyH = 52;
-  ctx.fillStyle = '#21262d';
-  ctx.strokeStyle = '#30363d';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.roundRect(-bodyW / 2, -bodyH / 2, bodyW, bodyH, 7);
-  ctx.fill();
-  ctx.stroke();
-
-  const lCol = leftPct > 0.05  ? '#58a6ff' : leftPct < -0.05  ? '#f85149' : '#30363d';
-  const rCol = rightPct > 0.05  ? '#58a6ff' : rightPct < -0.05  ? '#f85149' : '#30363d';
-  ctx.fillStyle = lCol + '66';
-  ctx.fillRect(-bodyW / 2 - 8, -bodyH / 2 + 4, 6, bodyH - 8);
-  ctx.fillStyle = rCol + '66';
-  ctx.fillRect(bodyW / 2 + 2, -bodyH / 2 + 4, 6, bodyH - 8);
-
-  // Nose arrow
-  ctx.fillStyle = '#8b949e';
-  ctx.beginPath();
-  ctx.moveTo(0, -bodyH / 2 - 8);
-  ctx.lineTo(-7, -bodyH / 2 + 4);
-  ctx.lineTo(7, -bodyH / 2 + 4);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
-
-  // Heading vector
-  const hx = S.robot.x + Math.cos(S.robot.heading) * 22;
-  const hy = S.robot.y + Math.sin(S.robot.heading) * 22;
-  ctx.strokeStyle = '#79c0ff';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(S.robot.x, S.robot.y);
-  ctx.lineTo(hx, hy);
-  ctx.stroke();
-
-  // Status info
-  const dtInfo = document.getElementById('dtInfo');
-  if (dtInfo) {
-    const lRpm = leftIds.length   ? leftIds.reduce((s,id)=>s+(S.motors[id]?.rpm||0),0)/leftIds.length  : null;
-    const rRpm = rightIds.length  ? rightIds.reduce((s,id)=>s+(S.motors[id]?.rpm||0),0)/rightIds.length : null;
-    dtInfo.textContent = (lRpm !== null  ? `L: ${lRpm.toFixed(0)} ` : '') + (rRpm !== null  ? `R: ${rRpm.toFixed(0)} rpm` : '');
-  }
-
-  const headingEl = document.getElementById('dtHeading');
-  if (headingEl) {
-    const headingDeg = ((S.robot.heading * 180 / Math.PI) + 450) % 360;
-    headingEl.textContent = headingDeg.toFixed(0);
-  }
-  const radiusEl = document.getElementById('dtRadius');
-  if (radiusEl) {
-    if (Math.abs(angularV) < 0.03 && Math.abs(linearV) > 2) radiusEl.textContent = 'Straight';
-    else if (Math.abs(angularV) >= 0.03 && Math.abs(linearV) <= 2) radiusEl.textContent = 'Turning in place';
-    else if (Math.abs(angularV) >= 0.03) {
-      const r = Math.abs(linearV / angularV);
-      radiusEl.textContent = 'R' + r.toFixed(0) + ' px';
-    } else radiusEl.textContent = '';
-  }
-}
-
-// Animate drivetrain at ~30fps
-setInterval(drawDrivetrain, 33);
 
 //  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 //  RPM Chart
@@ -4061,12 +3789,12 @@ async function pollHealth() {
     const r = await fetch('/api/health');
     const d = await r.json();
     document.getElementById('iUptime').textContent  = fmtUptime(d.uptime_ms);
-    document.getElementById('iPlatform').textContent = d.runtime_mode === 'socketcan'  ? 'Linux / SocketCAN' : 'Desktop / Mock';
+    document.getElementById('iPlatform').textContent = 'Linux / SocketCAN';
 
     const can = d.can_bus || {};
     const canLabel = can.channel
-       ? `${d.runtime_mode === 'socketcan'  ? 'SocketCAN' : 'MockCAN'} ${can.channel}${can.speed_kbps  ? ` @ ${can.speed_kbps} kbps` : ''}`
-      : (d.runtime_mode === 'socketcan'  ? 'SocketCAN' : 'MockCAN');
+      ? `SocketCAN ${can.channel}${can.speed_kbps ? ` @ ${can.speed_kbps} kbps` : ''}`
+      : 'SocketCAN';
     const canCounters = [
       can.total_messages !== undefined  ? `tx ${can.total_messages}` : null,
       can.tx_count !== undefined  ? `txq ${can.tx_count}` : null,
@@ -4117,7 +3845,6 @@ function fmtUptime(ms) {
 //  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
 //  Init
 //  ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? ?? ? deg
-resetRobot();
 initSidePanelCollapse();
 initCenterCardOrder();
 initCollapsiblePieces();
